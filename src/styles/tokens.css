@@ -1,0 +1,72 @@
+/*
+ * Design tokens. Components only consume these custom properties, so a theme
+ * is just another block that overrides them.
+ *
+ * Resolution order:
+ *   1. explicit  <html data-theme="NAME">  (future: user-chosen / extra themes)
+ *   2. otherwise the OS preference (prefers-color-scheme)
+ * Dark is the default when there is no preference.
+ */
+
+:root {
+  --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-display: 'Oxanium', var(--font-body);
+
+  --radius-tile: 24px;
+  --radius-button: 14px;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  /* dark (default) */
+  color-scheme: dark;
+  --surface-page: #000;
+  --surface-tile: #111113;
+  --surface-tile-hover: #1a1a1d;
+  --border-subtle: #1c1c1f;
+  --border-tile: #252528;
+  --border-tile-hover: #3a3a3e;
+  --text: #fff;
+  --text-muted: #8c8c8c;
+  --text-tile: #cfcfcf;
+  --accent: #fff;
+  --accent-hover: #e3e3e3;
+  --on-accent: #000;
+  --focus-ring: #fff;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --surface-page: #f4f2ec;
+    --surface-tile: #fff;
+    --surface-tile-hover: #faf9f5;
+    --border-subtle: #e0dcd0;
+    --border-tile: #e0dcd0;
+    --border-tile-hover: #c9c5b8;
+    --text: #15181e;
+    --text-muted: #5c616a;
+    --text-tile: #444952;
+    --accent: #15181e;
+    --accent-hover: #2c3038;
+    --on-accent: #f4f2ec;
+    --focus-ring: #15181e;
+  }
+}
+
+/* Keep in sync with the media block above (CSS can't share a block between a
+   media query and a selector without a preprocessor). */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --surface-page: #f4f2ec;
+  --surface-tile: #fff;
+  --surface-tile-hover: #faf9f5;
+  --border-subtle: #e0dcd0;
+  --border-tile: #e0dcd0;
+  --border-tile-hover: #c9c5b8;
+  --text: #15181e;
+  --text-muted: #5c616a;
+  --text-tile: #444952;
+  --accent: #15181e;
+  --accent-hover: #2c3038;
+  --on-accent: #f4f2ec;
+  --focus-ring: #15181e;
+}

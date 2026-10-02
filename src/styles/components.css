@@ -1,0 +1,235 @@
+.app {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.skip-link {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main:focus {
+  outline: none;
+}
+
+.app-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  block-size: 56px;
+  padding-inline: 16px;
+  border-block-end: 2px solid var(--border-subtle);
+}
+
+.wordmark {
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text-tile);
+}
+
+.page {
+  flex: 1;
+  padding: 40px clamp(16px, 4.5vw, 56px) 32px;
+}
+
+.page .eyebrow {
+  margin: 12px 0 0;
+}
+
+/* Sport selection */
+
+.sport-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin-block-start: 32px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-block-size: 232px;
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+  border: 2px solid var(--border-tile);
+  color: var(--text-tile);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 140ms var(--ease-out),
+    background 140ms,
+    color 140ms,
+    border-color 140ms;
+  animation: tile-in 320ms var(--ease-out) backwards;
+}
+
+.tile:nth-of-type(2) {
+  animation-delay: 30ms;
+}
+.tile:nth-of-type(3) {
+  animation-delay: 60ms;
+}
+.tile:nth-of-type(4) {
+  animation-delay: 90ms;
+}
+.tile:nth-of-type(5) {
+  animation-delay: 120ms;
+}
+.tile:nth-of-type(6) {
+  animation-delay: 150ms;
+}
+.tile:nth-of-type(7) {
+  animation-delay: 180ms;
+}
+.tile:nth-of-type(8) {
+  animation-delay: 210ms;
+}
+
+.tile:not(:has(input:disabled)):hover {
+  background: var(--surface-tile-hover);
+  border-color: var(--border-tile-hover);
+  color: var(--text);
+}
+
+.tile:not(:has(input:disabled)):active {
+  transform: scale(0.97);
+}
+
+.tile:has(input:checked),
+.tile:has(input:checked):hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.tile:has(input:checked) .eyebrow {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.tile:has(input:disabled) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tile:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* The native radio stays in the DOM (keyboard, arrows, screen readers) but the
+   whole tile is its visual. */
+.tile input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.tile-icon {
+  inline-size: 88px;
+  block-size: 88px;
+}
+
+.tile-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.app-footer {
+  flex: none;
+  position: sticky;
+  inset-block-end: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-block-size: 96px;
+  padding: 16px clamp(16px, 4.5vw, 56px);
+  border-block-start: 2px solid var(--border-subtle);
+  background: var(--surface-page);
+}
+
+.selected-name {
+  display: block;
+  margin-block-start: 4px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  block-size: 56px;
+  padding-inline: 28px;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 1.125rem;
+  font-weight: 700;
+  transition:
+    transform 120ms var(--ease-out),
+    background 120ms;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.primary svg {
+  inline-size: 24px;
+  block-size: 24px;
+}
+
+@keyframes tile-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .primary {
+    animation: none;
+    transition: none;
+  }
+}
