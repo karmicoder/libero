@@ -9,6 +9,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
+    // Skip entry animations so axe never samples mid-fade colors.
+    reducedMotion: 'reduce',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
