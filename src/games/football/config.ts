@@ -44,7 +44,7 @@ export function defaultMatchConfig(): MatchConfig {
       },
       { id: 'pen', name: 'Penalties', abbreviation: 'PEN', kind: 'shootout' },
     ],
-    substitutions: { enabled: true, perPeriod: 3 },
+    substitutions: { enabled: true, perPeriod: 5 },
     stoppageTime: { enabled: true },
   }
 }
