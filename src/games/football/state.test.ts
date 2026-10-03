@@ -34,6 +34,7 @@ describe('FootballState', () => {
           scorer: 9,
         },
       ],
+      subsRemaining: { visitor: 3, home: 2 },
       nextEventId: 2,
     }
     expect(JSON.parse(JSON.stringify(state))).toEqual(state)

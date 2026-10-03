@@ -13,6 +13,7 @@ const state = (patch: Partial<FootballState> = {}): FootballState => ({
     visitor: { name: 'Rovers', score: 2 },
     home: { name: 'United', score: 11 },
   },
+  subsRemaining: { visitor: 3, home: 3 },
   events: [],
   nextEventId: 1,
   ...patch,
@@ -116,22 +117,15 @@ describe('FootballBoard', () => {
   })
 
   describe('substitution pips', () => {
-    it('shows remaining subs for the period', () => {
-      renderBoard(
-        state({
-          events: [
-            {
-              id: 'e1',
-              type: 'substitution',
-              team: 'home',
-              periodId: 'h1',
-              clockSeconds: 60,
-            },
-          ],
-        }),
-      )
-      expect(screen.getByText('2 of 3 left this period')).toBeInTheDocument()
+    it('shows each team’s remaining subs from state', () => {
+      renderBoard(state({ subsRemaining: { visitor: 3, home: 1 } }))
+      expect(screen.getByText('1 of 3 left this period')).toBeInTheDocument()
       expect(screen.getByText('3 of 3 left this period')).toBeInTheDocument()
+    })
+
+    it('shows extra pips when remaining was raised above the limit', () => {
+      renderBoard(state({ subsRemaining: { visitor: 3, home: 5 } }))
+      expect(screen.getByText('5 of 5 left this period')).toBeInTheDocument()
     })
 
     it('is hidden when substitutions are disabled', () => {

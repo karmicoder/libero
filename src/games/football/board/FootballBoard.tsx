@@ -3,7 +3,7 @@ import { useNow } from '../../../match/useNow'
 import { displayedSeconds, formatClock } from '../clock'
 import { findPeriod } from '../config'
 import type { FootballMessage, FootballState, TeamSide } from '../state'
-import { subsUsed } from '../subs'
+import { subLimit } from '../subs'
 import styles from './FootballBoard.module.css'
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -13,12 +13,11 @@ const SIDE_LABEL: Record<TeamSide, string> = {
 
 function Team({ side, state }: { side: TeamSide; state: FootballState }) {
   const team = state.teams[side]
-  const { substitutions } = state.config
-  const limit = substitutions.enabled ? substitutions.perPeriod : undefined
-  const left =
-    limit === undefined
-      ? 0
-      : Math.max(0, limit - subsUsed(state.events, side, state.periodId))
+  const configured = subLimit(state.config)
+  const left = state.subsRemaining[side]
+  // Normally one pip per allowed sub; a manual raise shows the extra pips.
+  const limit =
+    configured === undefined ? undefined : Math.max(configured, left)
 
   return (
     <section className={styles.team} aria-label={`${SIDE_LABEL[side]} team`}>

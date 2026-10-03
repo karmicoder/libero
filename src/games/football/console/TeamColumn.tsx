@@ -1,6 +1,6 @@
 import type { FootballAction, FootballState, TeamSide } from '../state'
 import { sentOffNumbers } from '../cards'
-import { subsUsed } from '../subs'
+import { subLimit } from '../subs'
 import { eventSummary, recentEvents } from './events'
 import styles from './TeamColumn.module.css'
 
@@ -20,8 +20,11 @@ export function TeamColumn({ side, state, dispatch }: Props) {
   const label = SIDE_LABEL[side]
   const name = team.name || label
   const { substitutions } = state.config
-  const subLimit = substitutions.enabled ? substitutions.perPeriod : undefined
-  const used = subsUsed(state.events, side, state.periodId)
+  const configured = subLimit(state.config)
+  const left = state.subsRemaining[side]
+  // Normally one pip per allowed sub; a manual raise shows the extra pips.
+  const pipCount =
+    configured === undefined ? undefined : Math.max(configured, left)
   const recent = recentEvents(state.events, side)
   const sentOff = sentOffNumbers(state.events, side)
 
@@ -76,19 +79,19 @@ export function TeamColumn({ side, state, dispatch }: Props) {
         )}
       </div>
 
-      {subLimit !== undefined && (
+      {pipCount !== undefined && (
         <p className={styles.subs}>
           <span className="eyebrow">Subs</span>
           <span className={styles.pips} aria-hidden="true">
-            {Array.from({ length: subLimit }, (_, i) => (
+            {Array.from({ length: pipCount }, (_, i) => (
               <span
                 key={i}
-                className={i < subLimit - used ? styles.pipLeft : styles.pip}
+                className={i < left ? styles.pipLeft : styles.pip}
               />
             ))}
           </span>
           <span className="visually-hidden">
-            {Math.max(0, subLimit - used)} of {subLimit} left this period
+            {left} of {pipCount} left this period
           </span>
         </p>
       )}

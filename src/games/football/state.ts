@@ -67,10 +67,16 @@ export interface CardEvent extends MatchEventBase {
   secondYellow?: boolean
 }
 
+/** One player replacing another. Shirt numbers are optional (no roster). */
+export interface SubstitutionPair {
+  off?: number
+  on?: number
+}
+
+/** One stoppage can hold several pairs (e.g. a triple substitution). */
 export interface SubstitutionEvent extends MatchEventBase {
   type: 'substitution'
-  playerOff?: number
-  playerOn?: number
+  pairs: SubstitutionPair[]
 }
 
 export type MatchEvent = GoalEvent | CardEvent | SubstitutionEvent
@@ -88,6 +94,12 @@ export interface FootballState {
   /** Announced added minutes for the current period; null when none shown. */
   stoppageMinutes: number | null
   teams: Record<TeamSide, TeamState>
+  /**
+   * Substitutions each team has left this period: reset to the configured
+   * limit on entering a play period, reduced by one per pair, never below 0
+   * (going over is allowed). Manually adjustable. 0 when there is no limit.
+   */
+  subsRemaining: Record<TeamSide, number>
   /** Chronological log of goals, cards and substitutions. */
   events: MatchEvent[]
   /** Next event id is `e<nextEventId>`. Never reused, even after removals. */
@@ -130,13 +142,19 @@ export type FootballAction =
       numbers: number[]
       at: number
     }
+  /** No-op with no pairs or when substitutions are disabled. */
   | {
       type: 'substitution'
       team: TeamSide
-      playerOff?: number
-      playerOn?: number
+      pairs: SubstitutionPair[]
       at: number
     }
+  /**
+   * Manual correction of the pips. Floored and clamped to 0 up to the larger
+   * of 5 and the configured limit; no-op when substitutions or their limit
+   * are off.
+   */
+  | { type: 'set-subs-remaining'; team: TeamSide; remaining: number }
   | { type: 'undo' }
   | { type: 'update-config'; config: MatchConfig }
 

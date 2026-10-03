@@ -15,7 +15,9 @@ import type {
   FootballState,
   GoalEvent,
   MatchConfig,
+  SubstitutionEvent,
 } from '../state'
+import { maxSubsRemaining, subLimit } from '../subs'
 import { isFootballState } from '../validate'
 
 const MAX_STOPPAGE_MINUTES = 15
@@ -30,6 +32,12 @@ function jerseyDetails(scorer?: number, assist?: number) {
     ...(validJersey(scorer) && { scorer }),
     ...(validJersey(assist) && { assist }),
   }
+}
+
+/** Both teams back to the configured limit (0 when there is none). */
+const freshSubs = (config: MatchConfig) => {
+  const limit = subLimit(config) ?? 0
+  return { visitor: limit, home: limit }
 }
 
 const stopped = (seconds: number) => ({
@@ -49,7 +57,15 @@ function enterPeriod(
     period.kind === 'play'
       ? stopped(periodOffsetSeconds(state.config, periodId))
       : stopped(clockSeconds(state.clock, at))
-  return { ...state, periodId, clock, stoppageMinutes: null }
+  return {
+    ...state,
+    periodId,
+    clock,
+    stoppageMinutes: null,
+    // Each play period gets a fresh set of substitutions; breaks keep them.
+    subsRemaining:
+      period.kind === 'play' ? freshSubs(state.config) : state.subsRemaining,
+  }
 }
 
 function reduceState(
@@ -209,9 +225,49 @@ function reduceState(
         },
       }
     }
+    case 'substitution': {
+      if (!state.config.substitutions.enabled) return state
+      const pairs = action.pairs.map((p) => ({
+        ...(validJersey(p.off) && { off: p.off }),
+        ...(validJersey(p.on) && { on: p.on }),
+      }))
+      if (pairs.length === 0) return state
+      const event: SubstitutionEvent = {
+        id: `e${state.nextEventId}`,
+        type: 'substitution',
+        team: action.team,
+        periodId: state.periodId,
+        clockSeconds: Math.floor(clockSeconds(state.clock, action.at)),
+        pairs,
+      }
+      return {
+        ...state,
+        // Over the limit is allowed: remaining just stops at 0.
+        subsRemaining: {
+          ...state.subsRemaining,
+          [action.team]: Math.max(
+            0,
+            state.subsRemaining[action.team] - pairs.length,
+          ),
+        },
+        events: [...state.events, event],
+        nextEventId: state.nextEventId + 1,
+      }
+    }
+    case 'set-subs-remaining': {
+      if (subLimit(state.config) === undefined) return state
+      const remaining = Math.min(
+        maxSubsRemaining(state.config),
+        Math.max(0, Math.floor(action.remaining)),
+      )
+      return {
+        ...state,
+        subsRemaining: { ...state.subsRemaining, [action.team]: remaining },
+      }
+    }
     default:
-      // Substitutions, undo and config edits are handled by later
-      // engine work; until then they leave the state untouched.
+      // Undo and config edits are handled by later engine work; until then
+      // they leave the state untouched.
       return state
   }
 }
@@ -232,6 +288,7 @@ export const footballEngine: GameEngine<
       visitor: { name: 'Visitor', score: 0 },
       home: { name: 'Home', score: 0 },
     },
+    subsRemaining: freshSubs(config),
     events: [],
     nextEventId: 1,
   }),

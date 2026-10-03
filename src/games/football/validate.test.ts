@@ -12,6 +12,7 @@ const valid = (): FootballState => ({
     visitor: { name: 'Visitor', score: 0 },
     home: { name: 'Home', score: 1 },
   },
+  subsRemaining: { visitor: 3, home: 3 },
   events: [],
   nextEventId: 1,
 })
@@ -28,6 +29,10 @@ describe('isFootballState', () => {
     expect(isFootballState({})).toBe(false)
     expect(isFootballState({ ...valid(), events: undefined })).toBe(false)
     expect(isFootballState({ ...valid(), nextEventId: undefined })).toBe(false)
+    // A backup from before substitutions were tracked in state.
+    expect(isFootballState({ ...valid(), subsRemaining: undefined })).toBe(
+      false,
+    )
   })
 
   it('rejects a mistyped clock or teams', () => {

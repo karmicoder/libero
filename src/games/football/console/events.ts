@@ -23,10 +23,17 @@ export function eventSummary(event: MatchEvent): string {
       return `${minute} ${withNumbers(label, event.numbers)}`
     }
     case 'substitution': {
-      const off =
-        event.playerOff !== undefined ? ` #${event.playerOff} off` : ''
-      const on = event.playerOn !== undefined ? ` #${event.playerOn} on` : ''
-      return `${minute} Sub${off}${on}`
+      const pairs = event.pairs.map((p) =>
+        [
+          p.off !== undefined && `#${p.off} off`,
+          p.on !== undefined && `#${p.on} on`,
+        ]
+          .filter(Boolean)
+          .join(' '),
+      )
+      const detail = pairs.filter(Boolean).join(', ')
+      const count = event.pairs.length > 1 ? ` ×${event.pairs.length}` : ''
+      return `${minute} Sub${detail ? ` ${detail}` : count}`
     }
   }
 }

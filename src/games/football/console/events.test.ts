@@ -33,15 +33,27 @@ describe('eventSummary', () => {
     expect(eventSummary(card({ color: 'red', secondYellow: true }))).toBe(
       '12′ Second yellow #4 #7',
     )
+  })
+
+  it('summarises substitutions, including several pairs and unnumbered ones', () => {
+    const sub = (pairs: { off?: number; on?: number }[]): MatchEvent => ({
+      ...base,
+      type: 'substitution',
+      team: 'home',
+      pairs,
+    })
+    expect(eventSummary(sub([{ off: 3, on: 8 }]))).toBe('12′ Sub #3 off #8 on')
     expect(
-      eventSummary({
-        ...base,
-        type: 'substitution',
-        team: 'home',
-        playerOff: 3,
-        playerOn: 8,
-      }),
-    ).toBe('12′ Sub #3 off #8 on')
+      eventSummary(
+        sub([
+          { off: 1, on: 13 },
+          { off: 2, on: 14 },
+        ]),
+      ),
+    ).toBe('12′ Sub #1 off #13 on, #2 off #14 on')
+    expect(eventSummary(sub([{ off: 5 }]))).toBe('12′ Sub #5 off')
+    expect(eventSummary(sub([{}]))).toBe('12′ Sub')
+    expect(eventSummary(sub([{}, {}, {}]))).toBe('12′ Sub ×3')
   })
 })
 
