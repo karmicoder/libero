@@ -451,6 +451,135 @@ describe('set-stoppage', () => {
   })
 })
 
+const card = (
+  team: 'visitor' | 'home',
+  color: 'yellow' | 'red',
+  numbers: number[],
+  at = T0,
+): FootballAction => ({ type: 'card', team, color, numbers, at })
+
+describe('card', () => {
+  it('records a first yellow as a yellow event with period and clock time', () => {
+    const s = run(
+      fresh(),
+      { type: 'start-clock', at: T0 },
+      card('home', 'yellow', [4], T0 + 61_500),
+    )
+    expect(s.events).toEqual([
+      {
+        id: 'e1',
+        type: 'card',
+        team: 'home',
+        periodId: 'h1',
+        clockSeconds: 61,
+        color: 'yellow',
+        numbers: [4],
+      },
+    ])
+  })
+
+  it('escalates a second yellow to a red second-yellow event', () => {
+    const s = run(
+      fresh(),
+      card('home', 'yellow', [4]),
+      card('home', 'yellow', [4]),
+    )
+    expect(s.events).toHaveLength(2)
+    expect(s.events[1]).toMatchObject({
+      id: 'e2',
+      type: 'card',
+      color: 'red',
+      secondYellow: true,
+      numbers: [4],
+    })
+  })
+
+  it('splits a mixed batch into a yellow and a second-yellow event', () => {
+    const s = run(
+      fresh(),
+      card('home', 'yellow', [4]),
+      card('home', 'yellow', [7, 4, 9]),
+    )
+    expect(s.events.slice(1)).toMatchObject([
+      { id: 'e2', color: 'yellow', numbers: [7, 9] },
+      { id: 'e3', color: 'red', secondYellow: true, numbers: [4] },
+    ])
+  })
+
+  it('records a direct red as a red event without escalation flag', () => {
+    const s = run(fresh(), card('visitor', 'red', [2, 5]))
+    expect(s.events).toEqual([
+      expect.objectContaining({
+        color: 'red',
+        numbers: [2, 5],
+        team: 'visitor',
+      }),
+    ])
+    expect(s.events[0]).not.toHaveProperty('secondYellow')
+  })
+
+  it('treats a yellow for an already sent-off player as a plain yellow', () => {
+    const s = run(
+      fresh(),
+      card('home', 'red', [4]),
+      card('home', 'yellow', [4]),
+    )
+    expect(s.events[1]).toMatchObject({ color: 'yellow', numbers: [4] })
+    expect(s.events[1]).not.toHaveProperty('secondYellow')
+  })
+
+  it('keeps each team’s numbers separate', () => {
+    const s = run(
+      fresh(),
+      card('visitor', 'yellow', [4]),
+      card('home', 'yellow', [4]),
+    )
+    expect(s.events[1]).toMatchObject({ team: 'home', color: 'yellow' })
+  })
+
+  it('counts a repeated number in one action once', () => {
+    const s = run(fresh(), card('home', 'yellow', [4, 4]))
+    expect(s.events).toHaveLength(1)
+    expect(s.events[0]).toMatchObject({ numbers: [4] })
+  })
+
+  it('drops invalid numbers but still records the card', () => {
+    const s = run(fresh(), card('home', 'yellow', [0, 100, 7]))
+    expect(s.events[0]).toMatchObject({ numbers: [7] })
+  })
+
+  it('records a card for an unidentified player with no numbers', () => {
+    const s = run(fresh(), card('home', 'yellow', []))
+    expect(s.events).toEqual([
+      expect.objectContaining({ color: 'yellow', numbers: [] }),
+    ])
+  })
+
+  it('does not change the score and emits no messages yet', () => {
+    const { state, messages } = footballEngine.reduce(
+      fresh(),
+      card('home', 'red', [3]),
+    )
+    expect(state.teams.home.score).toBe(0)
+    expect(messages).toEqual([])
+  })
+
+  it('shares the event id counter with goals', () => {
+    const s = run(fresh(), goal('home', T0), card('home', 'yellow', [3]))
+    expect(s.events.map((e) => e.id)).toEqual(['e1', 'e2'])
+    expect(s.nextEventId).toBe(3)
+  })
+
+  it('keeps state serialisable', () => {
+    const s = run(
+      fresh(),
+      card('home', 'yellow', [4]),
+      card('home', 'yellow', [4]),
+    )
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s)
+  })
+})
+
 describe('set-team-name', () => {
   it('renames one team and leaves the other and the score alone', () => {
     const s = run(fresh(), goal('home', T0), {

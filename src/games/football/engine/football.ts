@@ -1,4 +1,5 @@
 import type { GameEngine } from '../../../engines/types'
+import { cautionedNumbers } from '../cards'
 import { clockSeconds } from '../clock'
 import {
   defaultMatchConfig,
@@ -7,6 +8,8 @@ import {
   periodOffsetSeconds,
 } from '../config'
 import type {
+  CardColor,
+  CardEvent,
   FootballAction,
   FootballMessage,
   FootballState,
@@ -160,6 +163,42 @@ function reduceState(
             )
       return { ...state, stoppageMinutes: minutes }
     }
+    case 'card': {
+      const numbers = [...new Set(action.numbers.filter(validJersey))]
+      // A yellow for a cautioned player on the pitch is a second yellow, which
+      // is a red. Anyone else (first yellow, or already sent off) gets a plain
+      // yellow. A batch can mix both, so it splits into up to two events.
+      const cautioned = new Set(cautionedNumbers(state.events, action.team))
+      type Group = { color: CardColor; numbers: number[]; second?: true }
+      const split: Group[] = [
+        { color: 'yellow', numbers: numbers.filter((n) => !cautioned.has(n)) },
+        {
+          color: 'red',
+          numbers: numbers.filter((n) => cautioned.has(n)),
+          second: true,
+        },
+      ]
+      const groups: Group[] =
+        action.color === 'red' || numbers.length === 0
+          ? [{ color: action.color, numbers }]
+          : split.filter((g) => g.numbers.length > 0)
+      const clock = Math.floor(clockSeconds(state.clock, action.at))
+      const events: CardEvent[] = groups.map((g, i) => ({
+        id: `e${state.nextEventId + i}`,
+        type: 'card',
+        team: action.team,
+        periodId: state.periodId,
+        clockSeconds: clock,
+        color: g.color,
+        numbers: g.numbers,
+        ...(g.second && { secondYellow: true }),
+      }))
+      return {
+        ...state,
+        events: [...state.events, ...events],
+        nextEventId: state.nextEventId + events.length,
+      }
+    }
     case 'set-team-name': {
       if (state.teams[action.team].name === action.name) return state
       return {
@@ -171,7 +210,7 @@ function reduceState(
       }
     }
     default:
-      // Cards, substitutions, undo and config edits are handled by later
+      // Substitutions, undo and config edits are handled by later
       // engine work; until then they leave the state untouched.
       return state
   }

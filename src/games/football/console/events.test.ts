@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MatchEvent } from '../state'
-import { eventSummary, recentEvents, sentOffNumbers } from './events'
+import { eventSummary, recentEvents } from './events'
 
 const base = { id: 'e', periodId: 'h1', clockSeconds: 12 * 60 + 5 }
 const goal = (over: Partial<MatchEvent> = {}): MatchEvent =>
@@ -58,18 +58,5 @@ describe('recentEvents', () => {
       'e2',
     ])
     expect(recentEvents(events, 'visitor').map((e) => e.id)).toEqual(['v'])
-  })
-})
-
-describe('sentOffNumbers', () => {
-  const events: MatchEvent[] = [
-    { ...base, type: 'card', team: 'home', color: 'yellow', numbers: [4] },
-    { ...base, type: 'card', team: 'home', color: 'red', numbers: [4, 7] },
-    { ...base, type: 'card', team: 'visitor', color: 'red', numbers: [2] },
-  ]
-
-  it('lists distinct red-carded numbers for the team', () => {
-    expect(sentOffNumbers(events, 'home')).toEqual([4, 7])
-    expect(sentOffNumbers(events, 'visitor')).toEqual([2])
   })
 })
