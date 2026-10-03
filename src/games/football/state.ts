@@ -1,7 +1,9 @@
 /**
- * Football's neutral, types-only module: the state shape shared by the engine
- * (which produces it) and the scoreboard and console (which render it). Both
- * sides import from here and never from each other. Everything is plain JSON.
+ * Football's neutral types: the state shape shared by the engine (which
+ * produces it) and the scoreboard and console (which render it). Both sides
+ * import from here and never from each other. Everything is plain JSON.
+ *
+ * Pure helpers that every side needs (`config.ts`, `clock.ts`) sit beside it.
  */
 
 /** Visitor is the left column, Home the right. */
@@ -97,7 +99,8 @@ export interface FootballState {
 export type FootballAction =
   | { type: 'start-clock'; at: number }
   | { type: 'stop-clock'; at: number }
-  | { type: 'set-clock'; seconds: number; at: number }
+  /** The engine clamps `seconds` to 0-59 and `minutes` to >= 0. */
+  | { type: 'set-clock'; minutes: number; seconds: number; at: number }
   | { type: 'set-period'; periodId: string; at: number }
   | { type: 'set-stoppage'; minutes: number | null }
   | { type: 'set-team-name'; team: TeamSide; name: string }
