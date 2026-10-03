@@ -75,6 +75,44 @@ test.describe('update banners', () => {
     await expect(banner(board)).toHaveAttribute('data-team', 'visitor')
   })
 
+  test('a goal banner is centred under its team column with even spacing', async ({
+    context,
+  }) => {
+    const { console_, board } = await openConsoleAndBoard(context)
+    await announceGoal(console_, 'Home')
+    const goal = banner(board)
+    await expect(goal.getByRole('img', { name: 'Goal' })).toBeVisible()
+
+    const box = async (locator: ReturnType<Page['locator']>) =>
+      (await locator.boundingBox())!
+    const centre = (b: { x: number; width: number }) => b.x + b.width / 2
+
+    // Under the Home column: same centre as the score, inside the board margin.
+    const bannerBox = await box(goal)
+    const scoreBox = await box(boardScore(board, 'Home'))
+    expect(centre(bannerBox)).toBeCloseTo(centre(scoreBox), 0)
+    const stageBox = await box(board.getByTestId('board-stage'))
+    const margin = (40 / 1280) * stageBox.width
+    expect(bannerBox.x + bannerBox.width).toBeLessThanOrEqual(
+      stageBox.x + stageBox.width - margin + 1,
+    )
+
+    // Content is centred in the box: equal space before the minute and after
+    // the scorer.
+    const minute = await box(goal.locator('> span').first())
+    const scorer = await box(goal.getByText('9', { exact: true }))
+    const before = minute.x - bannerBox.x
+    const after = bannerBox.x + bannerBox.width - (scorer.x + scorer.width)
+    expect(Math.abs(before - after)).toBeLessThanOrEqual(2)
+
+    // Even gaps: divider to icon equals icon to scorer.
+    const divider = await box(goal.locator('> span').nth(1))
+    const icon = await box(goal.getByRole('img', { name: 'Goal' }))
+    const gapBefore = icon.x - (divider.x + divider.width)
+    const gapAfter = scorer.x - (icon.x + icon.width)
+    expect(Math.abs(gapBefore - gapAfter)).toBeLessThanOrEqual(1)
+  })
+
   test('the banner waits for the goal details, and skipping shows none', async ({
     context,
   }) => {
