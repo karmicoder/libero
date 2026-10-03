@@ -90,6 +90,8 @@ export interface FootballState {
   teams: Record<TeamSide, TeamState>
   /** Chronological log of goals, cards and substitutions. */
   events: MatchEvent[]
+  /** Next event id is `e<nextEventId>`. Never reused, even after removals. */
+  nextEventId: number
 }
 
 /**
@@ -102,8 +104,18 @@ export type FootballAction =
   /** The engine clamps `seconds` to 0-59 and `minutes` to >= 0. */
   | { type: 'set-clock'; minutes: number; seconds: number; at: number }
   | { type: 'set-period'; periodId: string; at: number }
+  /** Clamped to 0-15; only applies in a play period with stoppage enabled. */
   | { type: 'set-stoppage'; minutes: number | null }
   | { type: 'set-team-name'; team: TeamSide; name: string }
+  /** Replaces the goal's scorer and assist; an omitted field is cleared. */
+  | {
+      type: 'set-goal-details'
+      eventId: string
+      scorer?: number
+      assist?: number
+    }
+  /** Removes the team's most recent goal (by log order) and its point. */
+  | { type: 'remove-goal'; team: TeamSide }
   | {
       type: 'goal'
       team: TeamSide
