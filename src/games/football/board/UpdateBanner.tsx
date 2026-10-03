@@ -70,8 +70,8 @@ function Content({ notice }: { notice: FootballMessage }) {
 }
 
 /**
- * One update banner, in the scoring team's bottom corner (visitor left, home
- * right), extending under the centre column. Slides in after a short delay and
+ * One update banner, centred in the scoring team's bottom column (visitor
+ * left, home right). Slides in after a short delay and
  * out again; with reduced motion it fades. Timing lives in `boards/banner.ts`.
  */
 export function UpdateBanner({

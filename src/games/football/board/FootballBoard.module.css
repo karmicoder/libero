@@ -166,7 +166,9 @@
   position: absolute;
   inset-inline-end: var(--pad);
   inset-block-end: calc(var(--u) * 14);
+  /* Letter-spacing trails the last glyph; cancel it so the "O" meets the margin. */
   margin: 0;
+  margin-inline-end: -0.32em;
   font-size: var(--label-size);
   font-weight: 700;
   letter-spacing: 0.32em;
