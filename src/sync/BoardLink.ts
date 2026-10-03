@@ -1,6 +1,7 @@
 import {
   HEARTBEAT_MS,
   PEER_TIMEOUT_MS,
+  type ChannelOpener,
   type SyncChannel,
   type SyncMessage,
 } from './types'
@@ -25,7 +26,8 @@ export interface BoardLinkOptions {
  */
 export class BoardLink<State, Notice> {
   readonly id: string
-  #channel: SyncChannel<State, Notice>
+  #openChannel: ChannelOpener<State, Notice>
+  #channel: SyncChannel<State, Notice> | null = null
   #now: () => number
   #state: State | null = null
   #status: BoardStatus = { connected: false }
@@ -35,11 +37,12 @@ export class BoardLink<State, Notice> {
   #unsubscribe?: () => void
   #heartbeat?: ReturnType<typeof setInterval>
 
+  /** `openChannel` runs on every `start()`; the channel is closed on `stop()`. */
   constructor(
-    channel: SyncChannel<State, Notice>,
+    openChannel: ChannelOpener<State, Notice>,
     options: BoardLinkOptions = {},
   ) {
-    this.#channel = channel
+    this.#openChannel = openChannel
     this.id = options.id ?? crypto.randomUUID()
     this.#now = options.now ?? (() => performance.now())
   }
@@ -61,19 +64,22 @@ export class BoardLink<State, Notice> {
 
   /** Begins listening and asks the console for a snapshot. */
   start(): void {
+    this.#channel = this.#openChannel()
+    if (!this.#channel) return
     this.#unsubscribe = this.#channel.subscribe(this.#onMessage)
     this.#channel.send({ type: 'hello', from: this.id })
     this.#heartbeat = setInterval(() => {
-      this.#channel.send({ type: 'ping', from: this.id, role: 'board' })
+      this.#channel?.send({ type: 'ping', from: this.id, role: 'board' })
       this.#refresh()
     }, HEARTBEAT_MS)
   }
 
-  dispose(): void {
+  /** Stops and closes the channel. Subscribers stay subscribed. */
+  stop(): void {
     this.#unsubscribe?.()
     clearInterval(this.#heartbeat)
-    this.#listeners.clear()
-    this.#noticeListeners.clear()
+    this.#channel?.close()
+    this.#channel = null
   }
 
   #refresh() {

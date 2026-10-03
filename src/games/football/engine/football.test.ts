@@ -451,6 +451,25 @@ describe('set-stoppage', () => {
   })
 })
 
+describe('set-team-name', () => {
+  it('renames one team and leaves the other and the score alone', () => {
+    const s = run(fresh(), goal('home', T0), {
+      type: 'set-team-name',
+      team: 'home',
+      name: 'Reds',
+    })
+    expect(s.teams.home).toEqual({ name: 'Reds', score: 1 })
+    expect(s.teams.visitor.name).toBe('Visitor')
+  })
+
+  it('does nothing when the name is unchanged', () => {
+    const s = fresh()
+    expect(run(s, { type: 'set-team-name', team: 'home', name: 'Home' })).toBe(
+      s,
+    )
+  })
+})
+
 describe('reduce', () => {
   it('returns no messages for clock actions', () => {
     expect(

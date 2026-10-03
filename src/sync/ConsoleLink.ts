@@ -2,6 +2,7 @@ import {
   HEARTBEAT_MS,
   PEER_TIMEOUT_MS,
   PROBE_MS,
+  type ChannelOpener,
   type SyncChannel,
   type SyncMessage,
 } from './types'
@@ -42,7 +43,8 @@ export interface ConsoleLinkOptions<State> {
  */
 export class ConsoleLink<State, Notice> {
   readonly id: string
-  #channel: SyncChannel<State, Notice>
+  #openChannel: ChannelOpener<State, Notice>
+  #channel: SyncChannel<State, Notice> | null = null
   #options: ConsoleLinkOptions<State>
   #now: () => number
   #status: ConsoleStatus = { role: 'probing', boardConnected: false }
@@ -53,11 +55,16 @@ export class ConsoleLink<State, Notice> {
   #probeTimer?: ReturnType<typeof setTimeout>
   #heartbeat?: ReturnType<typeof setInterval>
 
+  /**
+   * `openChannel` runs on every `start()` and the channel it returns is closed
+   * on `stop()`. It may return null when there is no transport (e.g. no
+   * `BroadcastChannel`): the console then just runs alone, as the active one.
+   */
   constructor(
-    channel: SyncChannel<State, Notice>,
+    openChannel: ChannelOpener<State, Notice>,
     options: ConsoleLinkOptions<State>,
   ) {
-    this.#channel = channel
+    this.#openChannel = openChannel
     this.#options = options
     this.id = options.id ?? crypto.randomUUID()
     this.#now = options.now ?? (() => performance.now())
@@ -70,8 +77,20 @@ export class ConsoleLink<State, Notice> {
     return () => this.#listeners.delete(listener)
   }
 
-  /** Begins listening and checks for another console. */
+  /**
+   * Opens the channel and checks for another console. Safe to call again
+   * after `stop()`, which React's StrictMode does to effects.
+   */
   start(): void {
+    this.#boards.clear()
+    this.#awaitingHandover = false
+    this.#status = { role: 'probing', boardConnected: false }
+    this.#listeners.forEach((l) => l())
+    this.#channel = this.#openChannel()
+    if (!this.#channel) {
+      this.#becomeActive()
+      return
+    }
     this.#unsubscribe = this.#channel.subscribe(this.#onMessage)
     this.#send({ type: 'probe', from: this.id })
     this.#probeTimer = setTimeout(() => {
@@ -100,15 +119,17 @@ export class ConsoleLink<State, Notice> {
     this.#becomeActive()
   }
 
-  dispose(): void {
+  /** Stops and closes the channel. Status subscribers stay subscribed. */
+  stop(): void {
     this.#unsubscribe?.()
     clearTimeout(this.#probeTimer)
     clearInterval(this.#heartbeat)
-    this.#listeners.clear()
+    this.#channel?.close()
+    this.#channel = null
   }
 
   #send(message: SyncMessage<State, Notice>) {
-    this.#channel.send(message)
+    this.#channel?.send(message)
   }
 
   #setStatus(patch: Partial<ConsoleStatus>) {

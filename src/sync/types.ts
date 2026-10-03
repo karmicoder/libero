@@ -39,6 +39,15 @@ export interface SyncChannel<State = unknown, Notice = unknown> {
   close(): void
 }
 
+/**
+ * Opens a channel for a link's lifetime (`start()` to `stop()`). Null means no
+ * transport is available; the links then run unsynced.
+ */
+export type ChannelOpener<State, Notice> = () => SyncChannel<
+  State,
+  Notice
+> | null
+
 /** Heartbeat period, and how long without one before a peer counts as gone. */
 export const HEARTBEAT_MS = 2_000
 export const PEER_TIMEOUT_MS = 6_000

@@ -160,9 +160,19 @@ function reduceState(
             )
       return { ...state, stoppageMinutes: minutes }
     }
+    case 'set-team-name': {
+      if (state.teams[action.team].name === action.name) return state
+      return {
+        ...state,
+        teams: {
+          ...state.teams,
+          [action.team]: { ...state.teams[action.team], name: action.name },
+        },
+      }
+    }
     default:
-      // Cards, substitutions, undo, team names and config edits are handled
-      // by later engine work; until then they leave the state untouched.
+      // Cards, substitutions, undo and config edits are handled by later
+      // engine work; until then they leave the state untouched.
       return state
   }
 }
