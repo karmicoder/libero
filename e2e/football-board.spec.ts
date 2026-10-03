@@ -8,6 +8,9 @@ async function openConsoleAndBoard(context: BrowserContext, query = '') {
   await expect(console_.getByLabel('Home score')).toBeVisible()
   const board = await context.newPage()
   await board.goto(`/match/football/board${query}`)
+  // The board has state only once it has joined the console, so from here on
+  // it receives every notice (notices are never replayed to a late board).
+  await expect(board.getByLabel('Home score')).toBeVisible()
   return { console_, board }
 }
 
@@ -34,6 +37,79 @@ test('the board shows the console state and follows changes', async ({
   const name = console_.getByRole('textbox', { name: 'Visitor team name' })
   await name.fill('Rovers')
   await expect(board.getByRole('heading', { name: 'Rovers' })).toBeVisible()
+})
+
+test.describe('update banners', () => {
+  const banner = (board: Page) => board.locator('[data-phase]')
+
+  test('a goal shows a banner in the scoring team’s corner', async ({
+    context,
+  }) => {
+    const { console_, board } = await openConsoleAndBoard(context)
+    await expect(banner(board)).toHaveCount(0)
+
+    await console_
+      .getByRole('button', { name: 'Goal for Home', exact: true })
+      .click()
+    await expect(banner(board)).toHaveAttribute('data-team', 'home')
+    await expect(banner(board).getByRole('img', { name: 'Goal' })).toBeVisible()
+
+    // A newer notice replaces it, in the other team's corner.
+    await console_
+      .getByRole('button', { name: 'Goal for Visitor', exact: true })
+      .click()
+    await expect(banner(board)).toHaveCount(1)
+    await expect(banner(board)).toHaveAttribute('data-team', 'visitor')
+  })
+
+  test('a banner is not replayed when the board is reloaded', async ({
+    context,
+  }) => {
+    const { console_, board } = await openConsoleAndBoard(context)
+    await console_
+      .getByRole('button', { name: 'Goal for Home', exact: true })
+      .click()
+    await expect(banner(board)).toHaveCount(1)
+
+    await board.reload()
+    await expect(boardScore(board, 'Home')).toHaveText('1')
+    await expect(banner(board)).toHaveCount(0)
+  })
+
+  test('slides with motion allowed and fades with reduced motion', async ({
+    browser,
+  }) => {
+    for (const [reducedMotion, expected] of [
+      ['no-preference', /slide-in/],
+      ['reduce', /fade-in/],
+    ] as const) {
+      const context = await browser.newContext({ reducedMotion })
+      const { console_, board } = await openConsoleAndBoard(context)
+      await console_
+        .getByRole('button', { name: 'Goal for Home', exact: true })
+        .click()
+      await expect(banner(board)).toHaveCSS('animation-name', expected)
+      await context.close()
+    }
+  })
+
+  for (const colorScheme of ['dark', 'light'] as const) {
+    test.describe(`${colorScheme} scheme`, () => {
+      test.use({ colorScheme })
+
+      test('banners have no detectable accessibility violations', async ({
+        context,
+      }) => {
+        const { console_, board } = await openConsoleAndBoard(context)
+        const goal = { name: 'Goal for Home', exact: true }
+        await console_.getByRole('button', goal).click()
+        // Wait for the entry animation to finish so axe never samples mid-fade.
+        await expect(banner(board)).toHaveCSS('opacity', '1')
+        const results = await new AxeBuilder({ page: board }).analyze()
+        expect(results.violations).toEqual([])
+      })
+    })
+  }
 })
 
 test('the board waits when no console is open, and connects when one opens', async ({

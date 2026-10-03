@@ -69,6 +69,8 @@
   --on-accent: #000;
   --focus-ring: #fff;
   --positive: #3ddc84;
+  --card-yellow: #f5c518;
+  --card-red: #ef4b55;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -95,6 +97,8 @@
     --on-accent: #f4f2ec;
     --focus-ring: #15181e;
     --positive: #1a7f46;
+    --card-yellow: #e6b800;
+    --card-red: #d6303a;
   }
 }
 
@@ -116,4 +120,6 @@
   --on-accent: #f4f2ec;
   --focus-ring: #15181e;
   --positive: #1a7f46;
+  --card-yellow: #e6b800;
+  --card-red: #d6303a;
 }
