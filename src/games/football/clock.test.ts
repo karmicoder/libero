@@ -13,6 +13,7 @@ const state = (patch: Partial<FootballState> = {}): FootballState => ({
     home: { name: 'Home', score: 0 },
   },
   events: [],
+  nextEventId: 1,
   ...patch,
 })
 

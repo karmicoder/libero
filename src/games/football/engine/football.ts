@@ -10,8 +10,23 @@ import type {
   FootballAction,
   FootballMessage,
   FootballState,
+  GoalEvent,
   MatchConfig,
 } from '../state'
+
+const MAX_STOPPAGE_MINUTES = 15
+
+/** Shirt numbers are 1-99 (no leading zero); anything else is dropped. */
+const validJersey = (n: number | undefined): n is number =>
+  n !== undefined && Number.isInteger(n) && n >= 1 && n <= 99
+
+/** Only valid numbers become keys, so state is identical after JSON. */
+function jerseyDetails(scorer?: number, assist?: number) {
+  return {
+    ...(validJersey(scorer) && { scorer }),
+    ...(validJersey(assist) && { assist }),
+  }
+}
 
 const stopped = (seconds: number) => ({
   baseSeconds: seconds,
@@ -72,9 +87,81 @@ function reduceState(
     case 'set-period':
       if (action.periodId === state.periodId) return state
       return enterPeriod(state, action.periodId, action.at)
+    case 'goal': {
+      const event: GoalEvent = {
+        id: `e${state.nextEventId}`,
+        type: 'goal',
+        team: action.team,
+        periodId: state.periodId,
+        clockSeconds: Math.floor(clockSeconds(state.clock, action.at)),
+        ...jerseyDetails(action.scorer, action.assist),
+      }
+      return {
+        ...state,
+        teams: {
+          ...state.teams,
+          [action.team]: {
+            ...state.teams[action.team],
+            score: state.teams[action.team].score + 1,
+          },
+        },
+        events: [...state.events, event],
+        nextEventId: state.nextEventId + 1,
+      }
+    }
+    case 'set-goal-details': {
+      const index = state.events.findIndex((e) => e.id === action.eventId)
+      const target = state.events[index]
+      if (target?.type !== 'goal') return state
+      // Rebuilt without the old details so omitted fields are cleared.
+      const events = [...state.events]
+      events[index] = {
+        id: target.id,
+        type: 'goal',
+        team: target.team,
+        periodId: target.periodId,
+        clockSeconds: target.clockSeconds,
+        ...jerseyDetails(action.scorer, action.assist),
+      }
+      return { ...state, events }
+    }
+    case 'remove-goal': {
+      const score = state.teams[action.team].score
+      const index = state.events.findLastIndex(
+        (e) => e.type === 'goal' && e.team === action.team,
+      )
+      if (index === -1 && score === 0) return state
+      return {
+        ...state,
+        teams: {
+          ...state.teams,
+          [action.team]: {
+            ...state.teams[action.team],
+            score: Math.max(0, score - 1),
+          },
+        },
+        events:
+          index === -1
+            ? state.events
+            : state.events.filter((_, i) => i !== index),
+      }
+    }
+    case 'set-stoppage': {
+      if (!state.config.stoppageTime.enabled || period?.kind !== 'play') {
+        return state
+      }
+      const minutes =
+        action.minutes === null
+          ? null
+          : Math.min(
+              MAX_STOPPAGE_MINUTES,
+              Math.max(0, Math.floor(action.minutes)),
+            )
+      return { ...state, stoppageMinutes: minutes }
+    }
     default:
-      // Goals, cards, substitutions, undo and config edits are handled by
-      // later engine work; until then they leave the state untouched.
+      // Cards, substitutions, undo, team names and config edits are handled
+      // by later engine work; until then they leave the state untouched.
       return state
   }
 }
@@ -95,6 +182,7 @@ export const footballEngine: GameEngine<
       home: { name: 'Home', score: 0 },
     },
     events: [],
+    nextEventId: 1,
   }),
   reduce: (state, action) => ({
     state: reduceState(state, action),

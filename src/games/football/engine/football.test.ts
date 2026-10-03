@@ -237,6 +237,220 @@ describe('set-period', () => {
   })
 })
 
+const goal = (
+  team: 'visitor' | 'home',
+  at: number,
+  extra: { scorer?: number; assist?: number } = {},
+): FootballAction => ({ type: 'goal', team, at, ...extra })
+
+describe('goal', () => {
+  it('increments the score and logs an event with period and clock time', () => {
+    const s = run(
+      fresh(),
+      { type: 'start-clock', at: T0 },
+      goal('home', T0 + 125_900),
+    )
+    expect(s.teams.home.score).toBe(1)
+    expect(s.teams.visitor.score).toBe(0)
+    expect(s.events).toEqual([
+      {
+        id: 'e1',
+        type: 'goal',
+        team: 'home',
+        periodId: 'h1',
+        clockSeconds: 125,
+      },
+    ])
+  })
+
+  it('gives every event a distinct id, even after a removal', () => {
+    const s = run(
+      fresh(),
+      goal('home', T0),
+      { type: 'remove-goal', team: 'home' },
+      goal('home', T0),
+    )
+    expect(s.events.map((e) => e.id)).toEqual(['e2'])
+  })
+
+  it('records scorer and assist when given', () => {
+    const s = run(fresh(), goal('visitor', T0, { scorer: 9, assist: 10 }))
+    expect(s.events[0]).toMatchObject({ scorer: 9, assist: 10 })
+  })
+
+  it('drops invalid jersey numbers but still scores', () => {
+    const s = run(fresh(), goal('home', T0, { scorer: 0, assist: 100 }))
+    expect(s.teams.home.score).toBe(1)
+    expect(s.events[0]).not.toHaveProperty('scorer')
+    expect(s.events[0]).not.toHaveProperty('assist')
+  })
+
+  it('emits no messages yet', () => {
+    expect(footballEngine.reduce(fresh(), goal('home', T0)).messages).toEqual(
+      [],
+    )
+  })
+})
+
+describe('set-goal-details', () => {
+  const withGoals = () =>
+    run(fresh(), goal('home', T0), goal('visitor', T0), goal('home', T0))
+
+  it('sets scorer and assist on the targeted event only', () => {
+    const s = run(withGoals(), {
+      type: 'set-goal-details',
+      eventId: 'e1',
+      scorer: 7,
+      assist: 11,
+    })
+    expect(s.events[0]).toMatchObject({ scorer: 7, assist: 11 })
+    expect(s.events[1]).not.toHaveProperty('scorer')
+    expect(s.events[2]).not.toHaveProperty('scorer')
+  })
+
+  it('replaces both fields; omitted ones are cleared', () => {
+    const s = run(run(fresh(), goal('home', T0, { scorer: 7, assist: 11 })), {
+      type: 'set-goal-details',
+      eventId: 'e1',
+      scorer: 8,
+    })
+    expect(s.events[0]).toMatchObject({ scorer: 8 })
+    expect(s.events[0]).not.toHaveProperty('assist')
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s)
+  })
+
+  it('ignores invalid numbers', () => {
+    const s = run(withGoals(), {
+      type: 'set-goal-details',
+      eventId: 'e1',
+      scorer: 100,
+      assist: 0,
+    })
+    expect(s.events[0]).not.toHaveProperty('scorer')
+    expect(s.events[0]).not.toHaveProperty('assist')
+  })
+
+  it('does nothing for an unknown event or a non-goal event', () => {
+    const base = withGoals()
+    expect(
+      run(base, { type: 'set-goal-details', eventId: 'nope', scorer: 1 }),
+    ).toEqual(base)
+    const card = {
+      ...base,
+      events: [
+        {
+          id: 'c1',
+          type: 'card' as const,
+          team: 'home' as const,
+          periodId: 'h1',
+          clockSeconds: 0,
+          color: 'yellow' as const,
+          numbers: [4],
+        },
+      ],
+    }
+    expect(
+      run(card, { type: 'set-goal-details', eventId: 'c1', scorer: 1 }),
+    ).toEqual(card)
+  })
+})
+
+describe('remove-goal', () => {
+  it("removes the team's most recent goal and decrements its score", () => {
+    const s = run(
+      fresh(),
+      goal('home', T0, { scorer: 1 }),
+      goal('visitor', T0),
+      goal('home', T0, { scorer: 2 }),
+      { type: 'remove-goal', team: 'home' },
+    )
+    expect(s.teams.home.score).toBe(1)
+    expect(s.teams.visitor.score).toBe(1)
+    expect(s.events.map((e) => e.id)).toEqual(['e1', 'e2'])
+  })
+
+  it('removes the last goal by log order, not by clock time', () => {
+    const s = run(
+      fresh(),
+      { type: 'set-clock', minutes: 30, seconds: 0, at: T0 },
+      goal('home', T0, { scorer: 1 }),
+      { type: 'set-clock', minutes: 10, seconds: 0, at: T0 },
+      goal('home', T0, { scorer: 2 }),
+      { type: 'remove-goal', team: 'home' },
+    )
+    expect(s.events).toHaveLength(1)
+    expect(s.events[0]).toMatchObject({ scorer: 1 })
+  })
+
+  it('never takes the score below 0', () => {
+    const s = fresh()
+    expect(run(s, { type: 'remove-goal', team: 'home' })).toEqual(s)
+  })
+
+  it('leaves other event types alone', () => {
+    const base = run(fresh(), goal('home', T0))
+    const card = {
+      id: 'c1',
+      type: 'card' as const,
+      team: 'home' as const,
+      periodId: 'h1',
+      clockSeconds: 0,
+      color: 'yellow' as const,
+      numbers: [4],
+    }
+    const s = run(
+      { ...base, events: [...base.events, card] },
+      { type: 'remove-goal', team: 'home' },
+    )
+    expect(s.events).toEqual([card])
+  })
+})
+
+describe('set-stoppage', () => {
+  it('sets the announced minutes during a play period', () => {
+    expect(
+      run(fresh(), { type: 'set-stoppage', minutes: 4 }).stoppageMinutes,
+    ).toBe(4)
+  })
+
+  it('clamps to 0-15 and floors fractions', () => {
+    expect(
+      run(fresh(), { type: 'set-stoppage', minutes: 99 }).stoppageMinutes,
+    ).toBe(15)
+    expect(
+      run(fresh(), { type: 'set-stoppage', minutes: -2 }).stoppageMinutes,
+    ).toBe(0)
+    expect(
+      run(fresh(), { type: 'set-stoppage', minutes: 3.9 }).stoppageMinutes,
+    ).toBe(3)
+  })
+
+  it('clears with null', () => {
+    const s = run(
+      fresh(),
+      { type: 'set-stoppage', minutes: 4 },
+      { type: 'set-stoppage', minutes: null },
+    )
+    expect(s.stoppageMinutes).toBeNull()
+  })
+
+  it('does nothing outside play periods', () => {
+    const ht = run(fresh(), { type: 'set-period', periodId: 'ht', at: T0 })
+    expect(run(ht, { type: 'set-stoppage', minutes: 3 })).toEqual(ht)
+    const pen = run(fresh(), { type: 'set-period', periodId: 'pen', at: T0 })
+    expect(run(pen, { type: 'set-stoppage', minutes: 3 })).toEqual(pen)
+  })
+
+  it('does nothing when stoppage time is disabled', () => {
+    const config = {
+      ...defaultMatchConfig(),
+      stoppageTime: { enabled: false },
+    }
+    const s = footballEngine.initialState(config)
+    expect(run(s, { type: 'set-stoppage', minutes: 3 })).toEqual(s)
+  })
+})
+
 describe('reduce', () => {
   it('returns no messages for clock actions', () => {
     expect(
