@@ -25,7 +25,10 @@ Run `npm run format` and `npm run check` before finishing a change.
 ## Conventions
 
 - Semantic HTML: real `button`, `h1`-`h3`, `fieldset`, native form controls. Never `div` or `span` with click handlers.
-- Plain CSS with custom properties in `src/styles/`. No Tailwind or similar utility-first frameworks. Utility classes must name meaning (`.danger`, `.eyebrow`), not appearance.
+- Plain CSS with custom properties. No Tailwind or similar utility-first frameworks. Utility classes must name meaning (`.danger`, `.eyebrow`), not appearance.
+- No CSS preprocessors (Sass, Less, etc.). Native custom properties, nesting, `@layer`, `:has()`, and `calc()`/`color-mix()` cover what we need, and preprocessor variables would compete with the runtime tokens used for theming. If you hit a genuine need (e.g. mixins or generated rules that native CSS can't express), ask the user before adding one.
+- Component styling is scoped: put it in a CSS Module next to the component (`Foo.tsx` + `Foo.module.css`) and import it there. `src/styles/` is only for global element overrides (`base.css`), tokens (`tokens.css`), and reusable utility classes. Don't add component-specific selectors to `src/styles/`.
+- Only create a React component when it has a reason to exist (state, behavior, composition, logic). Don't wrap a native element just to attach styling (no `A.tsx` around `<a>`); style native elements globally in `base.css` and use utility classes for reusable patterns.
 - Colors and spacing come from tokens in `tokens.css`; themes are token overrides (`data-theme`), defaulting to `prefers-color-scheme`.
 - Accessibility is required: `jsx-a11y` lint must pass, and the e2e axe scan should stay clean.
 - Component tests (Testing Library) for interactions; Playwright for important in-browser behavior.
