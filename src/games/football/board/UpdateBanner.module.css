@@ -1,0 +1,153 @@
+/*
+ * Banner dimensions are multiples of --u (see FootballBoard.module.css). It
+ * sits in the bottom row of the board grid, over the reserved update slot.
+ */
+
+.banner {
+  --banner-height: calc(var(--u) * 100);
+  --banner-reach: calc(var(--u) * 96);
+  --banner-size: calc(var(--u) * 44);
+  --minute-size: calc(var(--u) * 32);
+  --icon-size: calc(var(--u) * 48);
+  --travel: calc(var(--u) * 140);
+
+  grid-row: 2;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 20);
+  min-inline-size: 0;
+  block-size: var(--banner-height);
+  padding-inline: calc(var(--u) * 28);
+  border: var(--stroke) solid var(--border-tile-hover);
+  border-radius: calc(var(--u) * 16);
+  background: var(--surface-tile);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--banner-size);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The scoring team's corner, reaching a little under the centre column. */
+.visitor {
+  grid-column: 1 / 3;
+  margin-inline-end: calc(var(--centre-width) - var(--banner-reach));
+}
+
+.home {
+  grid-column: 2 / 4;
+  margin-inline-start: calc(var(--centre-width) - var(--banner-reach));
+}
+
+.in {
+  animation: slide-in var(--enter-ms) var(--ease-out) var(--enter-delay)
+    backwards;
+}
+
+.out {
+  animation: slide-out var(--exit-ms) var(--ease-out) forwards;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(var(--travel));
+    opacity: 0;
+  }
+}
+
+@keyframes slide-out {
+  to {
+    transform: translateY(var(--travel));
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: no travel, fade only. */
+@media (prefers-reduced-motion: reduce) {
+  .in {
+    animation-name: fade-in;
+  }
+
+  .out {
+    animation-name: fade-out;
+  }
+}
+
+.minute {
+  font-size: var(--minute-size);
+  color: var(--text-muted);
+}
+
+.divider {
+  align-self: stretch;
+  inline-size: var(--stroke);
+  margin-block: calc(var(--u) * 20);
+  background: var(--border-tile-hover);
+}
+
+.event,
+.group,
+.assist {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 12);
+}
+
+.event {
+  gap: calc(var(--u) * 28);
+  min-inline-size: 0;
+  white-space: nowrap;
+}
+
+.assist {
+  color: var(--text-tile);
+}
+
+.more {
+  color: var(--text-muted);
+}
+
+.icon,
+.card,
+.subOff,
+.subOn {
+  flex: none;
+  inline-size: var(--icon-size);
+  block-size: var(--icon-size);
+}
+
+.subOff {
+  color: var(--card-red);
+}
+
+.subOn {
+  color: var(--positive);
+}
+
+/* Card glyphs get an outline so the shape reads in either theme. */
+.cardYellow,
+.cardRed {
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.cardYellow {
+  fill: var(--card-yellow);
+}
+
+.cardRed {
+  fill: var(--card-red);
+}
