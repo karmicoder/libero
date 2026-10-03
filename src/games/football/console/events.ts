@@ -42,11 +42,3 @@ export function recentEvents(
     .slice(-limit)
     .reverse()
 }
-
-/** Shirt numbers sent off (red card or second yellow), in order, without repeats. */
-export function sentOffNumbers(events: MatchEvent[], team: TeamSide): number[] {
-  const numbers = events.flatMap((e) =>
-    e.type === 'card' && e.team === team && e.color === 'red' ? e.numbers : [],
-  )
-  return [...new Set(numbers)]
-}
