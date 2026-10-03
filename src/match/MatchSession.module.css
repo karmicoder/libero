@@ -1,0 +1,20 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-block-start: 32px;
+}
+
+.secondary {
+  block-size: 56px;
+  padding-inline: 28px;
+  border: 2px solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.secondary:hover {
+  background: var(--surface-tile-hover);
+}
