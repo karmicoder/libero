@@ -26,6 +26,8 @@ export default defineConfig([
   // Engine/layout seam: rules (engine) and presentation (board, console) share
   // only the neutral `state.ts` types. The console reaches the engine through
   // `EngineRegistry` (src/engines), never the sport's engine directory.
+  // The patterns match import strings, so they cover relative imports only. If
+  // a path alias (e.g. `@/`) is ever added, extend them to match it.
   {
     files: ['src/games/*/engine/**/*.{ts,tsx}'],
     rules: {
