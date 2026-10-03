@@ -339,6 +339,13 @@ describe('FootballConsole', () => {
       expect(screen.getByRole('button', { name: 'Set clock' })).toHaveFocus()
     })
 
+    it('does not start the clock when Space is pressed in the sheet', async () => {
+      const { store, user } = setup()
+      await open(user)
+      await user.keyboard(' ')
+      expect(store.getState().clock.runningSince).toBeNull()
+    })
+
     it('leaves the clock alone on cancel or an empty entry', async () => {
       const { store, user } = setup()
       await open(user)

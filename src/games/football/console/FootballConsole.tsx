@@ -21,7 +21,7 @@ function useSpaceToggle(onToggle: () => void) {
       const target = e.target as HTMLElement | null
       if (
         target?.closest(
-          'input, textarea, select, button, a, [contenteditable="true"]',
+          'input, textarea, select, button, a, [role="dialog"], [contenteditable="true"]',
         )
       ) {
         return
