@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { displayedSeconds } from '../clock'
 import { defaultMatchConfig } from '../config'
 import type { FootballAction, FootballState } from '../state'
+import { subsOverLimit } from '../subs'
 import { footballEngine } from './football'
 
 const T0 = 1_000_000
@@ -577,6 +578,191 @@ describe('card', () => {
       card('home', 'yellow', [4]),
     )
     expect(JSON.parse(JSON.stringify(s))).toEqual(s)
+  })
+})
+
+const subs = (
+  team: 'visitor' | 'home',
+  pairs: { off?: number; on?: number }[],
+  at = T0,
+): FootballAction => ({ type: 'substitution', team, pairs, at })
+
+describe('substitution', () => {
+  it('records one pair and uses one sub', () => {
+    const s = run(
+      fresh(),
+      { type: 'start-clock', at: T0 },
+      subs('home', [{ off: 3, on: 12 }], T0 + 125_000),
+    )
+    expect(s.events).toEqual([
+      {
+        id: 'e1',
+        type: 'substitution',
+        team: 'home',
+        periodId: 'h1',
+        clockSeconds: 125,
+        pairs: [{ off: 3, on: 12 }],
+      },
+    ])
+    expect(s.subsRemaining).toEqual({ visitor: 3, home: 2 })
+  })
+
+  it('records several pairs as one event using one sub each', () => {
+    const s = run(
+      fresh(),
+      subs('visitor', [
+        { off: 1, on: 13 },
+        { off: 2, on: 14 },
+        { off: 3, on: 15 },
+      ]),
+    )
+    expect(s.events).toHaveLength(1)
+    expect(s.events[0]).toMatchObject({
+      pairs: [
+        { off: 1, on: 13 },
+        { off: 2, on: 14 },
+        { off: 3, on: 15 },
+      ],
+    })
+    expect(s.subsRemaining.visitor).toBe(0)
+  })
+
+  it('allows pairs without numbers', () => {
+    const s = run(fresh(), subs('home', [{}]))
+    expect(s.events[0]).toMatchObject({ pairs: [{}] })
+    expect(s.subsRemaining.home).toBe(2)
+  })
+
+  it('drops invalid numbers but keeps the pair', () => {
+    const s = run(fresh(), subs('home', [{ off: 0, on: 100 }, { off: 4 }]))
+    expect(s.events[0]).toMatchObject({ pairs: [{}, { off: 4 }] })
+  })
+
+  it('does nothing with no pairs', () => {
+    const s = fresh()
+    expect(run(s, subs('home', []))).toEqual(s)
+  })
+
+  it('allows going over the limit, clamping remaining at 0', () => {
+    const s = run(fresh(), subs('home', [{}, {}]), subs('home', [{}, {}]))
+    expect(s.subsRemaining.home).toBe(0)
+    expect(s.events).toHaveLength(2)
+    expect(subsOverLimit(s, 'home')).toBe(true)
+  })
+
+  it('does nothing when substitutions are disabled', () => {
+    const s = footballEngine.initialState({
+      ...defaultMatchConfig(),
+      substitutions: { enabled: false },
+    })
+    expect(run(s, subs('home', [{ off: 1, on: 2 }]))).toEqual(s)
+  })
+
+  it('shares the event id counter and emits no messages yet', () => {
+    const { state, messages } = footballEngine.reduce(
+      run(fresh(), goal('home', T0)),
+      subs('home', [{}]),
+    )
+    expect(state.events.map((e) => e.id)).toEqual(['e1', 'e2'])
+    expect(messages).toEqual([])
+  })
+
+  it('keeps state serialisable', () => {
+    const s = run(fresh(), subs('home', [{ off: 1, on: 2 }]))
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s)
+  })
+})
+
+describe('subsRemaining resets', () => {
+  it('starts at the configured limit for both teams', () => {
+    expect(fresh().subsRemaining).toEqual({ visitor: 3, home: 3 })
+  })
+
+  it('resets on entering a play period', () => {
+    const s = run(fresh(), subs('home', [{}, {}]), {
+      type: 'set-period',
+      periodId: 'h2',
+      at: T0,
+    })
+    expect(s.subsRemaining).toEqual({ visitor: 3, home: 3 })
+  })
+
+  it('resets when a break starts the next play period', () => {
+    const s = run(
+      fresh(),
+      subs('home', [{}]),
+      { type: 'set-period', periodId: 'ht', at: T0 },
+      { type: 'start-clock', at: T0 },
+    )
+    expect(s.periodId).toBe('h2')
+    expect(s.subsRemaining.home).toBe(3)
+  })
+
+  it('does not reset on a break or a shootout', () => {
+    const afterBreak = run(fresh(), subs('home', [{}]), {
+      type: 'set-period',
+      periodId: 'ht',
+      at: T0,
+    })
+    expect(afterBreak.subsRemaining.home).toBe(2)
+    const afterPens = run(fresh(), subs('home', [{}]), {
+      type: 'set-period',
+      periodId: 'pen',
+      at: T0,
+    })
+    expect(afterPens.subsRemaining.home).toBe(2)
+  })
+
+  it('uses 0 when there is no limit', () => {
+    const s = footballEngine.initialState({
+      ...defaultMatchConfig(),
+      substitutions: { enabled: true },
+    })
+    expect(s.subsRemaining).toEqual({ visitor: 0, home: 0 })
+  })
+})
+
+describe('set-subs-remaining', () => {
+  const set = (
+    team: 'visitor' | 'home',
+    remaining: number,
+  ): FootballAction => ({
+    type: 'set-subs-remaining',
+    team,
+    remaining,
+  })
+
+  it('sets one team’s pips', () => {
+    const s = run(fresh(), set('home', 1))
+    expect(s.subsRemaining).toEqual({ visitor: 3, home: 1 })
+  })
+
+  it('clamps to 0 and to 5 (or the limit if larger), flooring fractions', () => {
+    expect(run(fresh(), set('home', -2)).subsRemaining.home).toBe(0)
+    expect(run(fresh(), set('home', 9)).subsRemaining.home).toBe(5)
+    expect(run(fresh(), set('home', 2.9)).subsRemaining.home).toBe(2)
+    const wide = footballEngine.initialState({
+      ...defaultMatchConfig(),
+      substitutions: { enabled: true, perPeriod: 7 },
+    })
+    expect(run(wide, set('home', 9)).subsRemaining.home).toBe(7)
+  })
+
+  it('does nothing when substitutions or their limit are off', () => {
+    const off = footballEngine.initialState({
+      ...defaultMatchConfig(),
+      substitutions: { enabled: false },
+    })
+    expect(run(off, set('home', 2))).toEqual(off)
+    const unlimited = footballEngine.initialState({
+      ...defaultMatchConfig(),
+      substitutions: { enabled: true },
+    })
+    expect(run(unlimited, set('home', 2))).toEqual(unlimited)
+  })
+
+  it('does not change the event log', () => {
+    expect(run(fresh(), set('home', 1)).events).toEqual([])
   })
 })
 

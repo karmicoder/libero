@@ -28,6 +28,9 @@ export function isFootballState(value: unknown): value is FootballState {
     isObject(teams) &&
     isTeam(teams.visitor) &&
     isTeam(teams.home) &&
+    isObject(value.subsRemaining) &&
+    typeof value.subsRemaining.visitor === 'number' &&
+    typeof value.subsRemaining.home === 'number' &&
     Array.isArray(value.events) &&
     typeof value.nextEventId === 'number'
   )
