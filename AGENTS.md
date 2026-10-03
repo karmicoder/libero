@@ -21,6 +21,14 @@ Run `npm run format` and `npm run check` before finishing a change.
 - SPA React + TypeScript + Vite. No API server.
 - Game engine (rules) and scoreboard layouts (presentation) are loosely coupled through a game state. Neither should import the other.
 - Sports are data (`SportDefinition`) in a runtime `SportRegistry` (`src/sports/`). Don't hardcode sport lists in UI; read from the registry so sports can be injected at runtime.
+- Engines attach by `sportId` in a separate `EngineRegistry`; `SportDefinition` stays data-only. The sport's state type lives in a neutral, types-only module that both engine and layouts import (enforced by an ESLint `no-restricted-imports` rule).
+- An engine is a pure, serialisable reducer: `reduce(state, action) → { state, messages }`. `messages` are transient domain notices (e.g. `goal-scored`), never persisted or replayed. No Redux or other state-management library; use `useReducer` or a tiny store.
+- The scorer console is the master and owns game state. Scoreboards are view-only: they receive `snapshot` (full state) and `notice` messages over a `SyncChannel` and never run the reducer. Clocks are `{ baseSeconds, runningSince }` so every window derives the displayed time from `Date.now()`; no tick actions.
+
+## Design principles
+
+- **UX guidance over hard validation.** The user knows best what the scoreboard should show. Warn and guide in the UI; block only when needed for state validity (e.g. removing the current period, having no `play` period).
+- **"10-foot" scoreboard.** Boards are read from across a room: huge, high-contrast, glanceable type. Layout is defined by aspect ratio (a scaled 16:9 stage), not pixel sizes.
 
 ## Conventions
 

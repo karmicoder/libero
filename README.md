@@ -8,7 +8,7 @@ new sports are meant to be registrable at runtime.
 
 ## Getting started
 
-Requires Node 24 (LTS), see `.nvmrc`.
+Requires the Node version in `engines.node` in `package.json` (Node 24 LTS).
 
 ```sh
 npm install
@@ -36,8 +36,47 @@ Work is tracked in [GitHub Issues](https://github.com/karmicoder/libero/issues).
 ## Layout
 
 - `src/sports/`: `SportDefinition` + `SportRegistry` (the seam for runtime-injected sports)
-- `src/pages/`: route components (sport selection is home; `/match/:sportId` is a stub)
-- `src/styles/`: tokens (themes), base element styles, component styles
+- `src/pages/`: route components (sport selection is home; `/match/:sportId` is
+  currently a placeholder `MatchPage`, replaced by the football routes below)
+- `src/styles/`: tokens (themes), base element styles, shared utility classes
+
+## Architecture
+
+The football scoreboard and scorer console are being built under
+[#1](https://github.com/karmicoder/libero/issues/1); the pieces marked _planned_
+land with the child issues.
+
+- **Engine vs. layout.** A game engine (rules) and a scoreboard layout
+  (presentation) never import each other. They share only a neutral, types-only
+  game state module; an ESLint `no-restricted-imports` rule enforces this
+  (_planned_, [#2](https://github.com/karmicoder/libero/issues/2)).
+- **Registries.** `SportRegistry` holds sports as data. Engines attach by
+  `sportId` in a separate `EngineRegistry` (_planned_), so sports and engines can
+  both be injected at runtime.
+- **Engines are pure reducers:** `reduce(state, action) → { state, messages }`.
+  State is serialisable; `messages` are transient notices (goal, card,
+  substitution) used for banners. There is no Redux or other state library.
+- **Console is master.** The scorer console owns the game state and pushes it to
+  view-only scoreboards over a `SyncChannel` (`BroadcastChannel` on the same
+  device) as `snapshot` (full state) and `notice` messages. A board never runs the
+  reducer and does not update while disconnected. Clocks are
+  `{ baseSeconds, runningSince }`, so each window derives its own display time.
+- **Routes (_planned_):** `/match/football` is the console and
+  `/match/football/board` is the scoreboard.
+
+### Opening the scoreboard in a second window
+
+From the console, use **Open scoreboard** (a new window you can move to a second
+screen or projector). The **Board connected** indicator shows when it is linked.
+Both windows must be on the same device and browser profile. Cross-device sync
+is a follow-up ([#23](https://github.com/karmicoder/libero/issues/23)).
+
+## Design principles
+
+- **UX guidance over hard validation.** Warn and guide; block only when needed
+  for state validity.
+- **"10-foot" scoreboards.** Huge, high-contrast, glanceable type; layout is a
+  scaled 16:9 stage defined by aspect ratio, not pixel sizes.
 
 ## Styling conventions
 
