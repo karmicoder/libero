@@ -16,9 +16,9 @@ const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 /**
  * Two-step keypad for a goal's details: step 1 the scorer, step 2 the assist.
  * Either field can be tapped to jump between steps. It is a non-modal dialog
- * covering the scoring team's column: it takes focus when it opens, and the
- * physical keyboard works too (digits, Backspace, Enter on the sheet, Esc to
- * skip).
+ * covering the scoring team's column: focus lands on the scorer field when it
+ * opens, and the physical keyboard works too (digits, Backspace, Enter on a
+ * field to advance, Esc to skip).
  */
 export function GoalSheet({ teamName, onDone, onSkip }: Props) {
   const titleId = useId()
@@ -27,7 +27,11 @@ export function GoalSheet({ teamName, onDone, onSkip }: Props) {
   const [scorer, setScorer] = useState('')
   const [assist, setAssist] = useState('')
 
-  useEffect(() => sheet.current?.focus(), [])
+  const fields = useRef<(HTMLButtonElement | null)[]>([])
+
+  // Open on the scorer field, so a keyboard user can type at once and a single
+  // Tab reaches the assist.
+  useEffect(() => fields.current[0]?.focus(), [])
 
   const setCurrent = step === 1 ? setScorer : setAssist
   const press = (key: string) => setCurrent((v) => typeDigit(v, key))
@@ -51,9 +55,16 @@ export function GoalSheet({ teamName, onDone, onSkip }: Props) {
     } else if (e.key === 'Backspace') {
       e.preventDefault()
       erase()
-    } else if (e.key === 'Enter' && e.target === e.currentTarget) {
-      // On a focused button Enter already presses it.
+    } else if (
+      e.key === 'Enter' &&
+      (e.target === e.currentTarget ||
+        fields.current.some((f) => f === e.target))
+    ) {
+      // On the sheet or a field Enter means "next"; on any other focused
+      // button it already presses that button.
       e.preventDefault()
+      // Keep focus on the field being entered.
+      if (step === 1) fields.current[1]?.focus()
       advance()
     }
   }
@@ -92,6 +103,9 @@ export function GoalSheet({ teamName, onDone, onSkip }: Props) {
         ).map(([n, label, value]) => (
           <button
             key={n}
+            ref={(el) => {
+              fields.current[n - 1] = el
+            }}
             type="button"
             className={styles.field}
             aria-current={step === n ? 'step' : undefined}

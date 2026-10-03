@@ -198,7 +198,7 @@ describe('FootballConsole', () => {
     it('takes focus when it opens and returns it to the + button', async () => {
       const { user } = setup()
       await user.click(plus('Home'))
-      expect(screen.getByRole('dialog')).toHaveFocus()
+      expect(screen.getByRole('button', { name: /^Scorer/ })).toHaveFocus()
       await user.click(key('Skip details'))
       expect(plus('Home')).toHaveFocus()
     })

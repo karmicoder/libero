@@ -16,12 +16,12 @@ const field = (label: 'Scorer' | 'Assist') =>
 
 describe('GoalSheet', () => {
   describe('semantics and focus', () => {
-    it('is a labelled dialog that takes focus when it opens', () => {
+    it('is a labelled dialog that focuses the scorer field when it opens', () => {
       setup()
       const dialog = screen.getByRole('dialog', {
         name: 'Step 1 of 2 · Scorer',
       })
-      expect(dialog).toHaveFocus()
+      expect(field('Scorer')).toHaveFocus()
       expect(dialog).toHaveAttribute('aria-modal', 'false')
       expect(screen.getByText('Goal · United')).toBeInTheDocument()
     })
@@ -122,7 +122,6 @@ describe('GoalSheet', () => {
     it('tabbing from Scorer to Assist makes Assist the field being entered', async () => {
       const { user } = setup()
       await user.keyboard('9')
-      await user.tab() // dialog -> Scorer
       await user.tab() // Scorer -> Assist
       expect(field('Assist')).toHaveFocus()
       expect(field('Assist')).toHaveAttribute('aria-current', 'step')
@@ -138,7 +137,6 @@ describe('GoalSheet', () => {
     it('shift-tabbing back to Scorer returns to the scorer step', async () => {
       const { user, onDone } = setup()
       await user.tab()
-      await user.tab()
       await user.keyboard('4')
       await user.tab({ shift: true })
       expect(field('Scorer')).toHaveFocus()
@@ -152,7 +150,6 @@ describe('GoalSheet', () => {
     it('tabbing on past the fields into the keypad leaves the step alone', async () => {
       const { user } = setup()
       await user.tab()
-      await user.tab()
       await user.tab() // Assist -> key 1
       expect(key('1')).toHaveFocus()
       expect(
@@ -164,10 +161,7 @@ describe('GoalSheet', () => {
       const { user, onDone } = setup()
       await user.keyboard('9')
       await user.tab()
-      await user.tab()
       await user.keyboard('10')
-      await user.keyboard('{Enter}') // Enter on the focused Assist field: stays
-      expect(onDone).not.toHaveBeenCalled()
       // Tab through the keypad to Done and press it.
       for (let i = 0; i < 12; i++) await user.tab()
       expect(key('Done')).toHaveFocus()
@@ -221,12 +215,13 @@ describe('GoalSheet', () => {
       expect(field('Scorer')).toHaveTextContent('4')
     })
 
-    it('Enter on the sheet advances, then finishes', async () => {
+    it('Enter on a field advances (moving focus to Assist), then finishes', async () => {
       const { user, onDone } = setup()
       await user.keyboard('9{Enter}')
       expect(
         screen.getByRole('dialog', { name: 'Step 2 of 2 · Assist' }),
       ).toBeInTheDocument()
+      expect(field('Assist')).toHaveFocus()
       await user.keyboard('1{Enter}')
       expect(onDone).toHaveBeenCalledWith(9, 1)
     })
@@ -240,13 +235,11 @@ describe('GoalSheet', () => {
 
     it('Enter on a focused key presses that key, not the sheet action', async () => {
       const { user, onDone } = setup()
-      await user.tab()
-      expect(field('Scorer')).toHaveFocus()
+      await user.tab() // Assist
+      await user.tab() // key 1
+      expect(key('1')).toHaveFocus()
       await user.keyboard('{Enter}')
-      // Pressing the Scorer field again just stays on step 1.
-      expect(
-        screen.getByRole('dialog', { name: 'Step 1 of 2 · Scorer' }),
-      ).toBeInTheDocument()
+      expect(field('Assist')).toHaveTextContent('1')
       expect(onDone).not.toHaveBeenCalled()
     })
   })

@@ -46,9 +46,10 @@ test.describe('goal sheet', () => {
     await plus(page).focus()
     await page.keyboard.press('Enter')
 
-    // The sheet takes focus, so typing goes straight into the scorer field.
+    // The scorer field takes focus, so typing goes straight into it.
     const dialog = page.getByRole('dialog', { name: 'Step 1 of 2 · Scorer' })
-    await expect(dialog).toBeFocused()
+    await expect(page.getByRole('button', { name: /^Scorer/ })).toBeFocused()
+    await expect(dialog).toBeVisible()
     await page.keyboard.type('9')
     await page.keyboard.press('Enter')
     await expect(
@@ -70,10 +71,9 @@ test.describe('goal sheet', () => {
     await page.goto('/match/football')
     await plus(page).focus()
     await page.keyboard.press('Enter')
-    await expect(page.getByRole('dialog')).toBeFocused()
+    await expect(page.getByRole('button', { name: /^Scorer/ })).toBeFocused()
 
     await page.keyboard.type('9')
-    await page.keyboard.press('Tab') // Scorer field
     await page.keyboard.press('Tab') // Assist field
     const assist = page.getByRole('button', { name: /^Assist/ })
     await expect(assist).toBeFocused()
