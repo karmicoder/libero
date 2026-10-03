@@ -1,5 +1,8 @@
 import type { MatchConfig, PeriodConfig } from './state'
 
+/** The most added minutes the scorer can announce for a period. */
+export const MAX_STOPPAGE_MINUTES = 15
+
 /** Design defaults. A fresh object each call so callers can't share mutations. */
 export function defaultMatchConfig(): MatchConfig {
   return {

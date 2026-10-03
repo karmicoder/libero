@@ -1,13 +1,24 @@
 .centre {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-5);
+  position: relative;
   padding: var(--space-6);
   border: var(--border-width) solid var(--border-tile);
   border-radius: var(--radius-tile);
   background: var(--surface-tile);
   text-align: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.toast {
+  margin: var(--space-3) 0 0;
+  min-block-size: 1lh;
+  color: var(--text-muted);
+  font-weight: 700;
 }
 
 .period {
