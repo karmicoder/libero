@@ -95,6 +95,9 @@ export function GoalSheet({ teamName, onDone, onSkip }: Props) {
             type="button"
             className={styles.field}
             aria-current={step === n ? 'step' : undefined}
+            // Focus (Tab, Shift+Tab or a click) makes this the field being
+            // entered, so a keyboard user can move between them.
+            onFocus={() => setStep(n)}
             onClick={() => setStep(n)}
           >
             <span className="eyebrow">{label}</span>

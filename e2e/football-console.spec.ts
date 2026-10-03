@@ -64,6 +64,35 @@ test.describe('goal sheet', () => {
     await expect(page.getByText('0′ Goal #9 (A #10)')).toBeVisible()
   })
 
+  test('Tab moves between Scorer and Assist and typing follows the focus', async ({
+    page,
+  }) => {
+    await page.goto('/match/football')
+    await plus(page).focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('dialog')).toBeFocused()
+
+    await page.keyboard.type('9')
+    await page.keyboard.press('Tab') // Scorer field
+    await page.keyboard.press('Tab') // Assist field
+    const assist = page.getByRole('button', { name: /^Assist/ })
+    await expect(assist).toBeFocused()
+    await expect(assist).toHaveAttribute('aria-current', 'step')
+    await page.keyboard.type('10')
+    await expect(assist).toContainText('10')
+    await expect(page.getByRole('button', { name: /^Scorer/ })).toContainText(
+      '9',
+    )
+
+    // Through the keypad (1-9, backspace, 0) to Done, keyboard only.
+    for (let i = 0; i < 12; i++) await page.keyboard.press('Tab')
+    await expect(page.getByRole('button', { name: 'Done' })).toBeFocused()
+    await page.keyboard.press('Enter')
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByText('0′ Goal #9 (A #10)')).toBeVisible()
+  })
+
   test('Tab stays inside the sheet while it is open', async ({ page }) => {
     await page.goto('/match/football')
     await plus(page).click()

@@ -118,6 +118,64 @@ describe('GoalSheet', () => {
     })
   })
 
+  describe('focus follows the step (keyboard-only flow)', () => {
+    it('tabbing from Scorer to Assist makes Assist the field being entered', async () => {
+      const { user } = setup()
+      await user.keyboard('9')
+      await user.tab() // dialog -> Scorer
+      await user.tab() // Scorer -> Assist
+      expect(field('Assist')).toHaveFocus()
+      expect(field('Assist')).toHaveAttribute('aria-current', 'step')
+      expect(
+        screen.getByRole('dialog', { name: 'Step 2 of 2 · Assist' }),
+      ).toBeInTheDocument()
+
+      await user.keyboard('1')
+      expect(field('Assist')).toHaveTextContent('1')
+      expect(field('Scorer')).toHaveTextContent('9')
+    })
+
+    it('shift-tabbing back to Scorer returns to the scorer step', async () => {
+      const { user, onDone } = setup()
+      await user.tab()
+      await user.tab()
+      await user.keyboard('4')
+      await user.tab({ shift: true })
+      expect(field('Scorer')).toHaveFocus()
+      expect(field('Scorer')).toHaveAttribute('aria-current', 'step')
+      await user.keyboard('9')
+      expect(field('Scorer')).toHaveTextContent('9')
+      expect(field('Assist')).toHaveTextContent('4')
+      expect(onDone).not.toHaveBeenCalled()
+    })
+
+    it('tabbing on past the fields into the keypad leaves the step alone', async () => {
+      const { user } = setup()
+      await user.tab()
+      await user.tab()
+      await user.tab() // Assist -> key 1
+      expect(key('1')).toHaveFocus()
+      expect(
+        screen.getByRole('dialog', { name: 'Step 2 of 2 · Assist' }),
+      ).toBeInTheDocument()
+    })
+
+    it('can finish with the keyboard alone: type, tab, type, then Done', async () => {
+      const { user, onDone } = setup()
+      await user.keyboard('9')
+      await user.tab()
+      await user.tab()
+      await user.keyboard('10')
+      await user.keyboard('{Enter}') // Enter on the focused Assist field: stays
+      expect(onDone).not.toHaveBeenCalled()
+      // Tab through the keypad to Done and press it.
+      for (let i = 0; i < 12; i++) await user.tab()
+      expect(key('Done')).toHaveFocus()
+      await user.keyboard('{Enter}')
+      expect(onDone).toHaveBeenCalledWith(9, 10)
+    })
+  })
+
   describe('finishing', () => {
     it('Done commits the scorer and the assist', async () => {
       const { user, onDone, onSkip } = setup()
