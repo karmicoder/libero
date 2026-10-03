@@ -286,10 +286,10 @@ describe('goal', () => {
     expect(s.events[0]).not.toHaveProperty('assist')
   })
 
-  it('emits no messages yet', () => {
-    expect(footballEngine.reduce(fresh(), goal('home', T0)).messages).toEqual(
-      [],
-    )
+  it('announces itself unless told not to (see notices below)', () => {
+    expect(
+      footballEngine.reduce(fresh(), goal('home', T0)).messages,
+    ).toHaveLength(1)
   })
 })
 
@@ -303,6 +303,7 @@ describe('set-goal-details', () => {
       eventId: 'e1',
       scorer: 7,
       assist: 11,
+      at: T0,
     })
     expect(s.events[0]).toMatchObject({ scorer: 7, assist: 11 })
     expect(s.events[1]).not.toHaveProperty('scorer')
@@ -314,6 +315,7 @@ describe('set-goal-details', () => {
       type: 'set-goal-details',
       eventId: 'e1',
       scorer: 8,
+      at: T0,
     })
     expect(s.events[0]).toMatchObject({ scorer: 8 })
     expect(s.events[0]).not.toHaveProperty('assist')
@@ -326,6 +328,7 @@ describe('set-goal-details', () => {
       eventId: 'e1',
       scorer: 100,
       assist: 0,
+      at: T0,
     })
     expect(s.events[0]).not.toHaveProperty('scorer')
     expect(s.events[0]).not.toHaveProperty('assist')
@@ -334,7 +337,12 @@ describe('set-goal-details', () => {
   it('does nothing for an unknown event or a non-goal event', () => {
     const base = withGoals()
     expect(
-      run(base, { type: 'set-goal-details', eventId: 'nope', scorer: 1 }),
+      run(base, {
+        type: 'set-goal-details',
+        eventId: 'nope',
+        scorer: 1,
+        at: T0,
+      }),
     ).toEqual(base)
     const card = {
       ...base,
@@ -351,7 +359,12 @@ describe('set-goal-details', () => {
       ],
     }
     expect(
-      run(card, { type: 'set-goal-details', eventId: 'c1', scorer: 1 }),
+      run(card, {
+        type: 'set-goal-details',
+        eventId: 'c1',
+        scorer: 1,
+        at: T0,
+      }),
     ).toEqual(card)
   })
 })
@@ -556,13 +569,9 @@ describe('card', () => {
     ])
   })
 
-  it('does not change the score and emits no messages yet', () => {
-    const { state, messages } = footballEngine.reduce(
-      fresh(),
-      card('home', 'red', [3]),
-    )
+  it('does not change the score', () => {
+    const { state } = footballEngine.reduce(fresh(), card('home', 'red', [3]))
     expect(state.teams.home.score).toBe(0)
-    expect(messages).toEqual([])
   })
 
   it('shares the event id counter with goals', () => {
@@ -658,13 +667,12 @@ describe('substitution', () => {
     expect(run(s, subs('home', [{ off: 1, on: 2 }]))).toEqual(s)
   })
 
-  it('shares the event id counter and emits no messages yet', () => {
-    const { state, messages } = footballEngine.reduce(
+  it('shares the event id counter', () => {
+    const { state } = footballEngine.reduce(
       run(fresh(), goal('home', T0)),
       subs('home', [{}]),
     )
     expect(state.events.map((e) => e.id)).toEqual(['e1', 'e2'])
-    expect(messages).toEqual([])
   })
 
   it('keeps state serialisable', () => {
@@ -782,6 +790,223 @@ describe('set-team-name', () => {
     expect(run(s, { type: 'set-team-name', team: 'home', name: 'Home' })).toBe(
       s,
     )
+  })
+})
+
+describe('notices', () => {
+  /** The messages one action produces from a given state. */
+  const messagesOf = (state: FootballState, action: FootballAction) =>
+    footballEngine.reduce(state, action).messages
+
+  describe('goal-scored', () => {
+    it('is emitted for a goal with its team, minute and details', () => {
+      const s = run(fresh(), { type: 'start-clock', at: T0 })
+      expect(
+        messagesOf(s, goal('home', T0 + 125_000, { scorer: 9, assist: 10 })),
+      ).toEqual([
+        {
+          type: 'goal-scored',
+          id: `e1@${T0 + 125_000}`,
+          at: T0 + 125_000,
+          team: 'home',
+          minute: 2,
+          scorer: 9,
+          assist: 10,
+        },
+      ])
+    })
+
+    it('is emitted for a goal with no details (the board shows a dash)', () => {
+      const [m] = messagesOf(fresh(), goal('visitor', T0))
+      expect(m).toMatchObject({ type: 'goal-scored', team: 'visitor' })
+      expect(m).not.toHaveProperty('scorer')
+      expect(m).not.toHaveProperty('assist')
+    })
+
+    it('is held back with announce: false', () => {
+      expect(
+        messagesOf(fresh(), {
+          type: 'goal',
+          team: 'home',
+          at: T0,
+          announce: false,
+        }),
+      ).toEqual([])
+    })
+
+    it('is emitted when details are committed, using the goal’s own minute', () => {
+      const s = run(
+        fresh(),
+        { type: 'set-clock', minutes: 31, seconds: 5, at: T0 },
+        { type: 'goal', team: 'home', at: T0, announce: false },
+      )
+      expect(
+        messagesOf(s, {
+          type: 'set-goal-details',
+          eventId: 'e1',
+          scorer: 7,
+          at: T0 + 9_000,
+        }),
+      ).toEqual([
+        {
+          type: 'goal-scored',
+          id: `e1@${T0 + 9_000}`,
+          at: T0 + 9_000,
+          team: 'home',
+          minute: 31,
+          scorer: 7,
+        },
+      ])
+    })
+
+    it('has no assist when only a scorer is committed ("No assist")', () => {
+      const s = run(fresh(), goal('home', T0))
+      const [m] = messagesOf(s, {
+        type: 'set-goal-details',
+        eventId: 'e1',
+        scorer: 7,
+        at: T0 + 1,
+      })
+      expect(m).toMatchObject({ scorer: 7 })
+      expect(m).not.toHaveProperty('assist')
+    })
+
+    it('gives the announcement of the same goal a distinct id', () => {
+      const s = run(fresh(), goal('home', T0))
+      const [again] = messagesOf(s, {
+        type: 'set-goal-details',
+        eventId: 'e1',
+        scorer: 7,
+        at: T0 + 5,
+      })
+      expect(again.id).toBe(`e1@${T0 + 5}`)
+      expect(again.id).not.toBe(`e1@${T0}`)
+    })
+
+    it('is not emitted for an unknown event, a removal or a no-op', () => {
+      const s = run(fresh(), goal('home', T0))
+      expect(
+        messagesOf(s, {
+          type: 'set-goal-details',
+          eventId: 'nope',
+          scorer: 1,
+          at: T0,
+        }),
+      ).toEqual([])
+      expect(messagesOf(s, { type: 'remove-goal', team: 'home' })).toEqual([])
+      expect(
+        messagesOf(fresh(), { type: 'remove-goal', team: 'home' }),
+      ).toEqual([])
+    })
+  })
+
+  describe('card-issued', () => {
+    it('is one notice per action with the card kind and numbers', () => {
+      expect(messagesOf(fresh(), card('home', 'yellow', [4, 7], T0))).toEqual([
+        {
+          type: 'card-issued',
+          id: `e1@${T0}`,
+          at: T0,
+          team: 'home',
+          minute: 0,
+          groups: [{ kind: 'yellow', numbers: [4, 7] }],
+        },
+      ])
+    })
+
+    it('reports a direct red', () => {
+      const [m] = messagesOf(fresh(), card('visitor', 'red', [2]))
+      expect(m).toMatchObject({ groups: [{ kind: 'red', numbers: [2] }] })
+    })
+
+    it('groups a yellow and a second yellow into one notice', () => {
+      const s = run(fresh(), card('home', 'yellow', [4]))
+      const messages = messagesOf(s, card('home', 'yellow', [7, 4]))
+      expect(messages).toHaveLength(1)
+      expect(messages[0]).toMatchObject({
+        type: 'card-issued',
+        groups: [
+          { kind: 'yellow', numbers: [7] },
+          { kind: 'second', numbers: [4] },
+        ],
+      })
+    })
+
+    it('uses the first event id of the action and the card minute', () => {
+      const s = run(
+        fresh(),
+        { type: 'set-clock', minutes: 44, seconds: 0, at: T0 },
+        card('home', 'yellow', [4]),
+      )
+      const [m] = messagesOf(s, card('home', 'yellow', [7, 4], T0 + 1))
+      expect(m.id).toBe(`e2@${T0 + 1}`)
+      expect(m).toMatchObject({ minute: 44 })
+    })
+  })
+
+  describe('substitution-made', () => {
+    it('lists every pair in one notice', () => {
+      const pairs = [
+        { off: 1, on: 13 },
+        { off: 2, on: 14 },
+      ]
+      expect(messagesOf(fresh(), subs('home', pairs, T0))).toEqual([
+        {
+          type: 'substitution-made',
+          id: `e1@${T0}`,
+          at: T0,
+          team: 'home',
+          minute: 0,
+          pairs,
+        },
+      ])
+    })
+
+    it('is not emitted when nothing was recorded', () => {
+      expect(messagesOf(fresh(), subs('home', []))).toEqual([])
+      const off = footballEngine.initialState({
+        ...defaultMatchConfig(),
+        substitutions: { enabled: false },
+      })
+      expect(messagesOf(off, subs('home', [{ off: 1 }]))).toEqual([])
+    })
+  })
+
+  describe('state', () => {
+    it('is unchanged by notices: no message data is stored', () => {
+      const { state, messages } = footballEngine.reduce(
+        fresh(),
+        goal('home', T0, { scorer: 9 }),
+      )
+      expect(messages).toHaveLength(1)
+      expect(JSON.stringify(state)).not.toContain('goal-scored')
+      expect(Object.keys(state).sort()).toEqual(Object.keys(fresh()).sort())
+    })
+
+    it('is identical whether or not the goal is announced', () => {
+      const loud = run(fresh(), goal('home', T0, { scorer: 9 }))
+      const quiet = run(fresh(), {
+        type: 'goal',
+        team: 'home',
+        scorer: 9,
+        at: T0,
+        announce: false,
+      })
+      expect(quiet).toEqual(loud)
+    })
+  })
+
+  it('emits nothing for clock, period, name, stoppage or pip actions', () => {
+    const actions: FootballAction[] = [
+      { type: 'start-clock', at: T0 },
+      { type: 'set-period', periodId: 'h2', at: T0 },
+      { type: 'set-team-name', team: 'home', name: 'Reds' },
+      { type: 'set-stoppage', minutes: 3 },
+      { type: 'set-subs-remaining', team: 'home', remaining: 1 },
+    ]
+    for (const action of actions) {
+      expect(messagesOf(fresh(), action)).toEqual([])
+    }
   })
 })
 

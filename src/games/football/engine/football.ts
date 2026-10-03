@@ -15,6 +15,7 @@ import type {
   FootballState,
   GoalEvent,
   MatchConfig,
+  MatchEvent,
   SubstitutionEvent,
 } from '../state'
 import { maxSubsRemaining, subLimit } from '../subs'
@@ -272,6 +273,80 @@ function reduceState(
   }
 }
 
+const eventMinute = (e: MatchEvent) => Math.floor(e.clockSeconds / 60)
+const noticeId = (eventId: string, at: number) => `${eventId}@${at}`
+
+function goalNotice(e: GoalEvent, at: number): FootballMessage {
+  return {
+    type: 'goal-scored',
+    id: noticeId(e.id, at),
+    at,
+    team: e.team,
+    minute: eventMinute(e),
+    ...(e.scorer !== undefined && { scorer: e.scorer }),
+    ...(e.assist !== undefined && { assist: e.assist }),
+  }
+}
+
+/**
+ * The transient notices for what an action just did, derived from the state
+ * change so the reducer cases stay about state. A no-op action changes
+ * nothing and so announces nothing. Notices are never stored.
+ */
+function noticesFor(
+  prev: FootballState,
+  next: FootballState,
+  action: FootballAction,
+): FootballMessage[] {
+  switch (action.type) {
+    case 'goal': {
+      const event = next.events.at(-1)
+      if (action.announce === false || event?.type !== 'goal') return []
+      return [goalNotice(event, action.at)]
+    }
+    case 'set-goal-details': {
+      if (next === prev) return []
+      const event = next.events.find((e) => e.id === action.eventId)
+      return event?.type === 'goal' ? [goalNotice(event, action.at)] : []
+    }
+    case 'card': {
+      const cards = next.events
+        .slice(prev.events.length)
+        .filter((e): e is CardEvent => e.type === 'card')
+      if (cards.length === 0) return []
+      return [
+        {
+          type: 'card-issued',
+          id: noticeId(cards[0].id, action.at),
+          at: action.at,
+          team: action.team,
+          minute: eventMinute(cards[0]),
+          groups: cards.map((c) => ({
+            kind: c.secondYellow ? 'second' : c.color,
+            numbers: c.numbers,
+          })),
+        },
+      ]
+    }
+    case 'substitution': {
+      const event = next.events.at(-1)
+      if (next === prev || event?.type !== 'substitution') return []
+      return [
+        {
+          type: 'substitution-made',
+          id: noticeId(event.id, action.at),
+          at: action.at,
+          team: action.team,
+          minute: eventMinute(event),
+          pairs: event.pairs,
+        },
+      ]
+    }
+    default:
+      return []
+  }
+}
+
 export const footballEngine: GameEngine<
   FootballState,
   FootballAction,
@@ -292,8 +367,8 @@ export const footballEngine: GameEngine<
     events: [],
     nextEventId: 1,
   }),
-  reduce: (state, action) => ({
-    state: reduceState(state, action),
-    messages: [],
-  }),
+  reduce: (state, action) => {
+    const next = reduceState(state, action)
+    return { state: next, messages: noticesFor(state, next, action) }
+  },
 }

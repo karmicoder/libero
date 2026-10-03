@@ -66,6 +66,14 @@ describe('FootballConsole', () => {
       expect(store.getState().events).toHaveLength(2)
     })
 
+    it('announces a goal through the store’s notice channel', async () => {
+      const { store, user } = setup()
+      const notices: FootballMessage[] = []
+      store.subscribeNotices((m) => notices.push(m))
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      expect(notices).toMatchObject([{ type: 'goal-scored', team: 'home' }])
+    })
+
     it('disables remove at 0', () => {
       setup()
       expect(
