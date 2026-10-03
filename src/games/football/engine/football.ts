@@ -13,6 +13,7 @@ import type {
   GoalEvent,
   MatchConfig,
 } from '../state'
+import { isFootballState } from '../validate'
 
 const MAX_STOPPAGE_MINUTES = 15
 
@@ -172,6 +173,7 @@ export const footballEngine: GameEngine<
   FootballMessage,
   MatchConfig
 > = {
+  isState: isFootballState,
   initialState: (config = defaultMatchConfig()) => ({
     config,
     clock: stopped(0),

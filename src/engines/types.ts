@@ -6,6 +6,11 @@
  */
 export interface GameEngine<State, Action, Message, Config = unknown> {
   initialState(config: Config): State
+  /**
+   * Type guard for state read back from storage. Persisted state is untrusted
+   * (older version, hand-edited, truncated), so restoring requires it.
+   */
+  isState?(value: unknown): value is State
   reduce(state: State, action: Action): ReduceResult<State, Message>
 }
 
