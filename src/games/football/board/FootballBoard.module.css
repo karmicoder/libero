@@ -134,6 +134,10 @@
   font-weight: 500;
 }
 
+/*
+ * Bottom-corner areas reserved for update banners (#11). Hidden, not removed,
+ * so the layout keeps their space; banners will show them.
+ */
 .slot,
 .slotEnd {
   display: flex;
@@ -147,6 +151,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-muted);
+  visibility: hidden;
 }
 
 .slot {

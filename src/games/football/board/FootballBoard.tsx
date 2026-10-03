@@ -87,6 +87,7 @@ export function FootballBoard({
 
           <Team side="home" state={state} />
 
+          {/* Reserved for update banners (#11); invisible until then. */}
           <div className={styles.slot} aria-hidden="true">
             Updates
           </div>

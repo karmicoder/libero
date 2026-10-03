@@ -19,6 +19,8 @@ test('the board shows the console state and follows changes', async ({
 }) => {
   const { console_, board } = await openConsoleAndBoard(context)
   await expect(boardScore(board, 'Home')).toHaveText('0')
+  // Banner areas are reserved but not shown to the audience yet.
+  await expect(board.getByText('Updates').first()).toBeHidden()
 
   await console_
     .getByRole('button', { name: 'Goal for Home', exact: true })
