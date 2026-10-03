@@ -124,6 +124,24 @@ test.describe('goal sheet', () => {
   }
 })
 
+test.describe('set-clock sheet', () => {
+  for (const colorScheme of ['dark', 'light'] as const) {
+    test.describe(`${colorScheme} scheme`, () => {
+      test.use({ colorScheme })
+
+      test('has no detectable accessibility violations when open', async ({
+        page,
+      }) => {
+        await page.goto('/match/football')
+        await page.getByRole('button', { name: 'Set clock' }).click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        const results = await new AxeBuilder({ page }).analyze()
+        expect(results.violations).toEqual([])
+      })
+    })
+  }
+})
+
 test('a second console window is blocked until it takes over', async ({
   context,
   page,

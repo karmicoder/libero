@@ -4,6 +4,7 @@ import { clockSeconds } from '../clock'
 import {
   defaultMatchConfig,
   findPeriod,
+  MAX_STOPPAGE_MINUTES,
   nextPlayPeriod,
   periodOffsetSeconds,
 } from '../config'
@@ -20,8 +21,6 @@ import type {
 } from '../state'
 import { maxSubsRemaining, subLimit } from '../subs'
 import { isFootballState } from '../validate'
-
-const MAX_STOPPAGE_MINUTES = 15
 
 /** Shirt numbers are 1-99 (no leading zero); anything else is dropped. */
 const validJersey = (n: number | undefined): n is number =>

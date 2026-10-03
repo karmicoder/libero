@@ -321,6 +321,59 @@ describe('FootballConsole', () => {
     })
   })
 
+  describe('set clock', () => {
+    const open = (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByRole('button', { name: 'Set clock' }))
+
+    it('sets the clock, closes the sheet and toasts', async () => {
+      const { store, user } = setup()
+      await open(user)
+      await user.keyboard('4500')
+      await user.click(screen.getByRole('button', { name: 'Apply' }))
+      expect(store.getState().clock).toEqual({
+        baseSeconds: 45 * 60,
+        runningSince: null,
+      })
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(screen.getByText('Clock set to 45:00')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Set clock' })).toHaveFocus()
+    })
+
+    it('does not start the clock when Space is pressed in the sheet', async () => {
+      const { store, user } = setup()
+      await open(user)
+      await user.keyboard(' ')
+      expect(store.getState().clock.runningSince).toBeNull()
+    })
+
+    it('leaves the clock alone on cancel or an empty entry', async () => {
+      const { store, user } = setup()
+      await open(user)
+      await user.keyboard('1234')
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      await open(user)
+      await user.click(screen.getByRole('button', { name: 'Apply' }))
+      expect(store.getState().clock.baseSeconds).toBe(0)
+      expect(screen.queryByText(/Clock set to/)).toBeNull()
+    })
+
+    it('offers presets from the configured periods', async () => {
+      const config = defaultMatchConfig()
+      config.periods = config.periods.slice(0, 3)
+      const { user } = setup(config)
+      await open(user)
+      const presets = screen.getByRole('group', { name: 'Presets' })
+      expect(within(presets).getAllByRole('button')).toHaveLength(2)
+      expect(within(presets).getByText('45:00')).toBeInTheDocument()
+    })
+
+    it('is unavailable in a shootout', async () => {
+      const { user } = setup()
+      await user.click(screen.getByRole('radio', { name: /PEN/ }))
+      expect(screen.getByRole('button', { name: 'Set clock' })).toBeDisabled()
+    })
+  })
+
   describe('stoppage time', () => {
     it('increments and decrements, never below 0', async () => {
       const { store, user } = setup()
@@ -337,6 +390,18 @@ describe('FootballConsole', () => {
       expect(screen.getByText('+2′')).toBeInTheDocument()
       await user.click(less)
       expect(store.getState().stoppageMinutes).toBe(1)
+    })
+
+    it('reads off at 0 and stops at 15', async () => {
+      const { store, user } = setup()
+      const more = screen.getByRole('button', {
+        name: 'Increase stoppage time',
+      })
+      expect(screen.getByText('off')).toBeInTheDocument()
+      for (let i = 0; i < 15; i++) await user.click(more)
+      expect(store.getState().stoppageMinutes).toBe(15)
+      expect(screen.getByText('+15′')).toBeInTheDocument()
+      expect(more).toBeDisabled()
     })
 
     it('is disabled outside play periods', async () => {
