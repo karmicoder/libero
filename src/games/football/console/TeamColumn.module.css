@@ -1,12 +1,17 @@
 .column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
+  /* Positioning context for the goal sheet that covers it. */
+  position: relative;
   min-inline-size: 0;
   padding: var(--space-6);
   border: var(--border-width) solid var(--border-tile);
   border-radius: var(--radius-tile);
   background: var(--surface-tile);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .name {

@@ -51,11 +51,20 @@ describe('FootballConsole', () => {
   beforeEach(() => window.getSelection()?.removeAllRanges())
 
   describe('score', () => {
+    /** Scores for a team and dismisses the goal sheet that opens. */
+    const scoreGoal = async (
+      user: ReturnType<typeof userEvent.setup>,
+      team: 'Home' | 'Visitor',
+    ) => {
+      await user.click(screen.getByRole('button', { name: `Goal for ${team}` }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+    }
+
     it('adds and removes goals per team', async () => {
       const { store, user } = setup()
-      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
-      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
-      await user.click(screen.getByRole('button', { name: 'Goal for Visitor' }))
+      await scoreGoal(user, 'Home')
+      await scoreGoal(user, 'Home')
+      await scoreGoal(user, 'Visitor')
       expect(score('Home')).toHaveTextContent('2')
       expect(score('Visitor')).toHaveTextContent('1')
 
@@ -64,14 +73,6 @@ describe('FootballConsole', () => {
       )
       expect(score('Home')).toHaveTextContent('1')
       expect(store.getState().events).toHaveLength(2)
-    })
-
-    it('announces a goal through the store’s notice channel', async () => {
-      const { store, user } = setup()
-      const notices: FootballMessage[] = []
-      store.subscribeNotices((m) => notices.push(m))
-      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
-      expect(notices).toMatchObject([{ type: 'goal-scored', team: 'home' }])
     })
 
     it('disables remove at 0', () => {
@@ -83,11 +84,160 @@ describe('FootballConsole', () => {
 
     it('logs goals in the team’s recent events', async () => {
       const { user } = setup()
-      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await scoreGoal(user, 'Home')
       const home = screen.getByRole('region', { name: 'Home team' })
       expect(within(home).getByText('0′ Goal')).toBeInTheDocument()
       const visitor = screen.getByRole('region', { name: 'Visitor team' })
       expect(within(visitor).getByText('None yet')).toBeInTheDocument()
+    })
+  })
+
+  describe('goal sheet', () => {
+    const plus = (team: 'Home' | 'Visitor') =>
+      screen.getByRole('button', { name: `Goal for ${team}` })
+    const sheet = () => screen.queryByRole('dialog')
+    const key = (name: string) => screen.getByRole('button', { name })
+
+    function withNotices() {
+      const ctx = setup()
+      const notices: FootballMessage[] = []
+      ctx.store.subscribeNotices((m) => notices.push(m))
+      return { ...ctx, notices }
+    }
+
+    it('scores at once, then opens the sheet in that team’s column', async () => {
+      const { user } = setup()
+      await user.click(plus('Home'))
+      expect(score('Home')).toHaveTextContent('1')
+      const home = screen.getByRole('region', { name: 'Home team' })
+      expect(within(home).getByRole('dialog')).toHaveAccessibleName(
+        'Step 1 of 2 · Scorer',
+      )
+      const visitor = screen.getByRole('region', { name: 'Visitor team' })
+      expect(within(visitor).queryByRole('dialog')).toBeNull()
+    })
+
+    it('does not announce the goal until details are committed', async () => {
+      const { user, notices } = withNotices()
+      await user.click(plus('Home'))
+      expect(notices).toEqual([])
+    })
+
+    it('Done announces the goal with scorer and assist', async () => {
+      const { user, store, notices } = withNotices()
+      await user.click(plus('Visitor'))
+      await user.click(key('9'))
+      await user.click(key('Next ›'))
+      await user.click(key('1'))
+      await user.click(key('0'))
+      await user.click(key('Done'))
+
+      expect(sheet()).toBeNull()
+      expect(notices).toMatchObject([
+        { type: 'goal-scored', team: 'visitor', scorer: 9, assist: 10 },
+      ])
+      expect(store.getState().events[0]).toMatchObject({
+        scorer: 9,
+        assist: 10,
+      })
+    })
+
+    it('No assist announces the goal with the scorer only', async () => {
+      const { user, notices } = withNotices()
+      await user.click(plus('Home'))
+      await user.click(key('7'))
+      await user.click(key('Next ›'))
+      await user.click(key('No assist'))
+      expect(notices).toHaveLength(1)
+      expect(notices[0]).toMatchObject({ scorer: 7 })
+      expect(notices[0]).not.toHaveProperty('assist')
+    })
+
+    it('Skip details keeps the goal but fires no banner', async () => {
+      const { user, store, notices } = withNotices()
+      await user.click(plus('Home'))
+      await user.click(key('Skip details'))
+      expect(sheet()).toBeNull()
+      expect(notices).toEqual([])
+      expect(store.getState().teams.home.score).toBe(1)
+      expect(store.getState().events[0]).not.toHaveProperty('scorer')
+    })
+
+    it('Escape skips the same way', async () => {
+      const { user, notices } = withNotices()
+      await user.click(plus('Home'))
+      await user.keyboard('{Escape}')
+      expect(sheet()).toBeNull()
+      expect(notices).toEqual([])
+    })
+
+    it('lets the scorer jump back from the assist step', async () => {
+      const { user, store } = setup()
+      await user.click(plus('Home'))
+      await user.click(key('Next ›'))
+      await user.click(key('4'))
+      await user.click(screen.getByRole('button', { name: /^Scorer/ }))
+      await user.click(key('9'))
+      await user.click(screen.getByRole('button', { name: /^Assist/ }))
+      await user.click(key('Done'))
+      expect(store.getState().events[0]).toMatchObject({ scorer: 9, assist: 4 })
+    })
+
+    it('finishes from the keyboard without reopening', async () => {
+      const { user, store, notices } = withNotices()
+      await user.click(plus('Home'))
+      await user.keyboard('9{Enter}10{Enter}')
+      // Closing hands focus to "+"; that Enter must not press it again.
+      expect(sheet()).toBeNull()
+      expect(store.getState().teams.home.score).toBe(1)
+      expect(notices).toMatchObject([
+        { type: 'goal-scored', scorer: 9, assist: 10 },
+      ])
+    })
+
+    it('takes focus when it opens and returns it to the + button', async () => {
+      const { user } = setup()
+      await user.click(plus('Home'))
+      expect(screen.getByRole('dialog')).toHaveFocus()
+      await user.click(key('Skip details'))
+      expect(plus('Home')).toHaveFocus()
+    })
+
+    it('makes the covered column inert while it is open', async () => {
+      const { user } = setup()
+      await user.click(plus('Home'))
+      const home = screen.getByRole('region', { name: 'Home team' })
+      const covered = home.querySelector('[inert]')
+      expect(covered).not.toBeNull()
+      expect(covered).toContainElement(plus('Home'))
+      // The other team's column stays usable.
+      const visitor = screen.getByRole('region', { name: 'Visitor team' })
+      expect(visitor.querySelector('[inert]')).toBeNull()
+    })
+
+    it('closes if its goal is removed meanwhile', async () => {
+      const { user, store } = setup()
+      await user.click(plus('Home'))
+      store.dispatch({ type: 'remove-goal', team: 'home' })
+      // Re-render happens via the store subscription.
+      await screen.findByRole('button', { name: 'Goal for Home' })
+      expect(sheet()).toBeNull()
+    })
+
+    it('a second goal for the other team replaces the first sheet', async () => {
+      const { user, notices } = withNotices()
+      await user.click(plus('Home'))
+      await user.click(plus('Visitor'))
+      const dialogs = screen.getAllByRole('dialog')
+      expect(dialogs).toHaveLength(1)
+      expect(
+        within(screen.getByRole('region', { name: 'Visitor team' })).getByRole(
+          'dialog',
+        ),
+      ).toBeInTheDocument()
+      // The first goal was left without details: counted, never announced.
+      expect(notices).toEqual([])
+      expect(score('Home')).toHaveTextContent('1')
     })
   })
 
