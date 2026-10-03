@@ -12,6 +12,43 @@
   --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
   --font-display: 'Oxanium', var(--font-body);
 
+  /* Spacing scale (gaps, padding, margins). rem, so it follows the user's
+     text-size setting as well as page zoom. Step N is N * 0.25rem. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  /* Control sizes; --size-touch is the 44px minimum touch target. */
+  --size-dot: 0.75rem;
+  --size-touch: 2.75rem;
+  --size-control: 3rem;
+  --size-control-lg: 3.5rem;
+  --size-step: 4rem;
+
+  /* Type scale. */
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  /* Scoreboard-style numerals. */
+  --text-clock: 5.5rem;
+  --text-score: 6rem;
+
+  /* Strokes stay in px: a hairline should not scale with text size. */
+  --border-width: 2px;
+  --outline-width: 3px;
+
+  /* Motion. Zeroed below for users who prefer reduced motion. */
+  --duration-fast: 120ms;
+  --duration-slow: 320ms;
+
   --radius-tile: 24px;
   --radius-button: 14px;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
@@ -31,6 +68,14 @@
   --accent-hover: #e3e3e3;
   --on-accent: #000;
   --focus-ring: #fff;
+  --positive: #3ddc84;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-slow: 0ms;
+  }
 }
 
 @media (prefers-color-scheme: light) {
@@ -49,6 +94,7 @@
     --accent-hover: #2c3038;
     --on-accent: #f4f2ec;
     --focus-ring: #15181e;
+    --positive: #1a7f46;
   }
 }
 
@@ -69,4 +115,5 @@
   --accent-hover: #2c3038;
   --on-accent: #f4f2ec;
   --focus-ring: #15181e;
+  --positive: #1a7f46;
 }

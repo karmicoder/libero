@@ -1,0 +1,120 @@
+.centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+  text-align: center;
+}
+
+.period {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.clock {
+  font-family: var(--font-display);
+  font-size: var(--text-clock);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.dot,
+.dotRunning {
+  inline-size: var(--size-dot);
+  block-size: var(--size-dot);
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.dotRunning {
+  background: var(--positive);
+}
+
+.periods,
+.stoppage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--size-control-lg);
+  min-block-size: var(--size-touch);
+  padding-inline: var(--space-3);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast),
+    color var(--duration-fast);
+}
+
+.chip:has(input:checked) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.chip:has(input:focus-visible) {
+  outline: var(--outline-width) solid var(--focus-ring);
+  outline-offset: var(--outline-width);
+}
+
+.stoppageRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.stoppageValue {
+  min-inline-size: 4ch;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.step {
+  inline-size: var(--size-control);
+  block-size: var(--size-control);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.secondary {
+  min-block-size: var(--size-control);
+  padding-inline: var(--space-6);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-weight: 700;
+}

@@ -24,14 +24,14 @@ function setup() {
   const bus = new MemoryBus<State, Notice>()
   const state = { current: { score: 0 } as State }
   const makeConsole = (id: string, onHandover?: (s: State) => void) =>
-    new ConsoleLink<State, Notice>(bus.open(), {
+    new ConsoleLink<State, Notice>(() => bus.open(), {
       id,
       now,
       getState: () => state.current,
       onHandover,
     })
   const makeBoard = (id: string) =>
-    new BoardLink<State, Notice>(bus.open(), { id, now })
+    new BoardLink<State, Notice>(() => bus.open(), { id, now })
   return { bus, state, makeConsole, makeBoard }
 }
 
@@ -152,7 +152,7 @@ describe('connection status', () => {
     b.start()
     expect(c.getStatus().boardConnected).toBe(true)
 
-    b.dispose()
+    b.stop()
     advance(PEER_TIMEOUT_MS + HEARTBEAT_MS)
     expect(c.getStatus().boardConnected).toBe(false)
   })
@@ -177,7 +177,7 @@ describe('connection status', () => {
     b.start()
     expect(b.getStatus().connected).toBe(true)
 
-    c.dispose()
+    c.stop()
     advance(PEER_TIMEOUT_MS + HEARTBEAT_MS)
     expect(b.getStatus().connected).toBe(false)
     expect(b.getState()).toEqual({ score: 4 })
@@ -190,7 +190,7 @@ describe('connection status', () => {
     advance(PROBE_MS)
     const b = makeBoard('b1')
     b.start()
-    c1.dispose()
+    c1.stop()
     advance(PEER_TIMEOUT_MS + HEARTBEAT_MS)
     expect(b.getStatus().connected).toBe(false)
 
@@ -210,6 +210,31 @@ describe('connection status', () => {
     vi.setSystemTime(Date.now() + 86_400_000)
     advance(HEARTBEAT_MS)
     expect(c.getStatus().boardConnected).toBe(true)
+  })
+})
+
+describe('lifecycle', () => {
+  it('can restart after stop (StrictMode re-runs effects)', () => {
+    const { makeConsole, makeBoard } = setup()
+    const c = makeConsole('c1')
+    c.start()
+    c.stop()
+    c.start()
+    advance(PROBE_MS)
+    expect(c.getStatus().role).toBe('active')
+    const b = makeBoard('b1')
+    b.start()
+    expect(b.getState()).toEqual({ score: 0 })
+  })
+
+  it('runs as the active console with no transport', () => {
+    const c = new ConsoleLink<State, Notice>(() => null, {
+      getState: () => ({ score: 0 }),
+    })
+    c.start()
+    expect(c.getStatus().role).toBe('active')
+    expect(() => c.publish({ score: 1 })).not.toThrow()
+    c.stop()
   })
 })
 

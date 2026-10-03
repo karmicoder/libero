@@ -15,6 +15,14 @@ export function displayedSeconds(clock: Clock, now: number): number {
   return Math.floor(clockSeconds(clock, now))
 }
 
+/** `mm:ss`, with minutes running past 99 (e.g. `105:37`). */
+export function formatClock(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds))
+  const mm = String(Math.floor(s / 60)).padStart(2, '0')
+  const ss = String(s % 60).padStart(2, '0')
+  return `${mm}:${ss}`
+}
+
 export type ClockControl =
   | { kind: 'start' }
   | { kind: 'resume' }

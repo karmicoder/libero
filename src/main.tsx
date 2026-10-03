@@ -5,12 +5,14 @@ import '@fontsource/atkinson-hyperlegible/400.css'
 import '@fontsource/atkinson-hyperlegible/700.css'
 import '@fontsource/oxanium/500.css'
 import './styles/index.css'
+import { registerBuiltinConsoles } from './consoles/builtin'
 import { registerBuiltinEngines } from './engines/builtin'
 import { registerBuiltinSports } from './sports/builtin'
 import App from './App'
 
 registerBuiltinSports()
 registerBuiltinEngines()
+registerBuiltinConsoles()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

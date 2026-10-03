@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { defaultMatchConfig } from './config'
-import { clockControl, clockSeconds, displayedSeconds } from './clock'
+import {
+  clockControl,
+  clockSeconds,
+  displayedSeconds,
+  formatClock,
+} from './clock'
 import type { FootballState } from './state'
 
 const state = (patch: Partial<FootballState> = {}): FootballState => ({
@@ -15,6 +20,19 @@ const state = (patch: Partial<FootballState> = {}): FootballState => ({
   events: [],
   nextEventId: 1,
   ...patch,
+})
+
+describe('formatClock', () => {
+  it('pads to mm:ss and lets minutes run past 99', () => {
+    expect(formatClock(0)).toBe('00:00')
+    expect(formatClock(65)).toBe('01:05')
+    expect(formatClock(105 * 60 + 37)).toBe('105:37')
+  })
+
+  it('floors fractions and clamps negatives', () => {
+    expect(formatClock(59.9)).toBe('00:59')
+    expect(formatClock(-5)).toBe('00:00')
+  })
 })
 
 describe('clockSeconds', () => {

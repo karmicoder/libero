@@ -1,0 +1,114 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-inline-size: 0;
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+}
+
+.name {
+  inline-size: 100%;
+  min-block-size: var(--size-control);
+  padding-inline: var(--space-4);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  text-align: center;
+}
+
+.scoreRow {
+  display: grid;
+  grid-template-columns: var(--size-step) 1fr var(--size-step);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.score {
+  font-family: var(--font-display);
+  font-size: var(--text-score);
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.step {
+  block-size: var(--size-step);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  transition: background var(--duration-fast);
+}
+
+.step:hover:not(:disabled) {
+  background: var(--surface-tile-hover);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.action {
+  flex: 1;
+  min-block-size: var(--size-control);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-weight: 700;
+}
+
+.subs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.pips {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.pip,
+.pipLeft {
+  inline-size: var(--space-4);
+  block-size: var(--space-4);
+  border: var(--border-width) solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.pipLeft {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.sentOff {
+  margin: 0;
+  font-weight: 700;
+}
+
+.events {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-tile);
+}
+
+.empty {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+}

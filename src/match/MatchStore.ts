@@ -27,6 +27,16 @@ export class MatchStore<State, Action, Message> {
 
   getState = (): State => this.#state
 
+  /**
+   * Replaces the state wholesale, bypassing the reducer. For adopting state
+   * from elsewhere (e.g. the previous console's handover), not for game actions.
+   */
+  replaceState = (state: State): void => {
+    this.#state = state
+    this.#onChange?.(state)
+    this.#listeners.forEach((l) => l())
+  }
+
   dispatch = (action: Action): void => {
     const { state, messages } = this.#engine.reduce(this.#state, action)
     if (state !== this.#state) {

@@ -54,6 +54,17 @@ describe('MatchStore', () => {
     expect(onChange).toHaveBeenCalledTimes(2)
   })
 
+  it('replaces state wholesale, persisting and notifying', () => {
+    const onChange = vi.fn()
+    const store = new MatchStore(counter, { n: 0 }, onChange)
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.replaceState({ n: 42 })
+    expect(store.getState()).toEqual({ n: 42 })
+    expect(onChange).toHaveBeenCalledWith({ n: 42 })
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
   it('stops notifying after unsubscribe', () => {
     const store = new MatchStore(counter, { n: 0 })
     const listener = vi.fn()
