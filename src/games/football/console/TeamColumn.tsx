@@ -1,5 +1,6 @@
 import type { FootballAction, FootballState, TeamSide } from '../state'
-import { eventSummary, recentEvents, sentOffNumbers, subsUsed } from './events'
+import { subsUsed } from '../subs'
+import { eventSummary, recentEvents, sentOffNumbers } from './events'
 import styles from './TeamColumn.module.css'
 
 interface Props {
