@@ -23,6 +23,93 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // Engine/layout seam: rules (engine) and presentation (board, console) share
+  // only the neutral `state.ts` types. The console reaches the engine through
+  // `EngineRegistry` (src/engines), never the sport's engine directory.
+  // The patterns match import strings, so they cover relative imports only. If
+  // a path alias (e.g. `@/`) is ever added, extend them to match it.
+  {
+    files: ['src/games/*/engine/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/board', '**/board/**', '**/console', '**/console/**'],
+              message:
+                'Engines must not import scoreboard or console code. Share types via state.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/games/*/board/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/engine',
+                '**/engine/**',
+                '**/engines',
+                '**/engines/**',
+              ],
+              message:
+                'Scoreboards are view-only and never run the reducer. Import types from state.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/games/*/console/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/engine', '**/engine/**'],
+              message:
+                'Get the engine from EngineRegistry (src/engines) instead of importing it directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/games/*/state.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/engine',
+                '**/engine/**',
+                '**/engines',
+                '**/engines/**',
+                '**/board',
+                '**/board/**',
+                '**/console',
+                '**/console/**',
+              ],
+              message:
+                'state.ts is the neutral, types-only seam; it imports nothing from either side.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ['*.config.{ts,js}', 'e2e/**/*.ts'],
     languageOptions: {
