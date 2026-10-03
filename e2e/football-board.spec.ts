@@ -17,6 +17,20 @@ async function openConsoleAndBoard(context: BrowserContext, query = '') {
 const boardScore = (board: Page, side: 'Visitor' | 'Home') =>
   board.getByLabel(`${side} score`)
 
+const goalButton = (console_: Page, team: 'Visitor' | 'Home') =>
+  console_.getByRole('button', { name: `Goal for ${team}`, exact: true })
+
+/**
+ * Scores for a team and commits scorer 9 with no assist through the goal
+ * sheet, which is what announces the goal on the board.
+ */
+async function announceGoal(console_: Page, team: 'Visitor' | 'Home') {
+  await goalButton(console_, team).click()
+  await console_.getByRole('button', { name: '9', exact: true }).click()
+  await console_.getByRole('button', { name: 'Next ›' }).click()
+  await console_.getByRole('button', { name: 'No assist' }).click()
+}
+
 test('the board shows the console state and follows changes', async ({
   context,
 }) => {
@@ -50,27 +64,47 @@ test.describe('update banners', () => {
     const { console_, board } = await openConsoleAndBoard(context)
     await expect(banner(board)).toHaveCount(0)
 
-    await console_
-      .getByRole('button', { name: 'Goal for Home', exact: true })
-      .click()
+    await announceGoal(console_, 'Home')
     await expect(banner(board)).toHaveAttribute('data-team', 'home')
     await expect(banner(board).getByRole('img', { name: 'Goal' })).toBeVisible()
+    await expect(banner(board)).toContainText('9')
 
     // A newer notice replaces it, in the other team's corner.
-    await console_
-      .getByRole('button', { name: 'Goal for Visitor', exact: true })
-      .click()
+    await announceGoal(console_, 'Visitor')
     await expect(banner(board)).toHaveCount(1)
     await expect(banner(board)).toHaveAttribute('data-team', 'visitor')
+  })
+
+  test('the banner waits for the goal details, and skipping shows none', async ({
+    context,
+  }) => {
+    const { console_, board } = await openConsoleAndBoard(context)
+
+    // The score updates at once; the banner is held until details are given.
+    await goalButton(console_, 'Home').click()
+    await expect(boardScore(board, 'Home')).toHaveText('1')
+    await expect(banner(board)).toHaveCount(0)
+
+    await console_.getByRole('button', { name: 'Skip details' }).click()
+    // Absence needs a signal to wait on: a rename is sent after any notice the
+    // skip might have produced and the channel preserves order, so once the
+    // board shows the new name, that notice would already have arrived.
+    await console_
+      .getByRole('textbox', { name: 'Visitor team name' })
+      .fill('Rovers')
+    await expect(board.getByRole('heading', { name: 'Rovers' })).toBeVisible()
+    await expect(banner(board)).toHaveCount(0)
+
+    // (The visitor's buttons are now named after "Rovers", so use Home.)
+    await announceGoal(console_, 'Home')
+    await expect(banner(board)).toHaveAttribute('data-team', 'home')
   })
 
   test('a banner is not replayed when the board is reloaded', async ({
     context,
   }) => {
     const { console_, board } = await openConsoleAndBoard(context)
-    await console_
-      .getByRole('button', { name: 'Goal for Home', exact: true })
-      .click()
+    await announceGoal(console_, 'Home')
     await expect(banner(board)).toHaveCount(1)
 
     await board.reload()
@@ -87,9 +121,7 @@ test.describe('update banners', () => {
     ] as const) {
       const context = await browser.newContext({ reducedMotion })
       const { console_, board } = await openConsoleAndBoard(context)
-      await console_
-        .getByRole('button', { name: 'Goal for Home', exact: true })
-        .click()
+      await announceGoal(console_, 'Home')
       await expect(banner(board)).toHaveCSS('animation-name', expected)
       await context.close()
     }
@@ -103,8 +135,7 @@ test.describe('update banners', () => {
         context,
       }) => {
         const { console_, board } = await openConsoleAndBoard(context)
-        const goal = { name: 'Goal for Home', exact: true }
-        await console_.getByRole('button', goal).click()
+        await announceGoal(console_, 'Home')
         // Wait for the entry animation to finish so axe never samples mid-fade.
         await expect(banner(board)).toHaveCSS('opacity', '1')
         const results = await new AxeBuilder({ page: board }).analyze()
