@@ -1,8 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useMatchState } from '../../../match/useMatchState'
-import type { FootballAction, FootballMessage, FootballState } from '../state'
+import type {
+  FootballAction,
+  FootballMessage,
+  FootballState,
+  TeamSide,
+} from '../state'
 import { CentrePanel } from './CentrePanel'
 import styles from './FootballConsole.module.css'
 import { TeamColumn } from './TeamColumn'
@@ -36,6 +41,39 @@ export function FootballConsole({
 }: ConsoleProps<FootballState, FootballAction, FootballMessage>) {
   const state = useMatchState(store)
   const { dispatch } = store
+
+  // The goal sheet that is open, if any: the scoring team and its goal event.
+  // It closes by itself if that goal is removed in the meantime.
+  const [sheet, setSheet] = useState<{
+    side: TeamSide
+    eventId: string
+  } | null>(null)
+  const openSheet =
+    sheet && state.events.some((e) => e.id === sheet.eventId) ? sheet : null
+
+  /** Scores at once, held back from the board until details are committed. */
+  const addGoal = (side: TeamSide) => {
+    dispatch({ type: 'goal', team: side, announce: false, at: Date.now() })
+    const event = store.getState().events.at(-1)
+    if (event?.type === 'goal') setSheet({ side, eventId: event.id })
+  }
+
+  const goalSheetFor = (side: TeamSide) =>
+    openSheet?.side === side
+      ? {
+          onDone: (scorer?: number, assist?: number) => {
+            dispatch({
+              type: 'set-goal-details',
+              eventId: openSheet.eventId,
+              scorer,
+              assist,
+              at: Date.now(),
+            })
+            setSheet(null)
+          },
+          onSkip: () => setSheet(null),
+        }
+      : undefined
 
   useSpaceToggle(() => {
     const current = store.getState()
@@ -76,9 +114,21 @@ export function FootballConsole({
       </div>
 
       <div className={styles.columns}>
-        <TeamColumn side="visitor" state={state} dispatch={dispatch} />
+        <TeamColumn
+          side="visitor"
+          state={state}
+          dispatch={dispatch}
+          onGoal={addGoal}
+          goalSheet={goalSheetFor('visitor')}
+        />
         <CentrePanel state={state} dispatch={dispatch} />
-        <TeamColumn side="home" state={state} dispatch={dispatch} />
+        <TeamColumn
+          side="home"
+          state={state}
+          dispatch={dispatch}
+          onGoal={addGoal}
+          goalSheet={goalSheetFor('home')}
+        />
       </div>
     </div>
   )

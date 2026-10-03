@@ -25,7 +25,9 @@ test('the board shows the console state and follows changes', async ({
   await console_
     .getByRole('button', { name: 'Goal for Home', exact: true })
     .click()
+  // The goal counts at once; the board shows it before any details are given.
   await expect(boardScore(board, 'Home')).toHaveText('1')
+  await console_.getByRole('button', { name: 'Skip details' }).click()
 
   await console_.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(console_.getByText('Board connected')).toBeVisible()
@@ -54,6 +56,7 @@ test('the board freezes and flags a closed console', async ({ context }) => {
     .getByRole('button', { name: 'Goal for Visitor', exact: true })
     .click()
   await expect(boardScore(board, 'Visitor')).toHaveText('1')
+  await console_.getByRole('button', { name: 'Skip details' }).click()
 
   await console_.close()
   await expect(board.getByText('Disconnected from console')).toBeVisible({

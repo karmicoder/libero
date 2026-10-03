@@ -1,5 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 for (const colorScheme of ['dark', 'light'] as const) {
   test.describe(`console, ${colorScheme} scheme`, () => {
@@ -19,6 +19,7 @@ test('score a goal, run the clock, and resume after a reload', async ({
 }) => {
   await page.goto('/match/football')
   await page.getByRole('button', { name: 'Goal for Home', exact: true }).click()
+  await page.getByRole('button', { name: 'Skip details' }).click()
   await expect(page.getByLabel('Home score')).toHaveText('1')
 
   await page.getByRole('button', { name: 'Start', exact: true }).click()
@@ -32,6 +33,66 @@ test('score a goal, run the clock, and resume after a reload', async ({
   await expect(page.getByLabel('Home score')).toHaveText('1')
   // The clock kept running from its stored start time.
   await expect(page.getByText('Running')).toBeVisible()
+})
+
+test.describe('goal sheet', () => {
+  const plus = (page: Page) =>
+    page.getByRole('button', { name: 'Goal for Home', exact: true })
+
+  test('scorer and assist can be entered with the physical keyboard alone', async ({
+    page,
+  }) => {
+    await page.goto('/match/football')
+    await plus(page).focus()
+    await page.keyboard.press('Enter')
+
+    // The sheet takes focus, so typing goes straight into the scorer field.
+    const dialog = page.getByRole('dialog', { name: 'Step 1 of 2 · Scorer' })
+    await expect(dialog).toBeFocused()
+    await page.keyboard.type('9')
+    await page.keyboard.press('Enter')
+    await expect(
+      page.getByRole('dialog', { name: 'Step 2 of 2 · Assist' }),
+    ).toBeVisible()
+    await page.keyboard.type('10')
+    await page.keyboard.press('Enter')
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    // Focus is back on the button that opened the sheet.
+    await expect(plus(page)).toBeFocused()
+    await expect(page.getByLabel('Home score')).toHaveText('1')
+    await expect(page.getByText('0′ Goal #9 (A #10)')).toBeVisible()
+  })
+
+  test('Tab stays inside the sheet while it is open', async ({ page }) => {
+    await page.goto('/match/football')
+    await plus(page).click()
+    const dialog = page.getByRole('dialog')
+    for (let i = 0; i < 20; i++) {
+      await page.keyboard.press('Tab')
+      // Focus never lands on the covered column behind the sheet.
+      await expect(
+        page.getByRole('textbox', { name: 'Home team name' }),
+      ).not.toBeFocused()
+      await expect(dialog).toBeVisible()
+    }
+  })
+
+  for (const colorScheme of ['dark', 'light'] as const) {
+    test.describe(`${colorScheme} scheme`, () => {
+      test.use({ colorScheme })
+
+      test('has no detectable accessibility violations with the sheet open', async ({
+        page,
+      }) => {
+        await page.goto('/match/football')
+        await plus(page).click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        const results = await new AxeBuilder({ page }).analyze()
+        expect(results.violations).toEqual([])
+      })
+    })
+  }
 })
 
 test('a second console window is blocked until it takes over', async ({
