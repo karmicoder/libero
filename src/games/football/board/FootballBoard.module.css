@@ -1,0 +1,179 @@
+/*
+ * The board is a 16:9 stage scaled to the window and letterboxed. Every
+ * dimension is a multiple of --u, one unit of the 1280x720 design, so the
+ * layout depends only on the aspect ratio, never on pixel sizes.
+ */
+
+.viewport {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+.stage {
+  inline-size: min(100vw, 100dvh * 16 / 9);
+  aspect-ratio: 16 / 9;
+  container-type: inline-size;
+}
+
+.board {
+  --u: calc(100cqw / 1280);
+  --pad: calc(var(--u) * 40);
+  --stroke: calc(var(--u) * 3);
+  --centre-width: calc(var(--u) * 380);
+  --name-size: calc(var(--u) * 44);
+  --score-size: calc(var(--u) * 300);
+  --clock-size: calc(var(--u) * 100);
+  --period-size: calc(var(--u) * 34);
+  --pill-size: calc(var(--u) * 40);
+  --label-size: calc(var(--u) * 22);
+  --pip-size: calc(var(--u) * 22);
+  --slot-height: calc(var(--u) * 100);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr var(--centre-width) 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: var(--pad);
+  inline-size: 100%;
+  block-size: 100%;
+  padding: var(--pad) var(--pad) calc(var(--u) * 60);
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 12);
+  min-inline-size: 0;
+}
+
+.name {
+  max-inline-size: 100%;
+  overflow: hidden;
+  font-size: var(--name-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--score-size);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.subs {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 16);
+  margin: 0;
+}
+
+.subsLabel {
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pips {
+  display: flex;
+  gap: calc(var(--u) * 10);
+}
+
+.pip,
+.pipLeft {
+  inline-size: var(--pip-size);
+  block-size: var(--pip-size);
+  border: var(--stroke) solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.pipLeft {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 20);
+  text-align: center;
+}
+
+.clock {
+  font-family: var(--font-display);
+  font-size: var(--clock-size);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.period {
+  font-size: var(--period-size);
+  color: var(--text-tile);
+}
+
+.pill {
+  margin: 0;
+  padding: calc(var(--u) * 6) calc(var(--u) * 24);
+  border: var(--stroke) solid var(--text);
+  border-radius: calc(var(--u) * 40);
+  font-family: var(--font-display);
+  font-size: var(--pill-size);
+  font-weight: 500;
+}
+
+.slot,
+.slotEnd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-row: 2;
+  block-size: var(--slot-height);
+  border: var(--stroke) dotted var(--border-tile-hover);
+  border-radius: calc(var(--u) * 16);
+  font-size: var(--label-size);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.slot {
+  grid-column: 1;
+}
+
+.slotEnd {
+  grid-column: 3;
+}
+
+.wordmark {
+  position: absolute;
+  inset-inline-end: var(--pad);
+  inset-block-end: calc(var(--u) * 14);
+  margin: 0;
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.disconnected {
+  position: absolute;
+  inset-inline-end: var(--pad);
+  inset-block-start: calc(var(--u) * 14);
+  margin: 0;
+  font-size: var(--label-size);
+  color: var(--text-muted);
+}
