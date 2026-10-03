@@ -119,20 +119,31 @@ export type FootballAction =
   /** Clamped to 0-15; only applies in a play period with stoppage enabled. */
   | { type: 'set-stoppage'; minutes: number | null }
   | { type: 'set-team-name'; team: TeamSide; name: string }
-  /** Replaces the goal's scorer and assist; an omitted field is cleared. */
+  /**
+   * Replaces the goal's scorer and assist; an omitted field is cleared.
+   * Committing details announces the goal (a `goal-scored` notice), so "No
+   * assist" is this action with a scorer only.
+   */
   | {
       type: 'set-goal-details'
       eventId: string
       scorer?: number
       assist?: number
+      at: number
     }
   /** Removes the team's most recent goal (by log order) and its point. */
   | { type: 'remove-goal'; team: TeamSide }
+  /**
+   * Announces the goal immediately unless `announce` is false. The console
+   * passes false when it is about to ask for details, so the board shows one
+   * banner when they are committed (and none if the scorer skips them).
+   */
   | {
       type: 'goal'
       team: TeamSide
       scorer?: number
       assist?: number
+      announce?: boolean
       at: number
     }
   | {
@@ -158,9 +169,34 @@ export type FootballAction =
   | { type: 'undo' }
   | { type: 'update-config'; config: MatchConfig }
 
-/** Transient notices emitted by the reducer; drive scoreboard banners. */
+/** A run of players receiving the same kind of card in one notice. */
+export interface CardNoticeGroup {
+  /** `second` is a second yellow, which is also a red. */
+  kind: 'yellow' | 'red' | 'second'
+  numbers: number[]
+}
+
+interface NoticeBase {
+  /**
+   * Unique per notice (`<event id>@<action time>`), so a board can queue and
+   * dedupe banners. The same goal can be announced again when its details
+   * arrive, with a different `at`.
+   */
+  id: string
+  /** Epoch ms of the action that produced it. */
+  at: number
+  team: TeamSide
+  /** Match minute of the event: `floor(clockSeconds / 60)`. */
+  minute: number
+}
+
+/**
+ * Transient notices emitted by the reducer; drive scoreboard banners. They
+ * are never stored in state, and a notice changes nothing but the messages.
+ */
 export type FootballMessage =
-  | { type: 'goal-scored'; event: GoalEvent }
-  | { type: 'card-issued'; event: CardEvent }
-  | { type: 'second-yellow'; event: CardEvent }
-  | { type: 'substitution-made'; event: SubstitutionEvent }
+  /** Missing details show as an en dash on the board. */
+  | (NoticeBase & { type: 'goal-scored'; scorer?: number; assist?: number })
+  /** One per card action, grouped (e.g. a yellow and a second yellow together). */
+  | (NoticeBase & { type: 'card-issued'; groups: CardNoticeGroup[] })
+  | (NoticeBase & { type: 'substitution-made'; pairs: SubstitutionPair[] })
