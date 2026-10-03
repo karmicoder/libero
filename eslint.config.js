@@ -24,7 +24,8 @@ export default defineConfig([
     },
   },
   // Engine/layout seam: rules (engine) and presentation (board, console) share
-  // only the neutral `state.ts` types. The console reaches the engine through
+  // only the neutral top-level modules (`state.ts` types, pure helpers like
+  // `clock.ts`) that sit directly in `src/games/<sport>/`. The console reaches the engine through
   // `EngineRegistry` (src/engines), never the sport's engine directory.
   // The patterns match import strings, so they cover relative imports only. If
   // a path alias (e.g. `@/`) is ever added, extend them to match it.
@@ -85,7 +86,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/games/*/state.ts'],
+    files: ['src/games/*/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -103,7 +104,7 @@ export default defineConfig([
                 '**/console/**',
               ],
               message:
-                'state.ts is the neutral, types-only seam; it imports nothing from either side.',
+                'Top-level sport modules (state.ts, clock.ts, ...) are the neutral shared seam; they import nothing from either side.',
             },
           ],
         },
