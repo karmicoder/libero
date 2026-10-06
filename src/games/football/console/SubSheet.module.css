@@ -1,0 +1,161 @@
+/* Covers the column that opened it, sharing the column's grid cell. */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sheet:focus {
+  outline: none;
+}
+
+.title {
+  font-size: var(--text-lg);
+}
+
+.entryRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+}
+
+/* The radio is the control; the label is the visible field. */
+.field input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.field:has(:checked) {
+  border-color: var(--accent);
+  background: var(--surface-tile-hover);
+}
+
+.field:has(:focus-visible) {
+  outline: var(--border-width) solid var(--accent);
+  outline-offset: var(--border-width);
+}
+
+.value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.step {
+  min-block-size: var(--size-touch);
+  padding-inline: var(--space-4);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-weight: 700;
+}
+
+.hint {
+  margin: 0;
+  min-block-size: 1lh;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-align: center;
+}
+
+.warning {
+  margin: 0;
+  color: var(--card-red);
+  font-weight: 700;
+  text-align: center;
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.pairs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pair {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  font-weight: 700;
+}
+
+.removePair {
+  min-inline-size: var(--size-touch);
+  min-block-size: var(--size-touch);
+  border: 0;
+  background: transparent;
+  font-size: var(--text-lg);
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.key {
+  min-block-size: var(--size-step);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  transition: background var(--duration-fast);
+}
+
+.key:hover {
+  background: var(--surface-tile-hover);
+}
+
+.confirm {
+  min-block-size: var(--size-step);
+  padding-inline: var(--space-2);
+}
+
+.cancel {
+  min-block-size: var(--size-touch);
+  border: 0;
+  background: transparent;
+  font-weight: 700;
+  text-decoration: underline;
+}
