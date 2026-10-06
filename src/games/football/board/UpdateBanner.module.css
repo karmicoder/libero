@@ -60,9 +60,18 @@
     transform: translateY(calc(var(--travel) * -1));
     clip-path: inset(var(--travel) 0 0 0);
   }
+  /* Explicit, because inset() to the implied \`none\` flips at the midpoint. */
+  to {
+    transform: none;
+    clip-path: inset(0);
+  }
 }
 
 @keyframes slide-out {
+  from {
+    transform: none;
+    clip-path: inset(0);
+  }
   to {
     transform: translateY(calc(var(--travel) * -1));
     clip-path: inset(var(--travel) 0 0 0);
