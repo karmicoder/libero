@@ -101,7 +101,7 @@ test.describe('goal sheet', () => {
       await page.keyboard.press('Tab')
       // Focus never lands on the covered column behind the sheet.
       await expect(
-        page.getByRole('textbox', { name: 'Home team name' }),
+        page.locator('input[aria-label="Home team name"]'),
       ).not.toBeFocused()
       await expect(dialog).toBeVisible()
     }
