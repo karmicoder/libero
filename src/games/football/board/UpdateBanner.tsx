@@ -54,14 +54,19 @@ function Content({ notice }: { notice: FootballMessage }) {
       const more = notice.pairs.length - shown.length
       return (
         <>
-          {shown.map((p, i) => (
-            <span key={i} className={styles.group}>
-              <SubIcon direction="off" />
-              <span>{p.off ?? '–'}</span>
-              <SubIcon direction="on" />
-              <span>{p.on ?? '–'}</span>
-            </span>
-          ))}
+          {/* Several pairs stack, one per row, so they fit the banner. */}
+          <span
+            className={shown.length > 1 ? styles.pairsStacked : styles.pairs}
+          >
+            {shown.map((p, i) => (
+              <span key={i} className={styles.group}>
+                <SubIcon direction="off" />
+                <span>{p.off ?? '–'}</span>
+                <SubIcon direction="on" />
+                <span>{p.on ?? '–'}</span>
+              </span>
+            ))}
+          </span>
           {more > 0 && <span className={styles.more}>+{more}</span>}
         </>
       )

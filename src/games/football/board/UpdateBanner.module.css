@@ -127,6 +127,24 @@
   white-space: nowrap;
 }
 
+/* One pair sits in a row; several stack, shrunk so three rows fit the banner. */
+.pairs,
+.pairsStacked {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 28);
+}
+
+.pairsStacked {
+  --icon-size: calc(var(--u) * 22);
+
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--u) * 4);
+  font-size: calc(var(--u) * 24);
+  line-height: 1;
+}
+
 .assist {
   color: var(--text-tile);
 }
