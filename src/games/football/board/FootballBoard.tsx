@@ -6,6 +6,7 @@ import { findPeriod } from '../config'
 import type { FootballMessage, FootballState, TeamSide } from '../state'
 import { subLimit } from '../subs'
 import styles from './FootballBoard.module.css'
+import { followUpNotice } from './followUp'
 import { UpdateBanner } from './UpdateBanner'
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -52,7 +53,7 @@ export function FootballBoard({
   connected,
   subscribeNotices,
 }: BoardProps<FootballState, FootballMessage>) {
-  const banner = useBanner(subscribeNotices)
+  const banner = useBanner(subscribeNotices, followUpNotice)
   const running = state.clock.runningSince !== null
   const now = useNow(running)
   const period = findPeriod(state.config, state.periodId)

@@ -5,11 +5,9 @@ import {
   BANNER_EXIT_MS,
 } from '../../../boards/banner'
 import type { FootballMessage } from '../state'
+import { MAX_PAIRS_SHOWN } from './followUp'
 import { BallIcon, CardIcon, SubIcon } from './icons'
 import styles from './UpdateBanner.module.css'
-
-/** At most this many substitution pairs are spelled out; the rest are counted. */
-const MAX_PAIRS_SHOWN = 3
 
 const timing = {
   '--enter-delay': `${BANNER_ENTER_DELAY_MS}ms`,
@@ -51,7 +49,6 @@ function Content({ notice }: { notice: FootballMessage }) {
       )
     case 'substitution-made': {
       const shown = notice.pairs.slice(0, MAX_PAIRS_SHOWN)
-      const more = notice.pairs.length - shown.length
       return (
         <>
           {/* Several pairs stack, one per row, so they fit the banner. */}
@@ -67,7 +64,6 @@ function Content({ notice }: { notice: FootballMessage }) {
               </span>
             ))}
           </span>
-          {more > 0 && <span className={styles.more}>+{more}</span>}
         </>
       )
     }

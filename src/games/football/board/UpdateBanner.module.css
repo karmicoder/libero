@@ -149,10 +149,6 @@
   color: var(--text-tile);
 }
 
-.more {
-  color: var(--text-muted);
-}
-
 .icon,
 .card,
 .subOff,
