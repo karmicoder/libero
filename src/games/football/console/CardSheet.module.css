@@ -1,15 +1,8 @@
-/* Covers the column that opened it; the column is its positioning context. */
+/* Covers the column that opened it, sharing the column's grid cell. */
 .sheet {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-6);
-  border-radius: var(--radius-tile);
-  background: var(--surface-tile);
-  overflow-y: auto;
 }
 
 .sheet:focus {
