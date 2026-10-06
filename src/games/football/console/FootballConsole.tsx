@@ -3,14 +3,18 @@ import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useMatchState } from '../../../match/useMatchState'
 import type {
+  CardColor,
   FootballAction,
   FootballMessage,
   FootballState,
   TeamSide,
 } from '../state'
+import { cardToast } from './cardToast'
 import { CentrePanel } from './CentrePanel'
 import styles from './FootballConsole.module.css'
 import { TeamColumn } from './TeamColumn'
+
+const TOAST_MS = 3000
 
 /** Space toggles the clock, unless focus is somewhere it already means something. */
 function useSpaceToggle(onToggle: () => void) {
@@ -42,6 +46,9 @@ export function FootballConsole({
   const state = useMatchState(store)
   const { dispatch } = store
 
+  // Which team's column the card sheet covers, if open.
+  const [cardSide, setCardSide] = useState<TeamSide | null>(null)
+
   // The goal sheet that is open, if any: the scoring team and its goal event.
   // It closes by itself if that goal is removed in the meantime.
   const [sheet, setSheet] = useState<{
@@ -53,6 +60,7 @@ export function FootballConsole({
 
   /** Scores at once, held back from the board until details are committed. */
   const addGoal = (side: TeamSide) => {
+    setCardSide(null)
     dispatch({ type: 'goal', team: side, announce: false, at: Date.now() })
     const event = store.getState().events.at(-1)
     if (event?.type === 'goal') setSheet({ side, eventId: event.id })
@@ -72,6 +80,33 @@ export function FootballConsole({
             setSheet(null)
           },
           onSkip: () => setSheet(null),
+        }
+      : undefined
+
+  const [toast, setToast] = useState<string | null>(null)
+  useEffect(() => {
+    if (toast === null) return
+    const timer = setTimeout(() => setToast(null), TOAST_MS)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  // One sheet at a time: opening a card sheet drops an open goal sheet.
+  const openCardSheet = (side: TeamSide) => {
+    setSheet(null)
+    setCardSide(side)
+  }
+
+  const cardSheetFor = (side: TeamSide) =>
+    cardSide === side
+      ? {
+          onConfirm: (color: CardColor, team: TeamSide, numbers: number[]) => {
+            const before = store.getState().events.length
+            dispatch({ type: 'card', team, color, numbers, at: Date.now() })
+            const message = cardToast(store.getState().events.slice(before))
+            if (message) setToast(message)
+            setCardSide(null)
+          },
+          onCancel: () => setCardSide(null),
         }
       : undefined
 
@@ -120,14 +155,23 @@ export function FootballConsole({
           dispatch={dispatch}
           onGoal={addGoal}
           goalSheet={goalSheetFor('visitor')}
+          onCard={openCardSheet}
+          cardSheet={cardSheetFor('visitor')}
         />
-        <CentrePanel state={state} dispatch={dispatch} />
+        <CentrePanel
+          state={state}
+          dispatch={dispatch}
+          toast={toast}
+          onToast={setToast}
+        />
         <TeamColumn
           side="home"
           state={state}
           dispatch={dispatch}
           onGoal={addGoal}
           goalSheet={goalSheetFor('home')}
+          onCard={openCardSheet}
+          cardSheet={cardSheetFor('home')}
         />
       </div>
     </div>

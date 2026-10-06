@@ -1,11 +1,20 @@
 .column {
-  /* Positioning context for the goal sheet that covers it. */
-  position: relative;
+  /* Content and any open sheet share one cell, so the column is as tall as
+     the taller of the two and a sheet is never clipped. */
+  display: grid;
   min-inline-size: 0;
   padding: var(--space-6);
   border: var(--border-width) solid var(--border-tile);
   border-radius: var(--radius-tile);
   background: var(--surface-tile);
+}
+
+.column > * {
+  grid-area: 1 / 1;
+}
+
+.content[inert] {
+  visibility: hidden;
 }
 
 .content {

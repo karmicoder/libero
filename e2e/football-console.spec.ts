@@ -101,7 +101,7 @@ test.describe('goal sheet', () => {
       await page.keyboard.press('Tab')
       // Focus never lands on the covered column behind the sheet.
       await expect(
-        page.getByRole('textbox', { name: 'Home team name' }),
+        page.locator('input[aria-label="Home team name"]'),
       ).not.toBeFocused()
       await expect(dialog).toBeVisible()
     }
@@ -135,6 +135,27 @@ test.describe('set-clock sheet', () => {
         await page.goto('/match/football')
         await page.getByRole('button', { name: 'Set clock' }).click()
         await expect(page.getByRole('dialog')).toBeVisible()
+        const results = await new AxeBuilder({ page }).analyze()
+        expect(results.violations).toEqual([])
+      })
+    })
+  }
+})
+
+test.describe('card sheet', () => {
+  for (const colorScheme of ['dark', 'light'] as const) {
+    test.describe(`${colorScheme} scheme`, () => {
+      test.use({ colorScheme })
+
+      test('has no detectable accessibility violations when open, with a queued number', async ({
+        page,
+      }) => {
+        await page.goto('/match/football')
+        await page.getByRole('button', { name: 'Card' }).first().click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        await page.keyboard.type('7')
+        await page.keyboard.press('Enter')
+        await expect(page.getByText('#7')).toBeVisible()
         const results = await new AxeBuilder({ page }).analyze()
         expect(results.violations).toEqual([])
       })

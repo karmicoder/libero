@@ -7,14 +7,15 @@ import styles from './CentrePanel.module.css'
 import { ClockSheet } from './ClockSheet'
 import { clockPresets } from './clockEntry'
 
-const TOAST_MS = 3000
-
 interface Props {
   state: FootballState
   dispatch: (action: FootballAction) => void
+  /** Transient confirmation text, owned by the console. */
+  toast: string | null
+  onToast: (message: string) => void
 }
 
-export function CentrePanel({ state, dispatch }: Props) {
+export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
   const running = state.clock.runningSince !== null
   const now = useNow(running)
   const period = findPeriod(state.config, state.periodId)
@@ -39,12 +40,6 @@ export function CentrePanel({ state, dispatch }: Props) {
   }[control.kind]
 
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => {
-    if (toast === null) return
-    const timer = setTimeout(() => setToast(null), TOAST_MS)
-    return () => clearTimeout(timer)
-  }, [toast])
 
   // When the sheet closes, focus goes back to the button that opened it.
   const setClockButton = useRef<HTMLButtonElement>(null)
@@ -58,7 +53,7 @@ export function CentrePanel({ state, dispatch }: Props) {
     setSheetOpen(false)
     if (!time) return
     dispatch({ type: 'set-clock', ...time, at: Date.now() })
-    setToast(`Clock set to ${formatClock(time.minutes * 60 + time.seconds)}`)
+    onToast(`Clock set to ${formatClock(time.minutes * 60 + time.seconds)}`)
   }
 
   const setStoppage = (minutes: number) =>

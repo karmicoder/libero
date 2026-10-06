@@ -1,8 +1,14 @@
 import { useEffect, useRef } from 'react'
-import type { FootballAction, FootballState, TeamSide } from '../state'
+import type {
+  CardColor,
+  FootballAction,
+  FootballState,
+  TeamSide,
+} from '../state'
 import { sentOffNumbers } from '../cards'
 import { subLimit } from '../subs'
 import { eventSummary, recentEvents } from './events'
+import { CardSheet } from './CardSheet'
 import { GoalSheet } from './GoalSheet'
 import styles from './TeamColumn.module.css'
 
@@ -17,6 +23,13 @@ interface Props {
     onDone: (scorer?: number, assist?: number) => void
     onSkip: () => void
   }
+  /** Called when Card is pressed; the console then opens the card sheet. */
+  onCard: (side: TeamSide) => void
+  /** Present while this team's card sheet is open. */
+  cardSheet?: {
+    onConfirm: (color: CardColor, team: TeamSide, numbers: number[]) => void
+    onCancel: () => void
+  }
 }
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -30,6 +43,8 @@ export function TeamColumn({
   dispatch,
   onGoal,
   goalSheet,
+  onCard,
+  cardSheet,
 }: Props) {
   const team = state.teams[side]
   const label = SIDE_LABEL[side]
@@ -45,12 +60,20 @@ export function TeamColumn({
 
   // When the sheet closes, focus goes back to the button that opened it.
   const goalButton = useRef<HTMLButtonElement>(null)
-  const sheetWasOpen = useRef(false)
-  const sheetOpen = goalSheet !== undefined
+  const cardButton = useRef<HTMLButtonElement>(null)
+  const goalWasOpen = useRef(false)
+  const cardWasOpen = useRef(false)
+  const goalOpen = goalSheet !== undefined
+  const cardOpen = cardSheet !== undefined
+  const sheetOpen = goalOpen || cardOpen
   useEffect(() => {
-    if (sheetWasOpen.current && !sheetOpen) goalButton.current?.focus()
-    sheetWasOpen.current = sheetOpen
-  }, [sheetOpen])
+    if (goalWasOpen.current && !goalOpen) goalButton.current?.focus()
+    goalWasOpen.current = goalOpen
+  }, [goalOpen])
+  useEffect(() => {
+    if (cardWasOpen.current && !cardOpen) cardButton.current?.focus()
+    cardWasOpen.current = cardOpen
+  }, [cardOpen])
 
   return (
     <section className={styles.column} aria-label={`${label} team`}>
@@ -100,7 +123,12 @@ export function TeamColumn({
         </div>
 
         <div className={styles.actions}>
-          <button type="button" className={styles.action} disabled>
+          <button
+            ref={cardButton}
+            type="button"
+            className={styles.action}
+            onClick={() => onCard(side)}
+          >
             Card
           </button>
           {substitutions.enabled && (
@@ -153,6 +181,19 @@ export function TeamColumn({
           teamName={name}
           onDone={goalSheet.onDone}
           onSkip={goalSheet.onSkip}
+        />
+      )}
+
+      {cardSheet && (
+        <CardSheet
+          initialTeam={side}
+          teamNames={{
+            visitor: state.teams.visitor.name || SIDE_LABEL.visitor,
+            home: state.teams.home.name || SIDE_LABEL.home,
+          }}
+          events={state.events}
+          onConfirm={cardSheet.onConfirm}
+          onCancel={cardSheet.onCancel}
         />
       )}
     </section>

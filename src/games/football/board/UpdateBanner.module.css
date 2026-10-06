@@ -9,7 +9,8 @@
   --banner-size: calc(var(--u) * 44);
   --minute-size: calc(var(--u) * 32);
   --icon-size: calc(var(--u) * 48);
-  --travel: calc(var(--u) * 140);
+  /* Its own height: it starts fully tucked in under the score section. */
+  --travel: var(--banner-height);
 
   grid-row: 2;
   align-self: stretch;
@@ -49,17 +50,31 @@
   animation: slide-out var(--exit-ms) var(--ease-out) forwards;
 }
 
+/*
+ * Slides down from the top edge of its slot, as if emerging from under the
+ * score section above. The clip keeps the part above that edge hidden while
+ * the transform moves it: it is inset by exactly the distance still to travel.
+ */
 @keyframes slide-in {
   from {
-    transform: translateY(var(--travel));
-    opacity: 0;
+    transform: translateY(calc(var(--travel) * -1));
+    clip-path: inset(var(--travel) 0 0 0);
+  }
+  /* Explicit, because inset() to the implied \`none\` flips at the midpoint. */
+  to {
+    transform: none;
+    clip-path: inset(0);
   }
 }
 
 @keyframes slide-out {
+  from {
+    transform: none;
+    clip-path: inset(0);
+  }
   to {
-    transform: translateY(var(--travel));
-    opacity: 0;
+    transform: translateY(calc(var(--travel) * -1));
+    clip-path: inset(var(--travel) 0 0 0);
   }
 }
 

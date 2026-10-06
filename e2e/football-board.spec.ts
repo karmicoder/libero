@@ -136,8 +136,14 @@ test.describe('update banners', () => {
       }) => {
         const { console_, board } = await openConsoleAndBoard(context)
         await announceGoal(console_, 'Home')
-        // Wait for the entry animation to finish so axe never samples mid-fade.
-        await expect(banner(board)).toHaveCSS('opacity', '1')
+        // Wait for the entry animation to finish so axe never samples mid-slide.
+        await banner(board).evaluate((el) =>
+          Promise.all(
+            el
+              .getAnimations()
+              .map((a: { finished: Promise<unknown> }) => a.finished),
+          ),
+        )
         const results = await new AxeBuilder({ page: board }).analyze()
         expect(results.violations).toEqual([])
       })
