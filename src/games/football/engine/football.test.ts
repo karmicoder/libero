@@ -613,7 +613,7 @@ describe('substitution', () => {
         pairs: [{ off: 3, on: 12 }],
       },
     ])
-    expect(s.subsRemaining).toEqual({ visitor: 3, home: 2 })
+    expect(s.subsRemaining).toEqual({ visitor: 5, home: 4 })
   })
 
   it('records several pairs as one event using one sub each', () => {
@@ -633,13 +633,13 @@ describe('substitution', () => {
         { off: 3, on: 15 },
       ],
     })
-    expect(s.subsRemaining.visitor).toBe(0)
+    expect(s.subsRemaining.visitor).toBe(2)
   })
 
   it('allows pairs without numbers', () => {
     const s = run(fresh(), subs('home', [{}]))
     expect(s.events[0]).toMatchObject({ pairs: [{}] })
-    expect(s.subsRemaining.home).toBe(2)
+    expect(s.subsRemaining.home).toBe(4)
   })
 
   it('drops invalid numbers but keeps the pair', () => {
@@ -653,7 +653,11 @@ describe('substitution', () => {
   })
 
   it('allows going over the limit, clamping remaining at 0', () => {
-    const s = run(fresh(), subs('home', [{}, {}]), subs('home', [{}, {}]))
+    const s = run(
+      fresh(),
+      subs('home', [{}, {}, {}]),
+      subs('home', [{}, {}, {}]),
+    )
     expect(s.subsRemaining.home).toBe(0)
     expect(s.events).toHaveLength(2)
     expect(subsOverLimit(s, 'home')).toBe(true)
@@ -683,7 +687,7 @@ describe('substitution', () => {
 
 describe('subsRemaining resets', () => {
   it('starts at the configured limit for both teams', () => {
-    expect(fresh().subsRemaining).toEqual({ visitor: 3, home: 3 })
+    expect(fresh().subsRemaining).toEqual({ visitor: 5, home: 5 })
   })
 
   it('resets on entering a play period', () => {
@@ -692,7 +696,7 @@ describe('subsRemaining resets', () => {
       periodId: 'h2',
       at: T0,
     })
-    expect(s.subsRemaining).toEqual({ visitor: 3, home: 3 })
+    expect(s.subsRemaining).toEqual({ visitor: 5, home: 5 })
   })
 
   it('resets when a break starts the next play period', () => {
@@ -703,7 +707,7 @@ describe('subsRemaining resets', () => {
       { type: 'start-clock', at: T0 },
     )
     expect(s.periodId).toBe('h2')
-    expect(s.subsRemaining.home).toBe(3)
+    expect(s.subsRemaining.home).toBe(5)
   })
 
   it('does not reset on a break or a shootout', () => {
@@ -712,13 +716,13 @@ describe('subsRemaining resets', () => {
       periodId: 'ht',
       at: T0,
     })
-    expect(afterBreak.subsRemaining.home).toBe(2)
+    expect(afterBreak.subsRemaining.home).toBe(4)
     const afterPens = run(fresh(), subs('home', [{}]), {
       type: 'set-period',
       periodId: 'pen',
       at: T0,
     })
-    expect(afterPens.subsRemaining.home).toBe(2)
+    expect(afterPens.subsRemaining.home).toBe(4)
   })
 
   it('uses 0 when there is no limit', () => {
@@ -742,7 +746,7 @@ describe('set-subs-remaining', () => {
 
   it('sets one team’s pips', () => {
     const s = run(fresh(), set('home', 1))
-    expect(s.subsRemaining).toEqual({ visitor: 3, home: 1 })
+    expect(s.subsRemaining).toEqual({ visitor: 5, home: 1 })
   })
 
   it('clamps to 0 and to 5 (or the limit if larger), flooring fractions', () => {

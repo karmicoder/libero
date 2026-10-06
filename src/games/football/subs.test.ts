@@ -35,7 +35,7 @@ const stateWith = (
 
 describe('subLimit / maxSubsRemaining', () => {
   it('is the per-period limit when enabled', () => {
-    expect(subLimit(defaultMatchConfig())).toBe(3)
+    expect(subLimit(defaultMatchConfig())).toBe(5)
   })
 
   it('is undefined when disabled or unlimited', () => {
@@ -87,8 +87,8 @@ describe('subsMade', () => {
 
 describe('subsOverLimit', () => {
   it('is false at the limit and true beyond it', () => {
-    expect(subsOverLimit(stateWith([sub('home', 3)]), 'home')).toBe(false)
-    expect(subsOverLimit(stateWith([sub('home', 4)]), 'home')).toBe(true)
+    expect(subsOverLimit(stateWith([sub('home', 5)]), 'home')).toBe(false)
+    expect(subsOverLimit(stateWith([sub('home', 6)]), 'home')).toBe(true)
   })
 
   it('looks at one team and the current period only', () => {
