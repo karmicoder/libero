@@ -50,6 +50,33 @@
   animation: slide-out var(--exit-ms) var(--ease-out) forwards;
 }
 
+/* A follow-up turns the card edge-on, then back face-on with the new page. */
+.flipOut {
+  animation: flip-out var(--flip-ms) ease-in forwards;
+}
+
+.flipIn {
+  animation: flip-in var(--flip-ms) ease-out;
+}
+
+@keyframes flip-out {
+  from {
+    transform: perspective(calc(var(--u) * 1200)) rotateY(0);
+  }
+  to {
+    transform: perspective(calc(var(--u) * 1200)) rotateY(90deg);
+  }
+}
+
+@keyframes flip-in {
+  from {
+    transform: perspective(calc(var(--u) * 1200)) rotateY(-90deg);
+  }
+  to {
+    transform: perspective(calc(var(--u) * 1200)) rotateY(0);
+  }
+}
+
 /*
  * Slides down from the top edge of its slot, as if emerging from under the
  * score section above. The clip keeps the part above that edge hidden while
@@ -98,6 +125,14 @@
 
   .out {
     animation-name: fade-out;
+  }
+
+  .flipOut {
+    animation-name: fade-out;
+  }
+
+  .flipIn {
+    animation-name: fade-in;
   }
 }
 

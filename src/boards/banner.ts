@@ -14,6 +14,9 @@ export const BANNER_EXIT_MS = 560
  */
 export const BANNER_FOLLOW_UP_MS = 4_500
 
+/** The card flips to the follow-up: each half is a turn to or from edge-on. */
+export const BANNER_FLIP_HALF_MS = 240
+
 /** From a notice arriving to the banner starting to leave. */
 export const BANNER_VISIBLE_MS =
   BANNER_ENTER_DELAY_MS + BANNER_ENTER_MS + BANNER_HOLD_MS

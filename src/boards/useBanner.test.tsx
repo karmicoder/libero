@@ -4,6 +4,7 @@ import {
   BANNER_ENTER_DELAY_MS,
   BANNER_ENTER_MS,
   BANNER_EXIT_MS,
+  BANNER_FLIP_HALF_MS,
   BANNER_FOLLOW_UP_MS,
   BANNER_HOLD_MS,
   BANNER_VISIBLE_MS,
@@ -40,7 +41,7 @@ describe('useBanner', () => {
     const { result } = renderHook(() => useBanner(f.subscribe))
 
     f.push({ id: 1 })
-    expect(result.current).toEqual({ notice: { id: 1 }, phase: 'in' })
+    expect(result.current).toMatchObject({ notice: { id: 1 }, phase: 'in' })
 
     // Still on show just before the hold ends.
     act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS - 1))
@@ -69,11 +70,11 @@ describe('useBanner', () => {
     f.push({ id: 1 })
     act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS - 100))
     f.push({ id: 2 })
-    expect(result.current).toEqual({ notice: { id: 2 }, phase: 'in' })
+    expect(result.current).toMatchObject({ notice: { id: 2 }, phase: 'in' })
 
     // The first notice's timer would have fired by now; it must not.
     act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS - 1))
-    expect(result.current).toEqual({ notice: { id: 2 }, phase: 'in' })
+    expect(result.current).toMatchObject({ notice: { id: 2 }, phase: 'in' })
     act(() => void vi.advanceTimersByTime(1))
     expect(result.current?.phase).toBe('out')
   })
@@ -86,7 +87,7 @@ describe('useBanner', () => {
     expect(result.current?.phase).toBe('out')
 
     f.push({ id: 2 })
-    expect(result.current).toEqual({ notice: { id: 2 }, phase: 'in' })
+    expect(result.current).toMatchObject({ notice: { id: 2 }, phase: 'in' })
     // The old exit timer must not remove the new banner.
     act(() => void vi.advanceTimersByTime(BANNER_EXIT_MS))
     expect(result.current?.notice).toEqual({ id: 2 })
@@ -103,15 +104,38 @@ describe('useBanner', () => {
       const { result } = renderHook(() => useBanner(f.subscribe, followUp))
 
       f.push({ id: 10 })
+      const card = result.current?.key
       act(() => void vi.advanceTimersByTime(BANNER_FOLLOW_UP_MS - 1))
-      expect(result.current).toEqual({ notice: { id: 10 }, phase: 'in' })
+      // Turning edge-on, still the first page.
+      expect(result.current).toMatchObject({ notice: { id: 10 }, flip: 'out' })
       act(() => void vi.advanceTimersByTime(1))
-      expect(result.current).toEqual({ notice: { id: 11 }, phase: 'in' })
+      // The same card, now showing the follow-up.
+      expect(result.current).toMatchObject({
+        notice: { id: 11 },
+        phase: 'in',
+        flip: 'in',
+        key: card,
+      })
 
       act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS))
       expect(result.current?.phase).toBe('out')
       act(() => void vi.advanceTimersByTime(BANNER_EXIT_MS))
       expect(result.current).toBeNull()
+    })
+
+    it('starts the flip a half-turn before the swap', () => {
+      const f = feed()
+      const { result } = renderHook(() => useBanner(f.subscribe, followUp))
+      f.push({ id: 10 })
+      act(
+        () =>
+          void vi.advanceTimersByTime(
+            BANNER_FOLLOW_UP_MS - BANNER_FLIP_HALF_MS - 1,
+          ),
+      )
+      expect(result.current?.flip).toBeUndefined()
+      act(() => void vi.advanceTimersByTime(1))
+      expect(result.current?.flip).toBe('out')
     })
 
     it('is cancelled by a newer notice', () => {
@@ -120,8 +144,9 @@ describe('useBanner', () => {
       f.push({ id: 10 })
       act(() => void vi.advanceTimersByTime(BANNER_FOLLOW_UP_MS - 100))
       f.push({ id: 1 })
-      act(() => void vi.advanceTimersByTime(200))
+      act(() => void vi.advanceTimersByTime(BANNER_FOLLOW_UP_MS))
       expect(result.current?.notice).toEqual({ id: 1 })
+      expect(result.current?.flip).toBeUndefined()
     })
   })
 

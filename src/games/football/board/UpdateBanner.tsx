@@ -3,16 +3,20 @@ import {
   BANNER_ENTER_DELAY_MS,
   BANNER_ENTER_MS,
   BANNER_EXIT_MS,
+  BANNER_FLIP_HALF_MS,
 } from '../../../boards/banner'
 import type { FootballMessage } from '../state'
 import { MAX_PAIRS_SHOWN } from './followUp'
 import { BallIcon, CardIcon, SubIcon } from './icons'
 import styles from './UpdateBanner.module.css'
 
+const flipClass = { out: 'flipOut', in: 'flipIn' } as const
+
 const timing = {
   '--enter-delay': `${BANNER_ENTER_DELAY_MS}ms`,
   '--enter-ms': `${BANNER_ENTER_MS}ms`,
   '--exit-ms': `${BANNER_EXIT_MS}ms`,
+  '--flip-ms': `${BANNER_FLIP_HALF_MS}ms`,
 } as CSSProperties
 
 function Content({ notice }: { notice: FootballMessage }) {
@@ -78,16 +82,23 @@ function Content({ notice }: { notice: FootballMessage }) {
 export function UpdateBanner({
   notice,
   phase,
+  flip,
 }: {
   notice: FootballMessage
   phase: 'in' | 'out'
+  /** A follow-up flipping in or out: the card turns about its vertical axis. */
+  flip?: 'out' | 'in'
 }) {
   return (
     <div
       className={[
         styles.banner,
         notice.team === 'visitor' ? styles.visitor : styles.home,
-        phase === 'in' ? styles.in : styles.out,
+        phase === 'out'
+          ? styles.out
+          : flip
+            ? styles[flipClass[flip]]
+            : styles.in,
       ].join(' ')}
       style={timing}
       role="status"

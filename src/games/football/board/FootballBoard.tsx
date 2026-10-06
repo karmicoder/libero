@@ -100,9 +100,10 @@ export function FootballBoard({
           </div>
           {banner && (
             <UpdateBanner
-              key={banner.notice.id}
+              key={banner.key}
               notice={banner.notice}
               phase={banner.phase}
+              flip={banner.flip}
             />
           )}
           <p className={styles.wordmark}>Libero</p>
