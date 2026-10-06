@@ -138,7 +138,11 @@ test.describe('update banners', () => {
         await announceGoal(console_, 'Home')
         // Wait for the entry animation to finish so axe never samples mid-slide.
         await banner(board).evaluate((el) =>
-          Promise.all(el.getAnimations().map((a) => a.finished)),
+          Promise.all(
+            el
+              .getAnimations()
+              .map((a: { finished: Promise<unknown> }) => a.finished),
+          ),
         )
         const results = await new AxeBuilder({ page: board }).analyze()
         expect(results.violations).toEqual([])
