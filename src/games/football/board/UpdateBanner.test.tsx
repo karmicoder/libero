@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { FootballMessage } from '../state'
+import { followUpNotice } from './followUp'
 import { UpdateBanner } from './UpdateBanner'
 
 const base = { id: 'e1@0', at: 0, team: 'home' as const, minute: 78 }
@@ -129,16 +130,32 @@ describe('UpdateBanner', () => {
       expect(banner).not.toHaveTextContent('+')
     })
 
-    it('counts pairs beyond three', () => {
-      const banner = renderBanner({
+    it('shows only the first three pairs; the rest come in a follow-up', () => {
+      const notice: FootballMessage = {
         ...base,
         type: 'substitution-made',
-        pairs: [{}, {}, {}, {}, {}],
-      })
+        pairs: [{ off: 1 }, { off: 2 }, { off: 3 }, { off: 4 }, { off: 5 }],
+      }
+      const banner = renderBanner(notice)
       expect(within(banner).getAllByRole('img', { name: 'Off' })).toHaveLength(
         3,
       )
-      expect(banner).toHaveTextContent('+2')
+      expect(banner).not.toHaveTextContent('+')
+      expect(followUpNotice(notice)).toMatchObject({
+        id: `${notice.id}+`,
+        pairs: [{ off: 4 }, { off: 5 }],
+      })
+    })
+
+    it('has no follow-up when the pairs fit, or for other notices', () => {
+      expect(
+        followUpNotice({
+          ...base,
+          type: 'substitution-made',
+          pairs: [{}, {}, {}],
+        }),
+      ).toBeUndefined()
+      expect(followUpNotice({ ...base, type: 'goal-scored' })).toBeUndefined()
     })
 
     it('shows a dash for a missing number', () => {

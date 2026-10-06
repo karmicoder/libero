@@ -3,6 +3,7 @@ import type {
   CardColor,
   FootballAction,
   FootballState,
+  SubstitutionPair,
   TeamSide,
 } from '../state'
 import { sentOffNumbers } from '../cards'
@@ -10,6 +11,7 @@ import { subLimit } from '../subs'
 import { eventSummary, recentEvents } from './events'
 import { CardSheet } from './CardSheet'
 import { GoalSheet } from './GoalSheet'
+import { SubSheet } from './SubSheet'
 import styles from './TeamColumn.module.css'
 
 interface Props {
@@ -30,6 +32,13 @@ interface Props {
     onConfirm: (color: CardColor, team: TeamSide, numbers: number[]) => void
     onCancel: () => void
   }
+  /** Called when Substitution is pressed; the console then opens the sheet. */
+  onSub: (side: TeamSide) => void
+  /** Present while this team's substitution sheet is open. */
+  subSheet?: {
+    onConfirm: (pairs: SubstitutionPair[]) => void
+    onCancel: () => void
+  }
 }
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -45,6 +54,8 @@ export function TeamColumn({
   goalSheet,
   onCard,
   cardSheet,
+  onSub,
+  subSheet,
 }: Props) {
   const team = state.teams[side]
   const label = SIDE_LABEL[side]
@@ -61,11 +72,14 @@ export function TeamColumn({
   // When the sheet closes, focus goes back to the button that opened it.
   const goalButton = useRef<HTMLButtonElement>(null)
   const cardButton = useRef<HTMLButtonElement>(null)
+  const subButton = useRef<HTMLButtonElement>(null)
   const goalWasOpen = useRef(false)
+  const subWasOpen = useRef(false)
   const cardWasOpen = useRef(false)
   const goalOpen = goalSheet !== undefined
   const cardOpen = cardSheet !== undefined
-  const sheetOpen = goalOpen || cardOpen
+  const subOpen = subSheet !== undefined
+  const sheetOpen = goalOpen || cardOpen || subOpen
   useEffect(() => {
     if (goalWasOpen.current && !goalOpen) goalButton.current?.focus()
     goalWasOpen.current = goalOpen
@@ -74,6 +88,10 @@ export function TeamColumn({
     if (cardWasOpen.current && !cardOpen) cardButton.current?.focus()
     cardWasOpen.current = cardOpen
   }, [cardOpen])
+  useEffect(() => {
+    if (subWasOpen.current && !subOpen) subButton.current?.focus()
+    subWasOpen.current = subOpen
+  }, [subOpen])
 
   return (
     <section className={styles.column} aria-label={`${label} team`}>
@@ -132,7 +150,12 @@ export function TeamColumn({
             Card
           </button>
           {substitutions.enabled && (
-            <button type="button" className={styles.action} disabled>
+            <button
+              ref={subButton}
+              type="button"
+              className={styles.action}
+              onClick={() => onSub(side)}
+            >
               Substitution
             </button>
           )}
@@ -194,6 +217,14 @@ export function TeamColumn({
           events={state.events}
           onConfirm={cardSheet.onConfirm}
           onCancel={cardSheet.onCancel}
+        />
+      )}
+      {subSheet && (
+        <SubSheet
+          teamName={name}
+          remaining={configured === undefined ? undefined : left}
+          onConfirm={subSheet.onConfirm}
+          onCancel={subSheet.onCancel}
         />
       )}
     </section>

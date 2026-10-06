@@ -3,18 +3,20 @@ import {
   BANNER_ENTER_DELAY_MS,
   BANNER_ENTER_MS,
   BANNER_EXIT_MS,
+  BANNER_FLIP_HALF_MS,
 } from '../../../boards/banner'
 import type { FootballMessage } from '../state'
+import { MAX_PAIRS_SHOWN } from './followUp'
 import { BallIcon, CardIcon, SubIcon } from './icons'
 import styles from './UpdateBanner.module.css'
 
-/** At most this many substitution pairs are spelled out; the rest are counted. */
-const MAX_PAIRS_SHOWN = 3
+const flipClass = { out: 'flipOut', in: 'flipIn' } as const
 
 const timing = {
   '--enter-delay': `${BANNER_ENTER_DELAY_MS}ms`,
   '--enter-ms': `${BANNER_ENTER_MS}ms`,
   '--exit-ms': `${BANNER_EXIT_MS}ms`,
+  '--flip-ms': `${BANNER_FLIP_HALF_MS}ms`,
 } as CSSProperties
 
 function Content({ notice }: { notice: FootballMessage }) {
@@ -51,18 +53,21 @@ function Content({ notice }: { notice: FootballMessage }) {
       )
     case 'substitution-made': {
       const shown = notice.pairs.slice(0, MAX_PAIRS_SHOWN)
-      const more = notice.pairs.length - shown.length
       return (
         <>
-          {shown.map((p, i) => (
-            <span key={i} className={styles.group}>
-              <SubIcon direction="off" />
-              <span>{p.off ?? '–'}</span>
-              <SubIcon direction="on" />
-              <span>{p.on ?? '–'}</span>
-            </span>
-          ))}
-          {more > 0 && <span className={styles.more}>+{more}</span>}
+          {/* Several pairs stack, one per row, so they fit the banner. */}
+          <span
+            className={shown.length > 1 ? styles.pairsStacked : styles.pairs}
+          >
+            {shown.map((p, i) => (
+              <span key={i} className={styles.group}>
+                <SubIcon direction="off" />
+                <span>{p.off ?? '–'}</span>
+                <SubIcon direction="on" />
+                <span>{p.on ?? '–'}</span>
+              </span>
+            ))}
+          </span>
         </>
       )
     }
@@ -77,16 +82,23 @@ function Content({ notice }: { notice: FootballMessage }) {
 export function UpdateBanner({
   notice,
   phase,
+  flip,
 }: {
   notice: FootballMessage
   phase: 'in' | 'out'
+  /** A follow-up flipping in or out: the card turns about its vertical axis. */
+  flip?: 'out' | 'in'
 }) {
   return (
     <div
       className={[
         styles.banner,
         notice.team === 'visitor' ? styles.visitor : styles.home,
-        phase === 'in' ? styles.in : styles.out,
+        phase === 'out'
+          ? styles.out
+          : flip
+            ? styles[flipClass[flip]]
+            : styles.in,
       ].join(' ')}
       style={timing}
       role="status"

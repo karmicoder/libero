@@ -7,6 +7,7 @@ import type {
   FootballAction,
   FootballMessage,
   FootballState,
+  SubstitutionPair,
   TeamSide,
 } from '../state'
 import { cardToast } from './cardToast'
@@ -48,6 +49,8 @@ export function FootballConsole({
 
   // Which team's column the card sheet covers, if open.
   const [cardSide, setCardSide] = useState<TeamSide | null>(null)
+  // Likewise for the substitution sheet.
+  const [subSide, setSubSide] = useState<TeamSide | null>(null)
 
   // The goal sheet that is open, if any: the scoring team and its goal event.
   // It closes by itself if that goal is removed in the meantime.
@@ -61,6 +64,7 @@ export function FootballConsole({
   /** Scores at once, held back from the board until details are committed. */
   const addGoal = (side: TeamSide) => {
     setCardSide(null)
+    setSubSide(null)
     dispatch({ type: 'goal', team: side, announce: false, at: Date.now() })
     const event = store.getState().events.at(-1)
     if (event?.type === 'goal') setSheet({ side, eventId: event.id })
@@ -90,10 +94,16 @@ export function FootballConsole({
     return () => clearTimeout(timer)
   }, [toast])
 
-  // One sheet at a time: opening a card sheet drops an open goal sheet.
+  // One sheet at a time: opening one drops whichever other is open.
   const openCardSheet = (side: TeamSide) => {
     setSheet(null)
+    setSubSide(null)
     setCardSide(side)
+  }
+  const openSubSheet = (side: TeamSide) => {
+    setSheet(null)
+    setCardSide(null)
+    setSubSide(side)
   }
 
   const cardSheetFor = (side: TeamSide) =>
@@ -107,6 +117,22 @@ export function FootballConsole({
             setCardSide(null)
           },
           onCancel: () => setCardSide(null),
+        }
+      : undefined
+
+  const subSheetFor = (side: TeamSide) =>
+    subSide === side
+      ? {
+          onConfirm: (pairs: SubstitutionPair[]) => {
+            dispatch({
+              type: 'substitution',
+              team: side,
+              pairs,
+              at: Date.now(),
+            })
+            setSubSide(null)
+          },
+          onCancel: () => setSubSide(null),
         }
       : undefined
 
@@ -157,6 +183,8 @@ export function FootballConsole({
           goalSheet={goalSheetFor('visitor')}
           onCard={openCardSheet}
           cardSheet={cardSheetFor('visitor')}
+          onSub={openSubSheet}
+          subSheet={subSheetFor('visitor')}
         />
         <CentrePanel
           state={state}
@@ -172,6 +200,8 @@ export function FootballConsole({
           goalSheet={goalSheetFor('home')}
           onCard={openCardSheet}
           cardSheet={cardSheetFor('home')}
+          onSub={openSubSheet}
+          subSheet={subSheetFor('home')}
         />
       </div>
     </div>

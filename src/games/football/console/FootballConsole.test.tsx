@@ -424,6 +424,35 @@ describe('FootballConsole', () => {
       expect(screen.getAllByText('5 of 5 left this period')).toHaveLength(2)
     })
 
+    it('records a substitution, drops a pip and returns focus', async () => {
+      const { store, user } = setup()
+      const home = within(screen.getByRole('region', { name: 'Home team' }))
+      await user.click(home.getByRole('button', { name: 'Substitution' }))
+      expect(screen.getByText('Substitution · Home')).toBeInTheDocument()
+      await user.keyboard('7{Enter}12{Enter}')
+      await user.click(screen.getByRole('button', { name: /^Confirm/ }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(store.getState().subsRemaining).toEqual({ visitor: 5, home: 4 })
+      expect(store.getState().events.at(-1)).toMatchObject({
+        type: 'substitution',
+        team: 'home',
+        pairs: [{ off: 7, on: 12 }],
+      })
+      expect(home.getByRole('button', { name: 'Substitution' })).toHaveFocus()
+    })
+
+    it('shows one sheet at a time', async () => {
+      const { user } = setup()
+      const home = within(screen.getByRole('region', { name: 'Home team' }))
+      await user.click(home.getByRole('button', { name: 'Substitution' }))
+      const visitor = within(
+        screen.getByRole('region', { name: 'Visitor team' }),
+      )
+      await user.click(visitor.getByRole('button', { name: 'Card' }))
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+      expect(screen.getByText('Card · Visitor')).toBeInTheDocument()
+    })
+
     it('hides substitution controls when disabled', () => {
       setup({
         ...defaultMatchConfig(),
