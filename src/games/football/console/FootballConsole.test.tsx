@@ -421,7 +421,7 @@ describe('FootballConsole', () => {
   describe('substitutions', () => {
     it('shows pips for the per-period limit', () => {
       setup()
-      expect(screen.getAllByText('3 of 3 left this period')).toHaveLength(2)
+      expect(screen.getAllByText('5 of 5 left this period')).toHaveLength(2)
     })
 
     it('hides substitution controls when disabled', () => {

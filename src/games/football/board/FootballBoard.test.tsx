@@ -119,14 +119,14 @@ describe('FootballBoard', () => {
 
   describe('substitution pips', () => {
     it('shows each team’s remaining subs from state', () => {
-      renderBoard(state({ subsRemaining: { visitor: 3, home: 1 } }))
-      expect(screen.getByText('1 of 3 left this period')).toBeInTheDocument()
-      expect(screen.getByText('3 of 3 left this period')).toBeInTheDocument()
+      renderBoard(state({ subsRemaining: { visitor: 5, home: 1 } }))
+      expect(screen.getByText('1 of 5 left this period')).toBeInTheDocument()
+      expect(screen.getByText('5 of 5 left this period')).toBeInTheDocument()
     })
 
     it('shows extra pips when remaining was raised above the limit', () => {
-      renderBoard(state({ subsRemaining: { visitor: 3, home: 5 } }))
-      expect(screen.getByText('5 of 5 left this period')).toBeInTheDocument()
+      renderBoard(state({ subsRemaining: { visitor: 3, home: 7 } }))
+      expect(screen.getByText('7 of 7 left this period')).toBeInTheDocument()
     })
 
     it('is hidden when substitutions are disabled', () => {

@@ -25,7 +25,7 @@ describe('defaultMatchConfig', () => {
       ['Extra time 2', 'ET2', 15, 'play'],
       ['Penalties', 'PEN', undefined, 'shootout'],
     ])
-    expect(c.substitutions).toEqual({ enabled: true, perPeriod: 3 })
+    expect(c.substitutions).toEqual({ enabled: true, perPeriod: 5 })
     expect(c.stoppageTime).toEqual({ enabled: true })
   })
 
