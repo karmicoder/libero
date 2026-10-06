@@ -103,15 +103,27 @@ describe('CardSheet', () => {
       expect(hint()).toHaveTextContent('2nd yellow → RED')
     })
 
-    it('flags a queued second yellow, but not on the other team', async () => {
+    it('flags a queued second yellow', async () => {
       const { user } = setup([yellowFor17])
       await user.click(key('1'))
       await user.click(key('7'))
       await user.click(key('+ Add'))
       const chips = screen.getByRole('list', { name: 'Queued numbers' })
       expect(within(chips).getByText('2nd yellow')).toBeInTheDocument()
+    })
+
+    it('clears the queue when the team changes', async () => {
+      const { user, onConfirm } = setup([yellowFor17])
+      await user.click(key('7'))
+      await user.click(key('+ Add'))
       await user.click(screen.getByRole('radio', { name: 'Visitor' }))
-      expect(within(chips).queryByText('2nd yellow')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('list', { name: 'Queued numbers' }),
+      ).not.toBeInTheDocument()
+      expect(confirm()).toBeDisabled()
+      await user.click(key('3'))
+      await user.click(confirm())
+      expect(onConfirm).toHaveBeenCalledWith('yellow', 'visitor', [3])
     })
 
     it('does not flag a red', async () => {

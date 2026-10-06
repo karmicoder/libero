@@ -145,7 +145,12 @@ export function CardSheet({
                 type="radio"
                 name="card-team"
                 checked={team === value}
-                onChange={() => setTeam(value)}
+                onChange={() => {
+                  // Queued numbers belong to the team they were typed for.
+                  setTeam(value)
+                  setQueued([])
+                  setEntry('')
+                }}
               />
               {TEAM_LABEL[value]}
             </label>

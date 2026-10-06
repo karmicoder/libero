@@ -525,6 +525,14 @@ describe('FootballConsole card sheet', () => {
     ).toBeInTheDocument()
   })
 
+  it('opening a card sheet closes an open goal sheet', async () => {
+    const { user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+    await openCard(user, 'Visitor')
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByText('Card · Visitor')).toBeInTheDocument()
+  })
+
   it('cancelling records nothing', async () => {
     const { store, user } = setup()
     await openCard(user, 'Visitor')

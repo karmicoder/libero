@@ -46,6 +46,9 @@ export function FootballConsole({
   const state = useMatchState(store)
   const { dispatch } = store
 
+  // Which team's column the card sheet covers, if open.
+  const [cardSide, setCardSide] = useState<TeamSide | null>(null)
+
   // The goal sheet that is open, if any: the scoring team and its goal event.
   // It closes by itself if that goal is removed in the meantime.
   const [sheet, setSheet] = useState<{
@@ -57,6 +60,7 @@ export function FootballConsole({
 
   /** Scores at once, held back from the board until details are committed. */
   const addGoal = (side: TeamSide) => {
+    setCardSide(null)
     dispatch({ type: 'goal', team: side, announce: false, at: Date.now() })
     const event = store.getState().events.at(-1)
     if (event?.type === 'goal') setSheet({ side, eventId: event.id })
@@ -79,14 +83,18 @@ export function FootballConsole({
         }
       : undefined
 
-  // Which team's column the card sheet covers, if open.
-  const [cardSide, setCardSide] = useState<TeamSide | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   useEffect(() => {
     if (toast === null) return
     const timer = setTimeout(() => setToast(null), TOAST_MS)
     return () => clearTimeout(timer)
   }, [toast])
+
+  // One sheet at a time: opening a card sheet drops an open goal sheet.
+  const openCardSheet = (side: TeamSide) => {
+    setSheet(null)
+    setCardSide(side)
+  }
 
   const cardSheetFor = (side: TeamSide) =>
     cardSide === side
@@ -147,7 +155,7 @@ export function FootballConsole({
           dispatch={dispatch}
           onGoal={addGoal}
           goalSheet={goalSheetFor('visitor')}
-          onCard={setCardSide}
+          onCard={openCardSheet}
           cardSheet={cardSheetFor('visitor')}
         />
         <CentrePanel
@@ -162,7 +170,7 @@ export function FootballConsole({
           dispatch={dispatch}
           onGoal={addGoal}
           goalSheet={goalSheetFor('home')}
-          onCard={setCardSide}
+          onCard={openCardSheet}
           cardSheet={cardSheetFor('home')}
         />
       </div>
