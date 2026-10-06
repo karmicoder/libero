@@ -142,6 +142,27 @@ test.describe('set-clock sheet', () => {
   }
 })
 
+test.describe('card sheet', () => {
+  for (const colorScheme of ['dark', 'light'] as const) {
+    test.describe(`${colorScheme} scheme`, () => {
+      test.use({ colorScheme })
+
+      test('has no detectable accessibility violations when open, with a queued number', async ({
+        page,
+      }) => {
+        await page.goto('/match/football')
+        await page.getByRole('button', { name: 'Card' }).first().click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        await page.keyboard.type('7')
+        await page.keyboard.press('Enter')
+        await expect(page.getByText('#7')).toBeVisible()
+        const results = await new AxeBuilder({ page }).analyze()
+        expect(results.violations).toEqual([])
+      })
+    })
+  }
+})
+
 test('a second console window is blocked until it takes over', async ({
   context,
   page,

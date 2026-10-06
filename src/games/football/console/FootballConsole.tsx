@@ -3,14 +3,18 @@ import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useMatchState } from '../../../match/useMatchState'
 import type {
+  CardColor,
   FootballAction,
   FootballMessage,
   FootballState,
   TeamSide,
 } from '../state'
+import { cardToast } from './cardToast'
 import { CentrePanel } from './CentrePanel'
 import styles from './FootballConsole.module.css'
 import { TeamColumn } from './TeamColumn'
+
+const TOAST_MS = 3000
 
 /** Space toggles the clock, unless focus is somewhere it already means something. */
 function useSpaceToggle(onToggle: () => void) {
@@ -75,6 +79,29 @@ export function FootballConsole({
         }
       : undefined
 
+  // Which team's column the card sheet covers, if open.
+  const [cardSide, setCardSide] = useState<TeamSide | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  useEffect(() => {
+    if (toast === null) return
+    const timer = setTimeout(() => setToast(null), TOAST_MS)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  const cardSheetFor = (side: TeamSide) =>
+    cardSide === side
+      ? {
+          onConfirm: (color: CardColor, team: TeamSide, numbers: number[]) => {
+            const before = store.getState().events.length
+            dispatch({ type: 'card', team, color, numbers, at: Date.now() })
+            const message = cardToast(store.getState().events.slice(before))
+            if (message) setToast(message)
+            setCardSide(null)
+          },
+          onCancel: () => setCardSide(null),
+        }
+      : undefined
+
   useSpaceToggle(() => {
     const current = store.getState()
     dispatch(
@@ -120,14 +147,23 @@ export function FootballConsole({
           dispatch={dispatch}
           onGoal={addGoal}
           goalSheet={goalSheetFor('visitor')}
+          onCard={setCardSide}
+          cardSheet={cardSheetFor('visitor')}
         />
-        <CentrePanel state={state} dispatch={dispatch} />
+        <CentrePanel
+          state={state}
+          dispatch={dispatch}
+          toast={toast}
+          onToast={setToast}
+        />
         <TeamColumn
           side="home"
           state={state}
           dispatch={dispatch}
           onGoal={addGoal}
           goalSheet={goalSheetFor('home')}
+          onCard={setCardSide}
+          cardSheet={cardSheetFor('home')}
         />
       </div>
     </div>

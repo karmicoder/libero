@@ -478,3 +478,57 @@ describe('FootballConsole', () => {
     })
   })
 })
+
+describe('FootballConsole card sheet', () => {
+  const openCard = async (
+    user: ReturnType<typeof userEvent.setup>,
+    team: 'Home' | 'Visitor',
+  ) => {
+    await user.click(
+      within(screen.getByRole('region', { name: `${team} team` })).getByRole(
+        'button',
+        { name: 'Card' },
+      ),
+    )
+  }
+  const giveYellow = async (
+    user: ReturnType<typeof userEvent.setup>,
+    n: string,
+  ) => {
+    await openCard(user, 'Home')
+    for (const d of n) await user.click(screen.getByRole('button', { name: d }))
+    await user.click(screen.getByRole('button', { name: 'Confirm' }))
+  }
+
+  it('records a yellow card and returns focus to the Card button', async () => {
+    const { store, user } = setup()
+    await giveYellow(user, '7')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(store.getState().events).toMatchObject([
+      { type: 'card', team: 'home', color: 'yellow', numbers: [7] },
+    ])
+    const home = screen.getByRole('region', { name: 'Home team' })
+    expect(within(home).getByText('0′ Yellow card #7')).toBeInTheDocument()
+    expect(within(home).getByRole('button', { name: 'Card' })).toHaveFocus()
+  })
+
+  it('turns a second yellow into a red with a toast', async () => {
+    const { store, user } = setup()
+    await giveYellow(user, '7')
+    await giveYellow(user, '7')
+    expect(store.getState().events.at(-1)).toMatchObject({
+      color: 'red',
+      secondYellow: true,
+    })
+    expect(
+      screen.getByText('#7 · second yellow → red card'),
+    ).toBeInTheDocument()
+  })
+
+  it('cancelling records nothing', async () => {
+    const { store, user } = setup()
+    await openCard(user, 'Visitor')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(store.getState().events).toEqual([])
+  })
+})
