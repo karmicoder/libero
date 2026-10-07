@@ -35,34 +35,57 @@ Work is tracked in [GitHub Issues](https://github.com/karmicoder/libero/issues).
 
 ## Layout
 
-- `src/sports/`: `SportDefinition` + `SportRegistry` (the seam for runtime-injected sports)
-- `src/pages/`: route components (sport selection is home; `/match/:sportId` is
-  currently a placeholder `MatchPage`, replaced by the football routes below)
+- `src/sports/`: `SportDefinition` (data only) + `SportRegistry`, the seam for runtime-injected sports
+- `src/engines/`: `EngineRegistry`; engines attach by `sportId`
+- `src/consoles/`, `src/boards/`: registries for the scorer console and scoreboard components per sport
+- `src/games/<sport>/`: everything sport-specific (see below)
+- `src/match/`: sport-agnostic hosts. `MatchSession` owns the `MatchStore` (state + local backup and resume), `ConsoleHost` and `BoardHost` wire a console or board to it
+- `src/sync/`: `SyncChannel` and its `BroadcastChannel` transport
+- `src/pages/`: route components. `SportSelectPage` is home, `MatchPage` renders the scorer console, `BoardPage` renders the scoreboard
 - `src/styles/`: tokens (themes), base element styles, shared utility classes
+- `e2e/`: Playwright specs
+
+Each sport lives in `src/games/<sport>/` (football today):
+
+- `state.ts`: the neutral, types-only game state. Engine and board both import it; ESLint enforces that they import nothing else from each other
+- `engine/`: the pure reducer
+- `board/`: the scoreboard layout
+- `console/`: the scorer console. It gets the engine from `EngineRegistry`, not from `engine/`
+- other top-level files (`clock.ts`, `config.ts`, ...): pure helpers every side may use
+
+## Routes
+
+| Route                   | Page              | What it is                                       |
+| ----------------------- | ----------------- | ------------------------------------------------ |
+| `/`                     | `SportSelectPage` | Pick a sport                                     |
+| `/match/:sportId`       | `MatchPage`       | Scorer console (master); e.g. `/match/football`  |
+| `/match/:sportId/board` | `BoardPage`       | View-only scoreboard, full window, no app header |
+
+A sport that is not `ready`, or has no engine and console registered, shows a
+"coming soon" placeholder on `/match/:sportId`.
 
 ## Architecture
 
-The football scoreboard and scorer console are being built under
-[#1](https://github.com/karmicoder/libero/issues/1); the pieces marked _planned_
-land with the child issues.
-
 - **Engine vs. layout.** A game engine (rules) and a scoreboard layout
-  (presentation) never import each other. They share only a neutral, types-only
-  game state module; an ESLint `no-restricted-imports` rule enforces this
-  (_planned_, [#2](https://github.com/karmicoder/libero/issues/2)).
+  (presentation) never import each other. They share only the neutral,
+  types-only game state module (`state.ts`); ESLint `no-restricted-imports`
+  rules in `eslint.config.js` enforce this.
 - **Registries.** `SportRegistry` holds sports as data. Engines attach by
-  `sportId` in a separate `EngineRegistry` (_planned_), so sports and engines can
-  both be injected at runtime.
+  `sportId` in a separate `EngineRegistry`, and consoles and boards in their own
+  registries, so sports and their code can be injected at runtime. UI reads the
+  sport list from the registry; nothing hardcodes it.
 - **Engines are pure reducers:** `reduce(state, action) → { state, messages }`.
   State is serialisable; `messages` are transient notices (goal, card,
-  substitution) used for banners. There is no Redux or other state library.
+  substitution) used for banners, never persisted or replayed. There is no Redux
+  or other state library.
 - **Console is master.** The scorer console owns the game state and pushes it to
   view-only scoreboards over a `SyncChannel` (`BroadcastChannel` on the same
   device) as `snapshot` (full state) and `notice` messages. A board never runs the
   reducer and does not update while disconnected. Clocks are
-  `{ baseSeconds, runningSince }`, so each window derives its own display time.
-- **Routes (_planned_):** `/match/football` is the console and
-  `/match/football/board` is the scoreboard.
+  `{ baseSeconds, runningSince }`, so each window derives its own display time
+  from `Date.now()`; there are no tick actions.
+- **Resume.** The console keeps a best-effort backup of the match in
+  `localStorage` and offers to resume it after a reload.
 
 ### Opening the scoreboard in a second window
 
