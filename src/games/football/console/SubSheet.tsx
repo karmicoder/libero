@@ -122,21 +122,27 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
       </h2>
 
       <div className={styles.entryRow}>
-        <fieldset className={styles.fields}>
-          <legend className="visually-hidden">Number being entered</legend>
+        <div
+          className={styles.fields}
+          role="group"
+          aria-label="Number being entered"
+        >
           {FIELDS.map(([value, label]) => (
-            <label key={value} className={styles.field}>
-              <input
-                type="radio"
-                name="sub-field"
-                checked={field === value}
-                onChange={() => setField(value)}
-              />
+            <button
+              key={value}
+              type="button"
+              className={styles.field}
+              aria-pressed={field === value}
+              onClick={() => {
+                setField(value)
+                sheet.current?.focus()
+              }}
+            >
               <span className="eyebrow">{label}</span>
               <span className={styles.value}>{entry[value] || '–'}</span>
-            </label>
+            </button>
           ))}
-        </fieldset>
+        </div>
         <div className={styles.steps}>
           <button
             type="button"
