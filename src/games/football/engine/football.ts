@@ -280,13 +280,18 @@ function reduceState(
         limit === undefined
           ? 0
           : Math.max(0, limit - subsMade(state.events, team, state.periodId))
+      // Only a changed limit re-derives the counts; any other edit keeps the
+      // scorer's manual corrections.
+      const limitChanged = limit !== subLimit(state.config)
       return {
         ...state,
         config,
         stoppageMinutes: config.stoppageTime.enabled
           ? state.stoppageMinutes
           : null,
-        subsRemaining: { visitor: left('visitor'), home: left('home') },
+        subsRemaining: limitChanged
+          ? { visitor: left('visitor'), home: left('home') }
+          : state.subsRemaining,
       }
     }
     default:

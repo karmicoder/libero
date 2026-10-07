@@ -71,7 +71,10 @@ export function SettingsScreen({
   useEffect(() => {
     const element = screen.current
     const listener = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') latestCancel.current()
+      // Esc in an open dropdown only closes the dropdown.
+      if (e.key === 'Escape' && !(e.target instanceof HTMLSelectElement)) {
+        latestCancel.current()
+      }
     }
     element?.addEventListener('keydown', listener)
     return () => element?.removeEventListener('keydown', listener)

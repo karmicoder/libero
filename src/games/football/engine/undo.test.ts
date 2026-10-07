@@ -362,3 +362,18 @@ describe('undo after a config change', () => {
     expect(undone.history).toEqual([])
   })
 })
+
+describe('undo clamps to the current config', () => {
+  it('does not restore more substitutions than the new limit', () => {
+    const subbed = run(fresh(), {
+      type: 'substitution',
+      team: 'home',
+      pairs: [{ off: 1, on: 12 }],
+      at: T0,
+    })
+    const config = defaultMatchConfig()
+    config.substitutions.perPeriod = 3
+    const undone = run(subbed, { type: 'update-config', config }, undo())
+    expect(undone.subsRemaining.home).toBe(3)
+  })
+})

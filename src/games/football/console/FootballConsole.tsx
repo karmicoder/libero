@@ -245,7 +245,12 @@ export function FootballConsole({
         <SettingsScreen
           config={state.config}
           currentPeriodId={state.periodId}
-          reservedIds={state.events.map((e) => e.periodId)}
+          reservedIds={[
+            ...state.events.map((e) => e.periodId),
+            ...(state.history ?? []).flatMap((h) =>
+              h.kind === 'period' ? [h.periodId] : [],
+            ),
+          ]}
           onSave={(config) => {
             dispatch({ type: 'update-config', config })
             setSettingsOpen(false)

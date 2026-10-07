@@ -1118,6 +1118,20 @@ describe('update-config', () => {
     expect(s.subsRemaining).toEqual({ visitor: 3, home: 1 })
   })
 
+  it('keeps manual substitutions-left corrections when the limit is unchanged', () => {
+    const start = run(fresh(), {
+      type: 'set-subs-remaining',
+      team: 'home',
+      remaining: 2,
+    })
+    const config = edited((c) => {
+      c.periods[0].name = 'First'
+    })
+    expect(
+      run(start, { type: 'update-config', config }).subsRemaining.home,
+    ).toBe(2)
+  })
+
   it('zeroes substitutions left when they are switched off', () => {
     const config = edited((c) => {
       c.substitutions.enabled = false
