@@ -188,6 +188,46 @@ test.describe('substitution sheet', () => {
   }
 })
 
+test.describe('settings screen', () => {
+  for (const colorScheme of ['dark', 'light'] as const) {
+    test.describe(`${colorScheme} scheme`, () => {
+      test.use({ colorScheme })
+
+      test('has no detectable accessibility violations, with the length keypad open', async ({
+        page,
+      }) => {
+        await page.goto('/match/football')
+        await page.getByRole('button', { name: 'Settings' }).click()
+        await expect(
+          page.getByRole('heading', { name: 'Match settings' }),
+        ).toBeVisible()
+        let results = await new AxeBuilder({ page }).analyze()
+        expect(results.violations).toEqual([])
+
+        await page.getByRole('button', { name: /^1st half length/ }).click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        results = await new AxeBuilder({ page }).analyze()
+        expect(results.violations).toEqual([])
+      })
+    })
+  }
+
+  test('a saved period length reaches the clock presets', async ({ page }) => {
+    await page.goto('/match/football')
+    await page.getByRole('button', { name: 'Settings' }).click()
+    await page.getByRole('button', { name: /^1st half length/ }).click()
+    await page.getByRole('button', { name: 'Backspace' }).click()
+    await page.getByRole('button', { name: 'Backspace' }).click()
+    await page.getByRole('button', { name: '4', exact: true }).click()
+    await page.getByRole('button', { name: '0', exact: true }).click()
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByLabel('Home score')).toBeVisible()
+    await page.getByRole('button', { name: 'Set clock' }).click()
+    await expect(page.getByRole('button', { name: '40:00' })).toBeVisible()
+  })
+})
+
 test('a second console window is blocked until it takes over', async ({
   context,
   page,

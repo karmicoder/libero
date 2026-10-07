@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useMatchState } from '../../../match/useMatchState'
@@ -13,13 +13,15 @@ import type {
 import { cardToast } from './cardToast'
 import { CentrePanel } from './CentrePanel'
 import styles from './FootballConsole.module.css'
+import { SettingsScreen } from './SettingsScreen'
 import { TeamColumn } from './TeamColumn'
 
 const TOAST_MS = 3000
 
 /** Space toggles the clock, unless focus is somewhere it already means something. */
-function useSpaceToggle(onToggle: () => void) {
+function useSpaceToggle(onToggle: () => void, enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return
     const handler = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || e.repeat) return
       if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -36,15 +38,17 @@ function useSpaceToggle(onToggle: () => void) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onToggle])
+  }, [onToggle, enabled])
 }
 
 /**
  * Ctrl/Cmd+Z undoes, unless it already means something: in a text field (the
- * browser's own undo) or while a sheet is open (nothing under it should change).
+ * browser's own undo) or while a sheet or the settings screen is open (nothing under it should
+ * change).
  */
-function useUndoHotkey(onUndo: () => void) {
+function useUndoHotkey(onUndo: () => void, enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
       if (!(e.ctrlKey || e.metaKey)) return
@@ -62,7 +66,7 @@ function useUndoHotkey(onUndo: () => void) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onUndo])
+  }, [onUndo, enabled])
 }
 
 export function FootballConsole({
@@ -162,6 +166,23 @@ export function FootballConsole({
         }
       : undefined
 
+  // The settings screen replaces the columns; closing it refocuses its button.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsButton = useRef<HTMLButtonElement>(null)
+  const settingsWasOpen = useRef(false)
+  useEffect(() => {
+    if (settingsWasOpen.current && !settingsOpen) {
+      settingsButton.current?.focus()
+    }
+    settingsWasOpen.current = settingsOpen
+  }, [settingsOpen])
+  const openSettings = () => {
+    setSheet(null)
+    setCardSide(null)
+    setSubSide(null)
+    setSettingsOpen(true)
+  }
+
   const lastStep = state.history?.at(-1)
   const undo = () => {
     const step = store.getState().history?.at(-1)
@@ -169,7 +190,7 @@ export function FootballConsole({
     dispatch({ type: 'undo', at: Date.now() })
     setToast(`Undid ${step.label.toLowerCase()}`)
   }
-  useUndoHotkey(undo)
+  useUndoHotkey(undo, !settingsOpen)
 
   useSpaceToggle(() => {
     const current = store.getState()
@@ -178,7 +199,7 @@ export function FootballConsole({
         ? { type: 'stop-clock', at: Date.now() }
         : { type: 'start-clock', at: Date.now() },
     )
-  })
+  }, !settingsOpen)
 
   return (
     <div className={styles.console}>
@@ -200,13 +221,19 @@ export function FootballConsole({
           >
             Open scoreboard
           </Link>
-          <button type="button" className={styles.topButton} disabled>
+          <button
+            type="button"
+            ref={settingsButton}
+            className={styles.topButton}
+            disabled={settingsOpen}
+            onClick={openSettings}
+          >
             Settings
           </button>
           <button
             type="button"
             className={styles.topButton}
-            disabled={!lastStep}
+            disabled={!lastStep || settingsOpen}
             onClick={undo}
           >
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
@@ -214,36 +241,50 @@ export function FootballConsole({
         </div>
       </div>
 
-      <div className={styles.columns}>
-        <TeamColumn
-          side="visitor"
-          state={state}
-          dispatch={dispatch}
-          onGoal={addGoal}
-          goalSheet={goalSheetFor('visitor')}
-          onCard={openCardSheet}
-          cardSheet={cardSheetFor('visitor')}
-          onSub={openSubSheet}
-          subSheet={subSheetFor('visitor')}
+      {settingsOpen ? (
+        <SettingsScreen
+          config={state.config}
+          currentPeriodId={state.periodId}
+          reservedIds={state.events.map((e) => e.periodId)}
+          onSave={(config) => {
+            dispatch({ type: 'update-config', config })
+            setSettingsOpen(false)
+            setToast('Settings saved')
+          }}
+          onCancel={() => setSettingsOpen(false)}
         />
-        <CentrePanel
-          state={state}
-          dispatch={dispatch}
-          toast={toast}
-          onToast={setToast}
-        />
-        <TeamColumn
-          side="home"
-          state={state}
-          dispatch={dispatch}
-          onGoal={addGoal}
-          goalSheet={goalSheetFor('home')}
-          onCard={openCardSheet}
-          cardSheet={cardSheetFor('home')}
-          onSub={openSubSheet}
-          subSheet={subSheetFor('home')}
-        />
-      </div>
+      ) : (
+        <div className={styles.columns}>
+          <TeamColumn
+            side="visitor"
+            state={state}
+            dispatch={dispatch}
+            onGoal={addGoal}
+            goalSheet={goalSheetFor('visitor')}
+            onCard={openCardSheet}
+            cardSheet={cardSheetFor('visitor')}
+            onSub={openSubSheet}
+            subSheet={subSheetFor('visitor')}
+          />
+          <CentrePanel
+            state={state}
+            dispatch={dispatch}
+            toast={toast}
+            onToast={setToast}
+          />
+          <TeamColumn
+            side="home"
+            state={state}
+            dispatch={dispatch}
+            onGoal={addGoal}
+            goalSheet={goalSheetFor('home')}
+            onCard={openCardSheet}
+            cardSheet={cardSheetFor('home')}
+            onSub={openSubSheet}
+            subSheet={subSheetFor('home')}
+          />
+        </div>
+      )}
     </div>
   )
 }

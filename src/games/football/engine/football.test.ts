@@ -1034,3 +1034,105 @@ describe('reduce', () => {
     expect(JSON.parse(JSON.stringify(s))).toEqual(s)
   })
 })
+
+describe('update-config', () => {
+  const edited = (
+    change: (c: ReturnType<typeof defaultMatchConfig>) => void,
+  ) => {
+    const config = defaultMatchConfig()
+    change(config)
+    return config
+  }
+
+  it('replaces the config and leaves the clock alone', () => {
+    const running = run(fresh(), { type: 'start-clock', at: T0 })
+    const config = edited((c) => {
+      c.periods[0].lengthMinutes = 40
+    })
+    const s = run(running, { type: 'update-config', config })
+    expect(s.config).toEqual(config)
+    expect(s.clock).toEqual(running.clock)
+    expect(s.periodId).toBe('h1')
+  })
+
+  it('moves later periods by the new lengths', () => {
+    const config = edited((c) => {
+      c.periods[0].lengthMinutes = 40
+    })
+    const s = run(
+      fresh(),
+      { type: 'update-config', config },
+      { type: 'set-period', periodId: 'h2', at: T0 },
+    )
+    expect(s.clock.baseSeconds).toBe(40 * 60)
+  })
+
+  it('ignores a config without the current period', () => {
+    const start = run(fresh(), { type: 'set-period', periodId: 'h2', at: T0 })
+    const config = edited((c) => {
+      c.periods = c.periods.filter((p) => p.id !== 'h2')
+    })
+    expect(run(start, { type: 'update-config', config })).toEqual(start)
+  })
+
+  it('ignores a config with no play period', () => {
+    const config = edited((c) => {
+      c.periods = c.periods.map((p) => ({ ...p, kind: 'break' as const }))
+    })
+    expect(run(fresh(), { type: 'update-config', config })).toEqual(fresh())
+  })
+
+  it('clears announced stoppage time when stoppage is turned off', () => {
+    const start = run(fresh(), { type: 'set-stoppage', minutes: 3 })
+    const config = edited((c) => {
+      c.stoppageTime.enabled = false
+    })
+    expect(run(start, { type: 'update-config', config }).stoppageMinutes).toBe(
+      null,
+    )
+  })
+
+  it('keeps announced stoppage time while it stays enabled', () => {
+    const start = run(fresh(), { type: 'set-stoppage', minutes: 3 })
+    const s = run(start, {
+      type: 'update-config',
+      config: defaultMatchConfig(),
+    })
+    expect(s.stoppageMinutes).toBe(3)
+  })
+
+  it('recomputes substitutions left from the subs already made', () => {
+    const start = run(fresh(), {
+      type: 'substitution',
+      team: 'home',
+      pairs: [
+        { off: 1, on: 12 },
+        { off: 2, on: 13 },
+      ],
+      at: T0,
+    })
+    const config = edited((c) => {
+      c.substitutions.perPeriod = 3
+    })
+    const s = run(start, { type: 'update-config', config })
+    expect(s.subsRemaining).toEqual({ visitor: 3, home: 1 })
+  })
+
+  it('zeroes substitutions left when they are switched off', () => {
+    const config = edited((c) => {
+      c.substitutions.enabled = false
+    })
+    expect(
+      run(fresh(), { type: 'update-config', config }).subsRemaining,
+    ).toEqual({ visitor: 0, home: 0 })
+  })
+
+  it('is not undoable', () => {
+    const config = edited((c) => {
+      c.periods[0].lengthMinutes = 40
+    })
+    expect(
+      run(fresh(), { type: 'update-config', config }).history,
+    ).toBeUndefined()
+  })
+})

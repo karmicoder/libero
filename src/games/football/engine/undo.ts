@@ -1,4 +1,5 @@
 import { clockSeconds } from '../clock'
+import { findPeriod } from '../config'
 import type {
   FootballAction,
   FootballState,
@@ -205,6 +206,8 @@ export function undoLast(state: FootballState, at: number): FootballState {
       }
     }
     case 'period':
+      // A config edit may have removed the period it would go back to.
+      if (!findPeriod(state.config, entry.periodId)) return base
       return {
         ...base,
         periodId: entry.periodId,

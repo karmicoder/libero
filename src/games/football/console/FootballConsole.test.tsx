@@ -652,4 +652,57 @@ describe('FootballConsole card sheet', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(store.getState().events).toEqual([])
   })
+
+  describe('settings', () => {
+    const open = async (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByRole('button', { name: 'Settings' }))
+
+    it('opens in place of the columns and Cancel brings them back', async () => {
+      const { user } = setup()
+      await open(user)
+      expect(
+        screen.getByRole('heading', { name: 'Match settings' }),
+      ).toBeInTheDocument()
+      expect(screen.queryByLabelText('Home score')).toBeNull()
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(screen.getByLabelText('Home score')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Settings' })).toHaveFocus()
+    })
+
+    it('Save applies the config mid-match without touching the clock', async () => {
+      const { user, store } = setup()
+      await user.click(primary())
+      const clock = store.getState().clock
+      await open(user)
+      await user.click(
+        screen.getByRole('button', { name: 'More substitutions' }),
+      )
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+      expect(store.getState().config.substitutions.perPeriod).toBe(6)
+      expect(store.getState().clock).toEqual(clock)
+      expect(screen.getByLabelText('Home score')).toBeInTheDocument()
+    })
+
+    it('Cancel leaves the config alone', async () => {
+      const { user, store } = setup()
+      await open(user)
+      await user.click(
+        screen.getByRole('button', { name: 'More substitutions' }),
+      )
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(store.getState().config).toEqual(defaultMatchConfig())
+    })
+
+    it('Space and Ctrl+Z do nothing to the match while it is open', async () => {
+      const { user, store } = setup()
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      await open(user)
+      await user.keyboard('{Control>}z{/Control}')
+      expect(store.getState().teams.home.score).toBe(1)
+      screen.getByRole('heading', { name: 'Match settings' }).focus()
+      await user.keyboard(' ')
+      expect(store.getState().clock.runningSince).toBeNull()
+    })
+  })
 })

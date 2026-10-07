@@ -350,3 +350,15 @@ describe('undo', () => {
     })
   })
 })
+
+describe('undo after a config change', () => {
+  it('drops a period change whose old period was removed', () => {
+    const moved = run(fresh(), { type: 'set-period', periodId: 'h2', at: T0 })
+    const config = defaultMatchConfig()
+    config.periods = config.periods.filter((p) => p.id !== 'h1')
+    const edited = run(moved, { type: 'update-config', config })
+    const undone = run(edited, undo())
+    expect(undone.periodId).toBe('h2')
+    expect(undone.history).toEqual([])
+  })
+})
