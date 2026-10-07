@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -504,6 +504,27 @@ describe('FootballConsole', () => {
         await user.keyboard(`{${modifier}>}z{/${modifier}}`)
         expect(score('Home')).toHaveTextContent('0')
       }
+    })
+
+    it('ignores a held key, so it cannot rewind the whole history', async () => {
+      const { user } = setup()
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
+      fireEvent.keyDown(document.body, {
+        key: 'z',
+        ctrlKey: true,
+        repeat: true,
+      })
+      fireEvent.keyDown(document.body, {
+        key: 'z',
+        ctrlKey: true,
+        repeat: true,
+      })
+      await screen.findByText('Undid goal')
+      expect(score('Home')).toHaveTextContent('1')
     })
 
     it('is left to the browser while typing in a text field', async () => {

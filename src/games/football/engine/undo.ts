@@ -212,5 +212,8 @@ export function undoLast(state: FootballState, at: number): FootballState {
         stoppageMinutes: entry.stoppageMinutes,
         subsRemaining: entry.subsRemaining,
       }
+    // Saved state is only loosely validated: drop an entry of an unknown kind.
+    default:
+      return base
   }
 }

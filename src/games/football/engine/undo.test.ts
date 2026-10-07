@@ -335,6 +335,15 @@ describe('undo', () => {
       expect(run(back, undo()).teams.visitor.score).toBe(0)
     })
 
+    it('drops an entry of an unknown kind instead of crashing', () => {
+      const s = {
+        ...fresh(),
+        history: [{ label: 'Mystery', kind: 'mystery' }],
+      } as unknown as FootballState
+      const { state } = footballEngine.reduce(s, undo())
+      expect(state.history).toEqual([])
+    })
+
     it('emits no notices', () => {
       const s = run(fresh(), goal('home'))
       expect(footballEngine.reduce(s, undo()).messages).toEqual([])

@@ -48,6 +48,8 @@ function useUndoHotkey(onUndo: () => void) {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
       if (!(e.ctrlKey || e.metaKey)) return
+      // Holding the keys must not walk back through the whole history.
+      if (e.repeat) return
       const target = e.target as HTMLElement | null
       if (
         target?.closest('input, textarea, select, [contenteditable="true"]') ||
