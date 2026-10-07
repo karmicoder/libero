@@ -23,9 +23,8 @@ const confirm = () => key(/^Confirm/)
 describe('SubSheet', () => {
   it('tabs from the Off field to the On field, then on to Add pair', async () => {
     const { user } = setup(5)
-    await user.tab()
-    const off = screen.getByRole('button', { name: /^Off/ })
-    expect(off).toHaveFocus()
+    // The sheet opens with Off focused, so one Tab reaches On.
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
     await user.keyboard('4')
     await user.tab()
     expect(screen.getByRole('button', { name: /^On/ })).toHaveFocus()
@@ -36,7 +35,6 @@ describe('SubSheet', () => {
 
   it('keeps focus on the On field after pressing it with the keyboard', async () => {
     const { user } = setup(5)
-    await user.tab()
     await user.tab()
     await user.keyboard('{Enter}')
     const on = screen.getByRole('button', { name: /^On/ })
@@ -51,7 +49,6 @@ describe('SubSheet', () => {
 
   it('types into the On field after tabbing to it, without pressing it', async () => {
     const { user } = setup(5)
-    await user.tab()
     await user.keyboard('4')
     await user.tab()
     await user.keyboard('7')
@@ -92,10 +89,11 @@ describe('SubSheet', () => {
     expect(on).toHaveTextContent('7')
   })
 
-  it('is a labelled dialog that takes focus and names the team', () => {
+  it('is a labelled dialog that focuses its Off field and names the team', () => {
     setup(5)
     const dialog = screen.getByRole('dialog', { name: 'Make a substitution' })
-    expect(dialog).toHaveFocus()
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
     expect(dialog).toHaveAttribute('aria-modal', 'false')
     expect(screen.getByText('Substitution · United')).toBeInTheDocument()
     expect(screen.getByText('No pairs yet')).toBeInTheDocument()

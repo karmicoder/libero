@@ -28,7 +28,7 @@ const show = (n?: number) => (n === undefined ? '–' : `#${n}`)
  * guidance, not validation: it shows a warning but confirming stays enabled.
  * Like the other sheets it is a non-modal dialog covering a team column,
  * accepts the physical keyboard (digits, Backspace, Enter for next, add or
- * confirm, Esc to cancel), and focuses itself when it opens.
+ * confirm, Esc to cancel), and focuses its Off field when it opens.
  */
 export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
   const titleId = useId()
@@ -38,7 +38,9 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
   const [entry, setEntry] = useState<Record<Field, string>>({ off: '', on: '' })
   const [queued, setQueued] = useState<SubstitutionPair[]>([])
 
-  useEffect(() => sheet.current?.focus(), [])
+  // Off starts selected, so it gets focus too: with focus on the sheet itself
+  // the first Tab would only land on the already highlighted Off.
+  useEffect(() => fieldButtons.current.off?.focus(), [])
 
   const pending: SubstitutionPair = {
     off: parseNumber(entry.off),
