@@ -55,6 +55,19 @@ test('the board shows the console state and follows changes', async ({
   await expect(board.getByRole('heading', { name: 'Rovers' })).toBeVisible()
 })
 
+test('undo on the console is reflected on the board', async ({ context }) => {
+  const { console_, board } = await openConsoleAndBoard(context)
+  await goalButton(console_, 'Home').click()
+  await console_.getByRole('button', { name: 'Skip details' }).click()
+  await expect(boardScore(board, 'Home')).toHaveText('1')
+
+  await console_.getByRole('button', { name: 'Undo · Goal' }).click()
+  await expect(boardScore(board, 'Home')).toHaveText('0')
+  await expect(
+    console_.getByRole('button', { name: 'Nothing to undo' }),
+  ).toBeDisabled()
+})
+
 test.describe('update banners', () => {
   const banner = (board: Page) => board.locator('[data-phase]')
 

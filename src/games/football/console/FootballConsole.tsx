@@ -39,6 +39,30 @@ function useSpaceToggle(onToggle: () => void) {
   }, [onToggle])
 }
 
+/**
+ * Ctrl/Cmd+Z undoes, unless it already means something: in a text field (the
+ * browser's own undo) or while a sheet is open (nothing under it should change).
+ */
+function useUndoHotkey(onUndo: () => void) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
+      if (!(e.ctrlKey || e.metaKey)) return
+      const target = e.target as HTMLElement | null
+      if (
+        target?.closest('input, textarea, select, [contenteditable="true"]') ||
+        document.querySelector('[role="dialog"]')
+      ) {
+        return
+      }
+      e.preventDefault()
+      onUndo()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onUndo])
+}
+
 export function FootballConsole({
   store,
   boardConnected,
@@ -136,6 +160,15 @@ export function FootballConsole({
         }
       : undefined
 
+  const lastStep = state.history?.at(-1)
+  const undo = () => {
+    const step = store.getState().history?.at(-1)
+    if (!step) return
+    dispatch({ type: 'undo', at: Date.now() })
+    setToast(`Undid ${step.label.toLowerCase()}`)
+  }
+  useUndoHotkey(undo)
+
   useSpaceToggle(() => {
     const current = store.getState()
     dispatch(
@@ -168,8 +201,13 @@ export function FootballConsole({
           <button type="button" className={styles.topButton} disabled>
             Settings
           </button>
-          <button type="button" className={styles.topButton} disabled>
-            Undo
+          <button
+            type="button"
+            className={styles.topButton}
+            disabled={!lastStep}
+            onClick={undo}
+          >
+            {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
           </button>
         </div>
       </div>

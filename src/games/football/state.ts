@@ -81,6 +81,45 @@ export interface SubstitutionEvent extends MatchEventBase {
 
 export type MatchEvent = GoalEvent | CardEvent | SubstitutionEvent
 
+/**
+ * One undoable step: the inverse of what an action did, small enough to ride
+ * along in every snapshot. Undo reverts match events and corrections (goals,
+ * cards, substitutions, pips, stoppage) without touching the clock; only
+ * set-clock and period changes restore time. Starting or stopping the clock
+ * and renaming a team are never undoable.
+ */
+export type UndoEntry = { label: string } & (
+  | { kind: 'goal'; team: TeamSide; eventId: string }
+  /** `event` is absent when the removed point had no logged goal. */
+  | { kind: 'goal-removed'; team: TeamSide; event?: GoalEvent; index: number }
+  | { kind: 'cards'; eventIds: string[] }
+  /** `before` is the team's remaining count in `periodId`, before the sub. */
+  | {
+      kind: 'substitution'
+      team: TeamSide
+      eventId: string
+      periodId: string
+      before: number
+    }
+  | {
+      kind: 'subs-remaining'
+      team: TeamSide
+      periodId: string
+      before: number
+    }
+  | { kind: 'stoppage'; periodId: string; before: number | null }
+  /** Seconds the set-clock moved the displayed time by (undo shifts back). */
+  | { kind: 'clock'; delta: number }
+  /** The period left behind, with the time and counts it had. */
+  | {
+      kind: 'period'
+      periodId: string
+      seconds: number
+      stoppageMinutes: number | null
+      subsRemaining: Record<TeamSide, number>
+    }
+)
+
 export interface TeamState {
   name: string
   score: number
@@ -104,6 +143,11 @@ export interface FootballState {
   events: MatchEvent[]
   /** Next event id is `e<nextEventId>`. Never reused, even after removals. */
   nextEventId: number
+  /**
+   * Undoable steps, oldest first, capped at 30. Absent (a match saved before
+   * undo existed) means none.
+   */
+  history?: UndoEntry[]
 }
 
 /**
@@ -166,7 +210,8 @@ export type FootballAction =
    * are off.
    */
   | { type: 'set-subs-remaining'; team: TeamSide; remaining: number }
-  | { type: 'undo' }
+  /** Reverts the most recent undoable step; `at` keeps clock math pure. */
+  | { type: 'undo'; at: number }
   | { type: 'update-config'; config: MatchConfig }
 
 /** A run of players receiving the same kind of card in one notice. */
