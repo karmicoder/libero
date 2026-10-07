@@ -21,6 +21,7 @@ import type {
 } from '../state'
 import { maxSubsRemaining, subLimit } from '../subs'
 import { isFootballState } from '../validate'
+import { undoEntryFor, undoLast, withEntry } from './undo'
 
 /** Shirt numbers are 1-99 (no leading zero); anything else is dropped. */
 const validJersey = (n: number | undefined): n is number =>
@@ -266,8 +267,8 @@ function reduceState(
       }
     }
     default:
-      // Undo and config edits are handled by later engine work; until then
-      // they leave the state untouched.
+      // Undo is handled in `reduce`; config edits by later engine work. Until
+      // then they leave the state untouched.
       return state
   }
 }
@@ -367,7 +368,14 @@ export const footballEngine: GameEngine<
     nextEventId: 1,
   }),
   reduce: (state, action) => {
+    if (action.type === 'undo') {
+      return { state: undoLast(state, action.at), messages: [] }
+    }
     const next = reduceState(state, action)
-    return { state: next, messages: noticesFor(state, next, action) }
+    const entry = undoEntryFor(state, next, action)
+    return {
+      state: entry ? withEntry(next, entry) : next,
+      messages: noticesFor(state, next, action),
+    }
   },
 }

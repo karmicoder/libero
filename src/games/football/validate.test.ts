@@ -23,6 +23,15 @@ describe('isFootballState', () => {
     expect(isFootballState(JSON.parse(JSON.stringify(valid())))).toBe(true)
   })
 
+  it('accepts state saved before undo existed, and with a history', () => {
+    expect(isFootballState(valid())).toBe(true)
+    const history = [
+      { label: 'Goal', kind: 'goal', team: 'home', eventId: 'e1' },
+    ]
+    expect(isFootballState({ ...valid(), history })).toBe(true)
+    expect(isFootballState({ ...valid(), history: 'x' })).toBe(false)
+  })
+
   it('rejects non-objects and incomplete state', () => {
     expect(isFootballState(null)).toBe(false)
     expect(isFootballState('x')).toBe(false)

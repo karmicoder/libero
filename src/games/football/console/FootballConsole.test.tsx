@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -460,6 +460,90 @@ describe('FootballConsole', () => {
       })
       expect(screen.queryByRole('button', { name: 'Substitution' })).toBeNull()
       expect(screen.queryByText(/left this period/)).toBeNull()
+    })
+  })
+
+  describe('undo', () => {
+    const undoButton = () =>
+      screen.getByRole('button', { name: /^(Undo|Nothing to undo)/ })
+
+    it('is disabled with nothing to undo', () => {
+      setup()
+      expect(undoButton()).toHaveTextContent('Nothing to undo')
+      expect(undoButton()).toBeDisabled()
+    })
+
+    it('names the last step and undoes it', async () => {
+      const { store, user } = setup()
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      expect(undoButton()).toHaveTextContent('Undo · Goal')
+      await user.click(undoButton())
+      expect(score('Home')).toHaveTextContent('0')
+      expect(store.getState().events).toEqual([])
+      expect(screen.getByText('Undid goal')).toBeInTheDocument()
+      expect(undoButton()).toBeDisabled()
+    })
+
+    it('leaves a running clock running', async () => {
+      const { store, user } = setup()
+      await user.click(primary())
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      await user.click(undoButton())
+      expect(store.getState().clock.runningSince).not.toBeNull()
+      expect(screen.getByText('Running')).toBeInTheDocument()
+    })
+
+    it('undoes with Ctrl+Z and Cmd+Z', async () => {
+      const { user } = setup()
+      for (const modifier of ['Control', 'Meta']) {
+        await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+        await user.click(screen.getByRole('button', { name: 'Skip details' }))
+        expect(score('Home')).toHaveTextContent('1')
+        await user.keyboard(`{${modifier}>}z{/${modifier}}`)
+        expect(score('Home')).toHaveTextContent('0')
+      }
+    })
+
+    it('ignores a held key, so it cannot rewind the whole history', async () => {
+      const { user } = setup()
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
+      fireEvent.keyDown(document.body, {
+        key: 'z',
+        ctrlKey: true,
+        repeat: true,
+      })
+      fireEvent.keyDown(document.body, {
+        key: 'z',
+        ctrlKey: true,
+        repeat: true,
+      })
+      await screen.findByText('Undid goal')
+      expect(score('Home')).toHaveTextContent('1')
+    })
+
+    it('is left to the browser while typing in a text field', async () => {
+      const { user } = setup()
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      await user.click(screen.getByRole('textbox', { name: 'Home team name' }))
+      await user.keyboard('{Control>}z{/Control}')
+      expect(score('Home')).toHaveTextContent('1')
+    })
+
+    it('is ignored while a sheet is open', async () => {
+      const { user } = setup()
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      await user.click(screen.getAllByRole('button', { name: 'Card' })[0])
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      await user.keyboard('{Control>}z{/Control}')
+      expect(score('Home')).toHaveTextContent('1')
     })
   })
 

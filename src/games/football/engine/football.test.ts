@@ -984,7 +984,10 @@ describe('notices', () => {
       )
       expect(messages).toHaveLength(1)
       expect(JSON.stringify(state)).not.toContain('goal-scored')
-      expect(Object.keys(state).sort()).toEqual(Object.keys(fresh()).sort())
+      // Only the undo history is new: nothing from the notice itself.
+      expect(Object.keys(state).sort()).toEqual(
+        [...Object.keys(fresh()), 'history'].sort(),
+      )
     })
 
     it('is identical whether or not the goal is announced', () => {

@@ -32,6 +32,7 @@ export function isFootballState(value: unknown): value is FootballState {
     typeof value.subsRemaining.visitor === 'number' &&
     typeof value.subsRemaining.home === 'number' &&
     Array.isArray(value.events) &&
-    typeof value.nextEventId === 'number'
+    typeof value.nextEventId === 'number' &&
+    (value.history === undefined || Array.isArray(value.history))
   )
 }
