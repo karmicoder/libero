@@ -1,4 +1,6 @@
 import { clockSeconds } from '../clock'
+import { findPeriod } from '../config'
+import { subLimit } from '../subs'
 import type {
   FootballAction,
   FootballState,
@@ -144,7 +146,7 @@ function withScore(
  * period changes (the old period, stopped at the time it had). Counts tied to
  * a period are restored only while still in that period.
  */
-export function undoLast(state: FootballState, at: number): FootballState {
+function applyUndo(state: FootballState, at: number): FootballState {
   const history = state.history ?? []
   const entry = history.at(-1)
   if (!entry) return state
@@ -205,6 +207,8 @@ export function undoLast(state: FootballState, at: number): FootballState {
       }
     }
     case 'period':
+      // A config edit may have removed the period it would go back to.
+      if (!findPeriod(state.config, entry.periodId)) return base
       return {
         ...base,
         periodId: entry.periodId,
@@ -215,5 +219,27 @@ export function undoLast(state: FootballState, at: number): FootballState {
     // Saved state is only loosely validated: drop an entry of an unknown kind.
     default:
       return base
+  }
+}
+
+/**
+ * Entries hold values from when they were recorded, and a config edit may
+ * have changed what is allowed since: keep the restored counts within the
+ * current config.
+ */
+export function undoLast(state: FootballState, at: number): FootballState {
+  const undone = applyUndo(state, at)
+  if (undone === state) return state
+  const max = subLimit(undone.config) ?? 0
+  const fit = (n: number) => Math.min(max, Math.max(0, n))
+  return {
+    ...undone,
+    subsRemaining: {
+      visitor: fit(undone.subsRemaining.visitor),
+      home: fit(undone.subsRemaining.home),
+    },
+    stoppageMinutes: undone.config.stoppageTime.enabled
+      ? undone.stoppageMinutes
+      : null,
   }
 }

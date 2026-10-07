@@ -1,0 +1,57 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  inline-size: max-content;
+  max-inline-size: 100%;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+}
+
+.sheet:focus {
+  outline: none;
+}
+
+.readout {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(3, var(--size-step));
+  gap: var(--space-2);
+}
+
+.key,
+.cancel {
+  min-block-size: var(--size-control);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-weight: 700;
+}
+
+.key {
+  font-size: var(--text-md);
+}
+
+.key:hover,
+.cancel:hover {
+  background: var(--surface-tile-hover);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.cancel {
+  padding-inline: var(--space-5);
+}

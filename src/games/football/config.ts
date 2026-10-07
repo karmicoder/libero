@@ -81,3 +81,31 @@ export function nextPlayPeriod(
   if (i === -1) return undefined
   return config.periods.slice(i + 1).find((p) => p.kind === 'play')
 }
+
+/** Why a config can't be saved: the only rules that protect state validity. */
+export type ConfigProblem = 'current-period-removed' | 'no-play-period'
+
+export const CONFIG_PROBLEM_MESSAGES: Record<ConfigProblem, string> = {
+  'current-period-removed':
+    "The current period can't be removed while it is in progress.",
+  'no-play-period': 'At least one period must be a play period.',
+}
+
+/**
+ * Problems that would leave the match in an invalid state if `config` were
+ * applied while `currentPeriodId` is the current period. Everything else is
+ * the scorer's call.
+ */
+export function configProblems(
+  config: MatchConfig,
+  currentPeriodId: string,
+): ConfigProblem[] {
+  const problems: ConfigProblem[] = []
+  if (!findPeriod(config, currentPeriodId)) {
+    problems.push('current-period-removed')
+  }
+  if (!config.periods.some((p) => p.kind === 'play')) {
+    problems.push('no-play-period')
+  }
+  return problems
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  configProblems,
   defaultMatchConfig,
   nextPlayPeriod,
   periodOffsetSeconds,
@@ -74,5 +75,23 @@ describe('nextPlayPeriod', () => {
     expect(nextPlayPeriod(c, 'ht')?.id).toBe('h2')
     expect(nextPlayPeriod(c, 'et2')).toBeUndefined()
     expect(nextPlayPeriod(c, 'nope')).toBeUndefined()
+  })
+})
+
+describe('configProblems', () => {
+  it('finds none in the defaults', () => {
+    expect(configProblems(defaultMatchConfig(), 'h1')).toEqual([])
+  })
+
+  it('flags a current period that is not in the config', () => {
+    const config = defaultMatchConfig()
+    config.periods = config.periods.filter((p) => p.id !== 'h2')
+    expect(configProblems(config, 'h2')).toEqual(['current-period-removed'])
+  })
+
+  it('requires at least one play period', () => {
+    const config = defaultMatchConfig()
+    config.periods = config.periods.filter((p) => p.kind !== 'play')
+    expect(configProblems(config, 'pen')).toEqual(['no-play-period'])
   })
 })

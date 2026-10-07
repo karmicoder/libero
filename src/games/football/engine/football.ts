@@ -2,6 +2,7 @@ import type { GameEngine } from '../../../engines/types'
 import { cautionedNumbers } from '../cards'
 import { clockSeconds } from '../clock'
 import {
+  configProblems,
   defaultMatchConfig,
   findPeriod,
   MAX_STOPPAGE_MINUTES,
@@ -18,8 +19,9 @@ import type {
   MatchConfig,
   MatchEvent,
   SubstitutionEvent,
+  TeamSide,
 } from '../state'
-import { maxSubsRemaining, subLimit } from '../subs'
+import { maxSubsRemaining, subLimit, subsMade } from '../subs'
 import { isFootballState } from '../validate'
 import { undoEntryFor, undoLast, withEntry } from './undo'
 
@@ -266,9 +268,34 @@ function reduceState(
         subsRemaining: { ...state.subsRemaining, [action.team]: remaining },
       }
     }
+    case 'update-config': {
+      // The screen shows these as messages; the reducer holds the line anyway.
+      if (configProblems(action.config, state.periodId).length > 0) {
+        return state
+      }
+      const config = action.config
+      // The clock is untouched: later periods' offsets derive from the config.
+      const limit = subLimit(config)
+      const left = (team: TeamSide) =>
+        limit === undefined
+          ? 0
+          : Math.max(0, limit - subsMade(state.events, team, state.periodId))
+      // Only a changed limit re-derives the counts; any other edit keeps the
+      // scorer's manual corrections.
+      const limitChanged = limit !== subLimit(state.config)
+      return {
+        ...state,
+        config,
+        stoppageMinutes: config.stoppageTime.enabled
+          ? state.stoppageMinutes
+          : null,
+        subsRemaining: limitChanged
+          ? { visitor: left('visitor'), home: left('home') }
+          : state.subsRemaining,
+      }
+    }
     default:
-      // Undo is handled in `reduce`; config edits by later engine work. Until
-      // then they leave the state untouched.
+      // Undo is handled in `reduce`.
       return state
   }
 }

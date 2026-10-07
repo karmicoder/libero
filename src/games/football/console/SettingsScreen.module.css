@@ -1,0 +1,183 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-inline-size: 60rem;
+  inline-size: 100%;
+  margin-inline: auto;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.header h2:focus {
+  outline: none;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.secondary,
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--size-touch);
+  padding-inline: var(--space-5);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-weight: 700;
+  transition: background var(--duration-fast);
+}
+
+.step {
+  min-inline-size: var(--size-touch);
+  padding-inline: var(--space-2);
+}
+
+.secondary:hover:not(:disabled),
+.step:hover:not(:disabled) {
+  background: var(--surface-tile-hover);
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 700;
+}
+
+.switchRow input {
+  inline-size: var(--size-control);
+  block-size: var(--size-touch);
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stepper output {
+  min-inline-size: 2ch;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.periods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field input,
+.field select,
+.lengthButton {
+  min-block-size: var(--size-touch);
+  padding-inline: var(--space-3);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.abbreviation {
+  inline-size: 6ch;
+  text-transform: uppercase;
+}
+
+.lengthButton {
+  min-inline-size: 7rem;
+  font-weight: 700;
+  text-align: start;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.current {
+  margin-inline-end: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.messages {
+  min-block-size: 1lh;
+  color: var(--card-red);
+  font-weight: 700;
+}
+
+.messages p {
+  margin: 0;
+}
