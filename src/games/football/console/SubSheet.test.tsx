@@ -21,6 +21,29 @@ const key = (name: string | RegExp) => screen.getByRole('button', { name })
 const confirm = () => key(/^Confirm/)
 
 describe('SubSheet', () => {
+  it('tabs from the Off field to the On field, then on to Next', async () => {
+    const { user } = setup(5)
+    await user.tab()
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: /^On/ })).toHaveFocus()
+    await user.tab()
+    expect(key('Next ›')).toHaveFocus()
+  })
+
+  it('selects a field by clicking it, and digits still type into it', async () => {
+    const { user } = setup(5)
+    const on = screen.getByRole('button', { name: /^On/ })
+    await user.click(on)
+    expect(on).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    await user.keyboard('7')
+    expect(on).toHaveTextContent('7')
+  })
+
   it('is a labelled dialog that takes focus and names the team', () => {
     setup(5)
     const dialog = screen.getByRole('dialog', { name: 'Make a substitution' })

@@ -37,22 +37,16 @@
   padding: var(--space-2);
   border: var(--border-width) solid var(--border-tile-hover);
   border-radius: var(--radius-button);
+  background: transparent;
   cursor: pointer;
 }
 
-/* The radio is the control; the label is the visible field. */
-.field input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.field:has(:checked) {
+.field[aria-pressed='true'] {
   border-color: var(--accent);
   background: var(--surface-tile-hover);
 }
 
-.field:has(:focus-visible) {
+.field:focus-visible {
   outline: var(--border-width) solid var(--accent);
   outline-offset: var(--border-width);
 }
