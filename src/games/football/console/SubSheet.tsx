@@ -33,6 +33,7 @@ const show = (n?: number) => (n === undefined ? '–' : `#${n}`)
 export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
   const titleId = useId()
   const sheet = useRef<HTMLDivElement>(null)
+  const fieldButtons = useRef<Partial<Record<Field, HTMLButtonElement>>>({})
   const [field, setField] = useState<Field>('off')
   const [entry, setEntry] = useState<Record<Field, string>>({ off: '', on: '' })
   const [queued, setQueued] = useState<SubstitutionPair[]>([])
@@ -49,11 +50,14 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
   const overLimit = remaining !== undefined && pairs.length > remaining
 
   // Buttons that disable themselves would drop focus, and with it the
-  // keyboard handler, so focus goes back to the sheet.
-  const next = () => {
-    setField('on')
-    sheet.current?.focus()
+  // keyboard handler, so focus moves to the field now being entered. Sending
+  // it to the sheet instead would make the next Tab land on Off, which
+  // selects Off again.
+  const focusField = (value: Field) => {
+    setField(value)
+    fieldButtons.current[value]?.focus()
   }
+  const next = () => focusField('on')
   const type = (key: string) =>
     setEntry((v) => ({ ...v, [field]: typeDigit(v[field], key) }))
   const erase = () => setEntry((v) => ({ ...v, [field]: backspace(v[field]) }))
@@ -61,14 +65,16 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
     if (!hasPending) return
     setQueued([...queued, pending])
     setEntry({ off: '', on: '' })
-    setField('off')
-    sheet.current?.focus()
+    focusField('off')
   }
   const remove = (index: number) =>
     setQueued(queued.filter((_, i) => i !== index))
   const confirm = () => {
     if (pairs.length > 0) onConfirm(pairs)
   }
+
+  const isFieldButton = (target: EventTarget | null) =>
+    Object.values(fieldButtons.current).some((button) => button === target)
 
   const handleKey = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -83,8 +89,12 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
     } else if (e.key === 'Backspace') {
       e.preventDefault()
       erase()
-    } else if (e.key === 'Enter' && e.target === e.currentTarget) {
-      // On a focused button Enter already presses that button.
+    } else if (
+      e.key === 'Enter' &&
+      (e.target === e.currentTarget || isFieldButton(e.target))
+    ) {
+      // On any other focused button Enter already presses that button. The
+      // field buttons are excluded: focusing one already selects it.
       e.preventDefault()
       if (field === 'off' && entry.off !== '') next()
       else if (hasPending) add()
@@ -131,6 +141,9 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
             <button
               key={value}
               type="button"
+              ref={(el) => {
+                if (el) fieldButtons.current[value] = el
+              }}
               className={styles.field}
               aria-pressed={field === value}
               // Focus selects too, so Tab-ing to a field makes it the one
