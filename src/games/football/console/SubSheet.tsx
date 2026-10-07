@@ -133,6 +133,10 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
               type="button"
               className={styles.field}
               aria-pressed={field === value}
+              // Focus selects too, so Tab-ing to a field makes it the one
+              // that digits type into. Click covers browsers that don't
+              // focus buttons on click.
+              onFocus={() => setField(value)}
               onClick={() => setField(value)}
             >
               <span className="eyebrow">{label}</span>

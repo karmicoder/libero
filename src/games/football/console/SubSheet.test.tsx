@@ -21,14 +21,17 @@ const key = (name: string | RegExp) => screen.getByRole('button', { name })
 const confirm = () => key(/^Confirm/)
 
 describe('SubSheet', () => {
-  it('tabs from the Off field to the On field, then on to Next', async () => {
+  it('tabs from the Off field to the On field, then on to Add pair', async () => {
     const { user } = setup(5)
     await user.tab()
-    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
+    const off = screen.getByRole('button', { name: /^Off/ })
+    expect(off).toHaveFocus()
+    await user.keyboard('4')
     await user.tab()
     expect(screen.getByRole('button', { name: /^On/ })).toHaveFocus()
+    // Next is disabled once On is the active field.
     await user.tab()
-    expect(key('Next ›')).toHaveFocus()
+    expect(key(/^\+ Add pair/)).toHaveFocus()
   })
 
   it('keeps focus on the On field after pressing it with the keyboard', async () => {
@@ -44,6 +47,16 @@ describe('SubSheet', () => {
     await user.tab()
     expect(key('Next ›')).toBeDisabled()
     expect(key(/^\+ Add pair/)).toHaveFocus()
+  })
+
+  it('types into the On field after tabbing to it, without pressing it', async () => {
+    const { user } = setup(5)
+    await user.tab()
+    await user.keyboard('4')
+    await user.tab()
+    await user.keyboard('7')
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveTextContent('4')
+    expect(screen.getByRole('button', { name: /^On/ })).toHaveTextContent('7')
   })
 
   it('selects a field by clicking it, and digits still type into it', async () => {
