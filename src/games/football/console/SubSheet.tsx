@@ -133,10 +133,7 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
               type="button"
               className={styles.field}
               aria-pressed={field === value}
-              onClick={() => {
-                setField(value)
-                sheet.current?.focus()
-              }}
+              onClick={() => setField(value)}
             >
               <span className="eyebrow">{label}</span>
               <span className={styles.value}>{entry[value] || '–'}</span>
