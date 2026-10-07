@@ -31,6 +31,21 @@ describe('SubSheet', () => {
     expect(key('Next ›')).toHaveFocus()
   })
 
+  it('keeps focus on the On field after pressing it with the keyboard', async () => {
+    const { user } = setup(5)
+    await user.tab()
+    await user.tab()
+    await user.keyboard('{Enter}')
+    const on = screen.getByRole('button', { name: /^On/ })
+    expect(on).toHaveAttribute('aria-pressed', 'true')
+    expect(on).toHaveFocus()
+    await user.keyboard('7')
+    expect(on).toHaveTextContent('7')
+    await user.tab()
+    expect(key('Next ›')).toBeDisabled()
+    expect(key(/^\+ Add pair/)).toHaveFocus()
+  })
+
   it('selects a field by clicking it, and digits still type into it', async () => {
     const { user } = setup(5)
     const on = screen.getByRole('button', { name: /^On/ })
