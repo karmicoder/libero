@@ -55,6 +55,33 @@ test('the board shows the console state and follows changes', async ({
   await expect(board.getByRole('heading', { name: 'Rovers' })).toBeVisible()
 })
 
+test('a period change on the console reaches the board', async ({
+  context,
+}) => {
+  const { console_, board } = await openConsoleAndBoard(context)
+  await expect(board.getByRole('heading', { name: '1st half' })).toBeVisible()
+
+  await console_.getByText('HT', { exact: true }).click()
+  await expect(board.getByRole('heading', { name: 'Half time' })).toBeVisible()
+})
+
+test('the board keeps following a console that was reloaded and resumed', async ({
+  context,
+}) => {
+  const { console_, board } = await openConsoleAndBoard(context)
+  await goalButton(console_, 'Home').click()
+  await console_.getByRole('button', { name: 'Skip details' }).click()
+  await expect(boardScore(board, 'Home')).toHaveText('1')
+
+  await console_.reload()
+  await console_.getByRole('button', { name: 'Resume match' }).click()
+  await expect(console_.getByLabel('Home score')).toHaveText('1')
+
+  await goalButton(console_, 'Home').click()
+  await console_.getByRole('button', { name: 'Skip details' }).click()
+  await expect(boardScore(board, 'Home')).toHaveText('2')
+})
+
 test('undo on the console is reflected on the board', async ({ context }) => {
   const { console_, board } = await openConsoleAndBoard(context)
   await goalButton(console_, 'Home').click()
