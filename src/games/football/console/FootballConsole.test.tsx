@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerBuiltinEngines } from '../../../engines/builtin'
 import { EngineRegistry } from '../../../engines/registry'
 import { MatchStore } from '../../../match/MatchStore'
@@ -375,8 +375,19 @@ describe('FootballConsole', () => {
   })
 
   describe('stoppage time', () => {
-    it('increments and decrements, never below 0', async () => {
-      const { store, user } = setup()
+    // The control settles for 1000 ms before it commits, so these run on fake
+    // timers. fireEvent, because userEvent's own waits hang under them.
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
+    const setupFake = setup
+    const settle = () => act(() => vi.advanceTimersByTime(1000))
+
+    it('increments and decrements, never below 0', () => {
+      const { store } = setupFake()
       const less = screen.getByRole('button', {
         name: 'Decrease stoppage time',
       })
@@ -384,29 +395,102 @@ describe('FootballConsole', () => {
         name: 'Increase stoppage time',
       })
       expect(less).toBeDisabled()
-      await user.click(more)
-      await user.click(more)
-      expect(store.getState().stoppageMinutes).toBe(2)
+      fireEvent.click(more)
+      fireEvent.click(more)
       expect(screen.getByText('+2′')).toBeInTheDocument()
-      await user.click(less)
+      settle()
+      expect(store.getState().stoppageMinutes).toBe(2)
+      fireEvent.click(less)
+      settle()
       expect(store.getState().stoppageMinutes).toBe(1)
     })
 
-    it('reads off at 0 and stops at 15', async () => {
-      const { store, user } = setup()
+    it('commits several presses as one change after the delay', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      const { store } = setupFake()
+      const types = () => reduce.mock.calls.map(([, action]) => action.type)
+      const more = screen.getByRole('button', {
+        name: 'Increase stoppage time',
+      })
+      fireEvent.click(more)
+      fireEvent.click(more)
+      fireEvent.click(more)
+      // The console shows +3′ at once; the store (and so the board) hasn't.
+      expect(screen.getByText(/\+3′/)).toBeInTheDocument()
+      expect(store.getState().stoppageMinutes).toBeNull()
+      expect(types()).toEqual([])
+      settle()
+      expect(reduce).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        type: 'set-stoppage',
+        minutes: 3,
+      })
+      expect(store.getState().stoppageMinutes).toBe(3)
+    })
+
+    it('marks the value as pending until it is committed', () => {
+      setupFake()
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Increase stoppage time' }),
+      )
+      const value = screen.getByText(/\+1′/)
+      expect(value).toHaveAttribute('data-pending')
+      expect(value).toHaveTextContent('not yet shown on the board')
+      settle()
+      expect(value).not.toHaveAttribute('data-pending')
+    })
+
+    it('commits nothing when presses cancel out', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      setupFake()
+      const types = () => reduce.mock.calls.map(([, action]) => action.type)
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Increase stoppage time' }),
+      )
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Decrease stoppage time' }),
+      )
+      settle()
+      expect(types()).toEqual([])
+    })
+
+    it('commits at once when focus leaves the control', () => {
+      const { store } = setupFake()
+      const more = screen.getByRole('button', {
+        name: 'Increase stoppage time',
+      })
+      act(() => more.focus())
+      fireEvent.click(more)
+      act(() => screen.getByRole('button', { name: 'Set clock' }).focus())
+      expect(store.getState().stoppageMinutes).toBe(1)
+    })
+
+    it('commits before a period change resets it', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      setupFake()
+      const types = () => reduce.mock.calls.map(([, action]) => action.type)
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Increase stoppage time' }),
+      )
+      fireEvent.click(screen.getByRole('radio', { name: /HT/ }))
+      expect(types()).toEqual(['set-stoppage', 'set-period'])
+    })
+
+    it('reads off at 0 and stops at 15', () => {
+      const { store } = setupFake()
       const more = screen.getByRole('button', {
         name: 'Increase stoppage time',
       })
       expect(screen.getByText('off')).toBeInTheDocument()
-      for (let i = 0; i < 15; i++) await user.click(more)
-      expect(store.getState().stoppageMinutes).toBe(15)
-      expect(screen.getByText('+15′')).toBeInTheDocument()
+      for (let i = 0; i < 15; i++) fireEvent.click(more)
+      expect(screen.getByText(/\+15′/)).toBeInTheDocument()
       expect(more).toBeDisabled()
+      settle()
+      expect(store.getState().stoppageMinutes).toBe(15)
     })
 
-    it('is disabled outside play periods', async () => {
-      const { user } = setup()
-      await user.click(screen.getByRole('radio', { name: /HT/ }))
+    it('is disabled outside play periods', () => {
+      setupFake()
+      fireEvent.click(screen.getByRole('radio', { name: /HT/ }))
       expect(
         screen.getByRole('button', { name: 'Increase stoppage time' }),
       ).toBeDisabled()

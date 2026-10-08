@@ -108,6 +108,13 @@
   font-size: var(--text-xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+
+  /* Not yet committed, so not yet on the board. */
+  &[data-pending] {
+    color: var(--text-muted);
+    text-decoration: underline dashed;
+    text-underline-offset: var(--space-1);
+  }
 }
 
 .step {

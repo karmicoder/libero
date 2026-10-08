@@ -30,6 +30,7 @@ Run `npm run format` and `npm run check` before finishing a change.
 
 - **UX guidance over hard validation.** The user knows best what the scoreboard should show. Warn and guide in the UI; block only when needed for state validity (e.g. removing the current period, having no `play` period).
 - **"10-foot" scoreboard.** Boards are read from across a room: huge, high-contrast, glanceable type. Layout is defined by aspect ratio (a scaled 16:9 stage), not pixel sizes.
+- **Debounce repeated-press adjustments, never discrete events.** Controls where the operator nudges a number with repeated presses (stoppage time ±; later manual subs remaining ± in #15) use `useDebouncedCommit` (`src/match/`): the console shows the pending value at once, marks it pending, and dispatches once after 1000 ms unchanged, so the boards never flash intermediate values. Flush on blur and before a dependent dispatch (e.g. period change). Goals, cards, substitutions and clock start/stop dispatch immediately. Timers here only pace the UI; they never feed the game clock.
 
 ## Conventions
 
