@@ -20,15 +20,20 @@
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
+  --space-7: 1.75rem;
   --space-8: 2rem;
   --space-10: 2.5rem;
 
   /* Control sizes; --size-touch is the 44px minimum touch target. */
   --size-dot: 0.75rem;
+  --size-icon: 1.5rem;
   --size-touch: 2.75rem;
   --size-control: 3rem;
   --size-control-lg: 3.5rem;
   --size-step: 4rem;
+
+  /* Upper bound of the fluid page gutter. */
+  --gutter-max: 3.5rem;
 
   /* Type scale. */
   --text-sm: 0.8125rem;
@@ -36,6 +41,7 @@
   --text-md: 1.125rem;
   --text-lg: 1.25rem;
   --text-xl: 1.5rem;
+  --text-title: 1.75rem;
   --text-2xl: 2rem;
   /* Scoreboard-style numerals. */
   --text-clock: 5.5rem;
@@ -48,6 +54,7 @@
   /* Motion. Zeroed below for users who prefer reduced motion. */
   --duration-fast: 120ms;
   --duration-slow: 320ms;
+  --duration-stagger: 30ms;
 
   --radius-tile: 24px;
   --radius-button: 14px;
@@ -77,6 +84,7 @@
   :root {
     --duration-fast: 0ms;
     --duration-slow: 0ms;
+    --duration-stagger: 0ms;
   }
 }
 
