@@ -26,10 +26,14 @@
 
   /* Control sizes; --size-touch is the 44px minimum touch target. */
   --size-dot: 0.75rem;
+  --size-icon: 1.5rem;
   --size-touch: 2.75rem;
   --size-control: 3rem;
   --size-control-lg: 3.5rem;
   --size-step: 4rem;
+
+  /* Upper bound of the fluid page gutter. */
+  --gutter-max: 3.5rem;
 
   /* Type scale. */
   --text-sm: 0.8125rem;

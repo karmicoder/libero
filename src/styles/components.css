@@ -50,7 +50,8 @@
 
 .page {
   flex: 1;
-  padding: var(--space-10) clamp(var(--space-4), 4.5vw, 3.5rem) var(--space-8);
+  padding: var(--space-10) clamp(var(--space-4), 4.5vw, var(--gutter-max))
+    var(--space-8);
 }
 
 .page .eyebrow {
@@ -173,7 +174,7 @@
   justify-content: space-between;
   gap: var(--space-4);
   min-block-size: 6rem;
-  padding: var(--space-4) clamp(var(--space-4), 4.5vw, 3.5rem);
+  padding: var(--space-4) clamp(var(--space-4), 4.5vw, var(--gutter-max));
   border-block-start: var(--border-width) solid var(--border-subtle);
   background: var(--surface-page);
 }
@@ -212,8 +213,8 @@
 }
 
 .primary svg {
-  inline-size: var(--space-6);
-  block-size: var(--space-6);
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
 }
 
 @keyframes tile-in {
