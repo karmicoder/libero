@@ -5,16 +5,21 @@ import {
   type ComponentType,
 } from 'react'
 import type { BoardProps } from '../boards/registry'
+import { engineRegistry } from '../engines/registry'
+import type { ClockTiming } from '../engines/types'
 import { BoardLink } from '../sync/BoardLink'
 import { openBroadcastChannel } from '../sync/broadcastChannel'
 import type { ChannelOpener } from '../sync/types'
 import styles from './BoardHost.module.css'
+import { monotonicNow } from './useNow'
 
 interface Props<State, Notice> {
   sportId: string
   Board: ComponentType<BoardProps<State, Notice>>
   /** Defaults to a `BroadcastChannel` named for the sport. */
   openChannel?: ChannelOpener<State, Notice>
+  /** Defaults to the sport's engine's `clockTiming`. */
+  timing?: ClockTiming<State>
 }
 
 /**
@@ -26,8 +31,17 @@ export function BoardHost<State, Notice>({
   sportId,
   Board,
   openChannel = () => openBroadcastChannel<State, Notice>(sportId),
+  timing = engineRegistry.get<State, unknown, Notice>(sportId)?.clockTiming,
 }: Props<State, Notice>) {
-  const [link] = useState(() => new BoardLink<State, Notice>(openChannel))
+  // A running clock is re-anchored to our own monotonic clock on arrival, so
+  // the console's timestamps never matter here.
+  const [link] = useState(
+    () =>
+      new BoardLink<State, Notice>(openChannel, {
+        adopt: (state) =>
+          timing ? timing.anchor(state, monotonicNow()) : state,
+      }),
+  )
 
   useEffect(() => {
     link.start()

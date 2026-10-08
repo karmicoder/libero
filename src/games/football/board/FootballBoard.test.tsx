@@ -77,7 +77,9 @@ describe('FootballBoard', () => {
 
   it('derives a running clock from its start timestamp', () => {
     renderBoard(
-      state({ clock: { baseSeconds: 60, runningSince: Date.now() - 5_000 } }),
+      state({
+        clock: { baseSeconds: 60, runningSince: performance.now() - 5_000 },
+      }),
     )
     expect(screen.getByText(/^01:0[4-9]$/)).toBeInTheDocument()
   })
