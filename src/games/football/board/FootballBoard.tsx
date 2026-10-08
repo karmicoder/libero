@@ -72,21 +72,23 @@ export function FootballBoard({
           <Team side="visitor" state={state} />
 
           <section className={styles.centre} aria-label="Match clock">
-            {showClock && (
-              <time
-                className={styles.clock}
-                dateTime={`PT${displayedSeconds(state.clock, now)}S`}
-              >
-                {formatClock(displayedSeconds(state.clock, now))}
-              </time>
-            )}
-            <h2 className={styles.period}>{period?.name}</h2>
-            {showStoppage && (
-              <p className={styles.pill}>
-                <span className="visually-hidden">Stoppage time </span>+
-                {state.stoppageMinutes}′
-              </p>
-            )}
+            <div className={styles.readout}>
+              {showClock && (
+                <time
+                  className={styles.clock}
+                  dateTime={`PT${displayedSeconds(state.clock, now)}S`}
+                >
+                  {formatClock(displayedSeconds(state.clock, now))}
+                </time>
+              )}
+              <h2 className={styles.period}>{period?.name}</h2>
+              {showStoppage && (
+                <p className={styles.pill}>
+                  <span className="visually-hidden">Stoppage time </span>+
+                  {state.stoppageMinutes}′
+                </p>
+              )}
+            </div>
           </section>
 
           <Team side="home" state={state} />
