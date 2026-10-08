@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from 'react'
 export const JUMP_THRESHOLD_MS = 1_000
 const CHECK_MS = 1_000
 
+// Module-level so the defaults are stable effect dependencies: a new function
+// each render would restart the watch and drop its baseline sample.
+const wallNow = () => Date.now()
+const monoNow = () => performance.now()
+
 export interface ClockJump {
   /** Seconds the wall clock moved beyond the monotonic clock; negative = back. */
   seconds: number
@@ -18,8 +23,8 @@ export interface ClockJump {
  */
 export function useWallClockJump(
   active: boolean,
-  wall: () => number = Date.now,
-  mono: () => number = () => performance.now(),
+  wall: () => number = wallNow,
+  mono: () => number = monoNow,
 ): { jump: ClockJump | null; dismiss: () => void } {
   const [jump, setJump] = useState<ClockJump | null>(null)
 
