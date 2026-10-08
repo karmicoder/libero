@@ -6,9 +6,9 @@
 
 .skip-link {
   position: absolute;
-  inset-block-start: 8px;
-  inset-inline-start: 8px;
-  padding: 8px 16px;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-button);
   background: var(--accent);
   color: var(--on-accent);
@@ -34,14 +34,14 @@
   flex: none;
   display: flex;
   align-items: center;
-  block-size: 56px;
-  padding-inline: 16px;
-  border-block-end: 2px solid var(--border-subtle);
+  block-size: var(--size-control-lg);
+  padding-inline: var(--space-4);
+  border-block-end: var(--border-width) solid var(--border-subtle);
 }
 
 .wordmark {
   font-weight: 700;
-  font-size: 1.125rem;
+  font-size: var(--text-md);
   letter-spacing: 0.32em;
   text-transform: uppercase;
   text-decoration: none;
@@ -50,20 +50,20 @@
 
 .page {
   flex: 1;
-  padding: 40px clamp(16px, 4.5vw, 56px) 32px;
+  padding: var(--space-10) clamp(var(--space-4), 4.5vw, 3.5rem) var(--space-8);
 }
 
 .page .eyebrow {
-  margin: 12px 0 0;
+  margin: var(--space-3) 0 0;
 }
 
 /* Sport selection */
 
 .sport-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-  gap: 16px;
-  margin-block-start: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-4);
+  margin-block-start: var(--space-8);
 }
 
 .tile {
@@ -72,42 +72,43 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  min-block-size: 232px;
+  gap: var(--space-4);
+  /* Per-tile dimension with no shared meaning. */
+  min-block-size: 14.5rem;
   border-radius: var(--radius-tile);
   background: var(--surface-tile);
-  border: 2px solid var(--border-tile);
+  border: var(--border-width) solid var(--border-tile);
   color: var(--text-tile);
   cursor: pointer;
   user-select: none;
   transition:
-    transform 140ms var(--ease-out),
-    background 140ms,
-    color 140ms,
-    border-color 140ms;
-  animation: tile-in 320ms var(--ease-out) backwards;
+    transform var(--duration-fast) var(--ease-out),
+    background var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+  animation: tile-in var(--duration-slow) var(--ease-out) backwards;
 }
 
 .tile:nth-of-type(2) {
-  animation-delay: 30ms;
+  animation-delay: calc(1 * var(--duration-stagger));
 }
 .tile:nth-of-type(3) {
-  animation-delay: 60ms;
+  animation-delay: calc(2 * var(--duration-stagger));
 }
 .tile:nth-of-type(4) {
-  animation-delay: 90ms;
+  animation-delay: calc(3 * var(--duration-stagger));
 }
 .tile:nth-of-type(5) {
-  animation-delay: 120ms;
+  animation-delay: calc(4 * var(--duration-stagger));
 }
 .tile:nth-of-type(6) {
-  animation-delay: 150ms;
+  animation-delay: calc(5 * var(--duration-stagger));
 }
 .tile:nth-of-type(7) {
-  animation-delay: 180ms;
+  animation-delay: calc(6 * var(--duration-stagger));
 }
 .tile:nth-of-type(8) {
-  animation-delay: 210ms;
+  animation-delay: calc(7 * var(--duration-stagger));
 }
 
 .tile:not(:has(input:disabled)):hover {
@@ -138,8 +139,8 @@
 }
 
 .tile:has(input:focus-visible) {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 3px;
+  outline: var(--outline-width) solid var(--focus-ring);
+  outline-offset: var(--outline-width);
 }
 
 /* The native radio stays in the DOM (keyboard, arrows, screen readers) but the
@@ -153,12 +154,12 @@
 }
 
 .tile-icon {
-  inline-size: 88px;
-  block-size: 88px;
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
 }
 
 .tile-name {
-  font-size: 1.75rem;
+  font-size: var(--text-title);
   font-weight: 700;
   line-height: 1.1;
 }
@@ -170,17 +171,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-block-size: 96px;
-  padding: 16px clamp(16px, 4.5vw, 56px);
-  border-block-start: 2px solid var(--border-subtle);
+  gap: var(--space-4);
+  min-block-size: 6rem;
+  padding: var(--space-4) clamp(var(--space-4), 4.5vw, 3.5rem);
+  border-block-start: var(--border-width) solid var(--border-subtle);
   background: var(--surface-page);
 }
 
 .selected-name {
   display: block;
-  margin-block-start: 4px;
-  font-size: 1.5rem;
+  margin-block-start: var(--space-1);
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
@@ -188,18 +189,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  block-size: 56px;
-  padding-inline: 28px;
+  gap: var(--space-3);
+  block-size: var(--size-control-lg);
+  padding-inline: var(--space-7);
   border: 0;
   border-radius: var(--radius-button);
   background: var(--accent);
   color: var(--on-accent);
-  font-size: 1.125rem;
+  font-size: var(--text-md);
   font-weight: 700;
   transition:
-    transform 120ms var(--ease-out),
-    background 120ms;
+    transform var(--duration-fast) var(--ease-out),
+    background var(--duration-fast);
 }
 
 .primary:hover:not(:disabled) {
@@ -211,25 +212,17 @@
 }
 
 .primary svg {
-  inline-size: 24px;
-  block-size: 24px;
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
 }
 
 @keyframes tile-in {
   from {
-    transform: translateY(12px);
+    transform: translateY(var(--space-3));
     opacity: 0;
   }
   to {
     transform: none;
     opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tile,
-  .primary {
-    animation: none;
-    transition: none;
   }
 }
