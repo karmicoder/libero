@@ -77,3 +77,19 @@
   gap: var(--space-6);
   align-items: start;
 }
+
+.warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--card-yellow);
+  border-radius: var(--radius-button);
+}
+
+.warning p {
+  margin: 0;
+  font-weight: 700;
+}

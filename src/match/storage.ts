@@ -4,8 +4,18 @@
  * app works without it; a failed save only costs the resume prompt.
  */
 
-/** Bump when the persisted shape changes; older backups are then ignored. */
-const VERSION = 1
+/**
+ * Bump when the persisted shape changes; backups of other versions are then
+ * ignored. Version 1 (clock anchored to the wall clock) is still read.
+ */
+const VERSION = 2
+const LEGACY_VERSION = 1
+
+export interface Backup<State> {
+  state: State
+  /** Wall-clock (epoch ms) save time: only to estimate the gap since. Null in version 1. */
+  savedAt: number | null
+}
 
 const keyFor = (sportId: string) => `libero:match:${sportId}`
 
@@ -25,26 +35,33 @@ export function saveBackup(
   try {
     storage?.setItem(
       keyFor(sportId),
-      JSON.stringify({ version: VERSION, state }),
+      JSON.stringify({ version: VERSION, savedAt: Date.now(), state }),
     )
   } catch {
     // Quota or access errors: carry on without a backup.
   }
 }
 
-/** The stored state, or null if absent, unreadable, another version or invalid. */
+/** The stored backup, or null if absent, unreadable, another version or invalid. */
 export function loadBackup<State>(
   sportId: string,
   isState: (value: unknown) => value is State,
   storage: Storage | undefined = defaultStorage(),
-): State | null {
+): Backup<State> | null {
   try {
     const raw = storage?.getItem(keyFor(sportId))
     if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return null
-    const { version, state } = parsed as { version?: unknown; state?: unknown }
-    return version === VERSION && isState(state) ? state : null
+    const { version, state, savedAt } = parsed as {
+      version?: unknown
+      state?: unknown
+      savedAt?: unknown
+    }
+    if (!isState(state)) return null
+    if (version === LEGACY_VERSION) return { state, savedAt: null }
+    if (version !== VERSION || typeof savedAt !== 'number') return null
+    return { state, savedAt }
   } catch {
     return null
   }

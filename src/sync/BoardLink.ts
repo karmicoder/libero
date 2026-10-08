@@ -11,11 +11,13 @@ export interface BoardStatus {
   connected: boolean
 }
 
-export interface BoardLinkOptions {
+export interface BoardLinkOptions<State = unknown> {
   /** Window id; defaults to a random UUID. */
   id?: string
   /** Monotonic millisecond clock; defaults to `performance.now()`. */
   now?: () => number
+  /** Applied to every snapshot as it arrives, e.g. to re-anchor a running clock. */
+  adopt?: (state: State) => State
 }
 
 /**
@@ -29,6 +31,7 @@ export class BoardLink<State, Notice> {
   #openChannel: ChannelOpener<State, Notice>
   #channel: SyncChannel<State, Notice> | null = null
   #now: () => number
+  #adopt: (state: State) => State
   #state: State | null = null
   #status: BoardStatus = { connected: false }
   #consoleSeen: number | null = null
@@ -40,11 +43,12 @@ export class BoardLink<State, Notice> {
   /** `openChannel` runs on every `start()`; the channel is closed on `stop()`. */
   constructor(
     openChannel: ChannelOpener<State, Notice>,
-    options: BoardLinkOptions = {},
+    options: BoardLinkOptions<State> = {},
   ) {
     this.#openChannel = openChannel
     this.id = options.id ?? crypto.randomUUID()
     this.#now = options.now ?? (() => performance.now())
+    this.#adopt = options.adopt ?? ((state) => state)
   }
 
   /** The last snapshot, or null before the first one arrives. */
@@ -96,7 +100,7 @@ export class BoardLink<State, Notice> {
     switch (message.type) {
       case 'snapshot':
         this.#consoleSeen = this.#now()
-        this.#state = message.state
+        this.#state = this.#adopt(message.state)
         this.#status = { connected: true }
         this.#listeners.forEach((l) => l())
         break

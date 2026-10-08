@@ -29,10 +29,12 @@ test('score a goal, run the clock, and resume after a reload', async ({
   await expect(
     page.getByRole('heading', { name: 'Resume match?' }),
   ).toBeVisible()
+  // A running clock can't be restored as running: the scorer is told, and it
+  // comes back paused.
+  await expect(page.getByText(/clock was running/i)).toBeVisible()
   await page.getByRole('button', { name: 'Resume match' }).click()
   await expect(page.getByLabel('Home score')).toHaveText('1')
-  // The clock kept running from its stored start time.
-  await expect(page.getByText('Running')).toBeVisible()
+  await expect(page.getByText('Paused')).toBeVisible()
 })
 
 test.describe('goal sheet', () => {

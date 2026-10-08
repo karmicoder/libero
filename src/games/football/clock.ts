@@ -2,8 +2,10 @@ import { findPeriod, nextPlayPeriod, periodOffsetSeconds } from './config'
 import type { Clock, FootballState, PeriodConfig } from './state'
 
 /**
- * Exact elapsed match-clock seconds at `now` (epoch ms). Every window derives
- * the time itself, so there are no tick actions. Never stops at period length.
+ * Exact elapsed match-clock seconds at `now`, a monotonic reading in the
+ * caller's own document (`performance.now()`, never the wall clock). Every
+ * window derives the time itself, so there are no tick actions. Never stops at
+ * period length.
  */
 export function clockSeconds(clock: Clock, now: number): number {
   if (clock.runningSince === null) return clock.baseSeconds
@@ -45,4 +47,31 @@ export function clockControl(state: FootballState, now: number): ClockControl {
     clockSeconds(state.clock, now) ===
     periodOffsetSeconds(state.config, period.id)
   return { kind: atPeriodStart ? 'start' : 'resume' }
+}
+
+/**
+ * Elapsed time folded into `baseSeconds`, for sending to another window. The
+ * remaining `runningSince` is only a running flag there; the receiver anchors it.
+ */
+export function foldClock(state: FootballState, now: number): FootballState {
+  if (state.clock.runningSince === null) return state
+  return {
+    ...state,
+    clock: { baseSeconds: clockSeconds(state.clock, now), runningSince: now },
+  }
+}
+
+/** A received (folded) running clock, started afresh from this window's `now`. */
+export function anchorClock(state: FootballState, now: number): FootballState {
+  if (state.clock.runningSince === null) return state
+  return { ...state, clock: { ...state.clock, runningSince: now } }
+}
+
+/** Stops the clock at its elapsed time at `now`. */
+export function pauseClock(state: FootballState, now: number): FootballState {
+  if (state.clock.runningSince === null) return state
+  return {
+    ...state,
+    clock: { baseSeconds: clockSeconds(state.clock, now), runningSince: null },
+  }
 }

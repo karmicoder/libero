@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { useSyncExternalStore } from 'react'
@@ -10,6 +10,12 @@ import { MatchSession } from './MatchSession'
 import type { MatchStore } from './MatchStore'
 
 const KEY = 'libero:match:football'
+
+interface SavedBackup {
+  version: number
+  savedAt?: number
+  state: { clock: { baseSeconds: number; runningSince: number | null } }
+}
 const T0 = 1_000_000
 
 type Store = MatchStore<FootballState, FootballAction, never>
@@ -78,12 +84,13 @@ describe('MatchSession', () => {
   it('backs up each change to localStorage', async () => {
     await playAndLeave()
     const saved = JSON.parse(localStorage.getItem(KEY)!)
-    expect(saved.version).toBe(1)
+    expect(saved.version).toBe(2)
+    expect(typeof saved.savedAt).toBe('number')
     expect(saved.state.teams.home.score).toBe(1)
-    expect(saved.state.clock.runningSince).toBe(T0)
+    expect(saved.state.clock.runningSince).not.toBeNull()
   })
 
-  it('resumes score, running clock and events from the backup', async () => {
+  it('resumes score and events, with a running clock stopped', async () => {
     await playAndLeave()
     const user = userEvent.setup()
     renderSession()
@@ -93,8 +100,82 @@ describe('MatchSession', () => {
     await user.click(screen.getByRole('button', { name: 'Resume match' }))
     expect(screen.getByLabelText('score')).toHaveTextContent('0-1')
     expect(screen.getByLabelText('events')).toHaveTextContent('1')
-    // The running clock keeps its start timestamp, so it keeps counting.
-    expect(screen.getByLabelText('clock')).toHaveTextContent(`0/${T0}`)
+    // The old anchor belonged to a closed document, so the clock is stopped.
+    expect(screen.getByLabelText('clock')).toHaveTextContent(/\/null$/)
+  })
+
+  /** Rewrites the saved backup, as if it had been written a while ago. */
+  function ageBackup(patch: (saved: SavedBackup) => void) {
+    const saved = JSON.parse(localStorage.getItem(KEY)!)
+    patch(saved)
+    localStorage.setItem(KEY, JSON.stringify(saved))
+  }
+
+  it('offers to add the wall-clock time since the last save', async () => {
+    await playAndLeave()
+    ageBackup((saved) => {
+      saved.savedAt = Date.now() - 125_000
+      saved.state.clock.baseSeconds = 600
+    })
+    const user = userEvent.setup()
+    renderSession()
+    expect(screen.getByText(/clock was running/i)).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: 'Resume and add 02:05' }),
+    )
+    const [base, since] = screen.getByLabelText('clock').textContent!.split('/')
+    expect(since).toBe('null')
+    expect(Number(base)).toBeGreaterThanOrEqual(725)
+    expect(Number(base)).toBeLessThan(727)
+  })
+
+  it('resumes without adding the gap when asked', async () => {
+    await playAndLeave()
+    ageBackup((saved) => {
+      saved.savedAt = Date.now() - 125_000
+      saved.state.clock.baseSeconds = 600
+    })
+    const user = userEvent.setup()
+    renderSession()
+    await user.click(screen.getByRole('button', { name: 'Resume match' }))
+    expect(screen.getByLabelText('clock')).toHaveTextContent('600/null')
+  })
+
+  it('migrates a version 1 backup, whose clock anchor is a wall-clock time', async () => {
+    await playAndLeave()
+    ageBackup((saved) => {
+      saved.version = 1
+      delete saved.savedAt
+      saved.state.clock = {
+        baseSeconds: 300,
+        runningSince: Date.now() - 90_000,
+      }
+    })
+    const user = userEvent.setup()
+    renderSession()
+    await user.click(
+      screen.getByRole('button', { name: 'Resume and add 01:30' }),
+    )
+    const [base, since] = screen.getByLabelText('clock').textContent!.split('/')
+    expect(since).toBe('null')
+    expect(Number(base)).toBeGreaterThanOrEqual(390)
+    expect(Number(base)).toBeLessThan(392)
+  })
+
+  it('re-saves a running clock periodically', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderSession()
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      const first = JSON.parse(localStorage.getItem(KEY)!).savedAt
+      await act(async () => void vi.advanceTimersByTime(5_000))
+      expect(JSON.parse(localStorage.getItem(KEY)!).savedAt).toBeGreaterThan(
+        first,
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('discards the backup only after confirmation', async () => {
@@ -127,7 +208,7 @@ describe('MatchSession', () => {
   })
 
   it('falls back to a fresh match on a corrupt backup', () => {
-    localStorage.setItem(KEY, '{"version":1,"state":{"oops":true}}')
+    localStorage.setItem(KEY, '{"version":2,"savedAt":1,"state":{"oops":true}}')
     renderSession()
     expect(screen.getByLabelText('score')).toHaveTextContent('0-0')
   })
