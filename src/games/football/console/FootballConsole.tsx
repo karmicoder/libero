@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useMatchState } from '../../../match/useMatchState'
+import { monotonicNow } from '../../../match/useNow'
+import { useWallClockJump } from '../../../match/useWallClockJump'
 import type {
   CardColor,
   FootballAction,
@@ -95,7 +97,7 @@ export function FootballConsole({
   const addGoal = (side: TeamSide) => {
     setCardSide(null)
     setSubSide(null)
-    dispatch({ type: 'goal', team: side, announce: false, at: Date.now() })
+    dispatch({ type: 'goal', team: side, announce: false, at: monotonicNow() })
     const event = store.getState().events.at(-1)
     if (event?.type === 'goal') setSheet({ side, eventId: event.id })
   }
@@ -109,7 +111,7 @@ export function FootballConsole({
               eventId: openSheet.eventId,
               scorer,
               assist,
-              at: Date.now(),
+              at: monotonicNow(),
             })
             setSheet(null)
           },
@@ -141,7 +143,7 @@ export function FootballConsole({
       ? {
           onConfirm: (color: CardColor, team: TeamSide, numbers: number[]) => {
             const before = store.getState().events.length
-            dispatch({ type: 'card', team, color, numbers, at: Date.now() })
+            dispatch({ type: 'card', team, color, numbers, at: monotonicNow() })
             const message = cardToast(store.getState().events.slice(before))
             if (message) setToast(message)
             setCardSide(null)
@@ -158,7 +160,7 @@ export function FootballConsole({
               type: 'substitution',
               team: side,
               pairs,
-              at: Date.now(),
+              at: monotonicNow(),
             })
             setSubSide(null)
           },
@@ -183,11 +185,15 @@ export function FootballConsole({
     setSettingsOpen(true)
   }
 
+  const { jump, dismiss: dismissJump } = useWallClockJump(
+    state.clock.runningSince !== null,
+  )
+
   const lastStep = state.history?.at(-1)
   const undo = () => {
     const step = store.getState().history?.at(-1)
     if (!step) return
-    dispatch({ type: 'undo', at: Date.now() })
+    dispatch({ type: 'undo', at: monotonicNow() })
     setToast(`Undid ${step.label.toLowerCase()}`)
   }
   useUndoHotkey(undo, !settingsOpen)
@@ -196,8 +202,8 @@ export function FootballConsole({
     const current = store.getState()
     dispatch(
       current.clock.runningSince !== null
-        ? { type: 'stop-clock', at: Date.now() }
-        : { type: 'start-clock', at: Date.now() },
+        ? { type: 'stop-clock', at: monotonicNow() }
+        : { type: 'start-clock', at: monotonicNow() },
     )
   }, !settingsOpen)
 
@@ -240,6 +246,23 @@ export function FootballConsole({
           </button>
         </div>
       </div>
+
+      {jump && (
+        <div className={styles.warning} role="alert">
+          <p>
+            {jump.seconds > 0
+              ? `The computer's clock jumped forward ${jump.seconds}s, or it went to sleep. The match clock may be behind: check it and use Set clock if needed.`
+              : `The computer's clock moved back ${-jump.seconds}s. The match clock is not affected.`}
+          </p>
+          <button
+            type="button"
+            className={styles.topButton}
+            onClick={dismissJump}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {settingsOpen ? (
         <SettingsScreen

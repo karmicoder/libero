@@ -4,6 +4,11 @@
  * sender's window id; receivers ignore their own messages.
  *
  * Boards only ever send `hello` and `ping`: they never write game state.
+ *
+ * Time: a snapshot or handover never carries the sender's timestamps. The
+ * sender folds elapsed time into the state and the receiver anchors it to its
+ * own monotonic clock (see `ClockTiming`), so windows and devices need not
+ * agree on the wall clock or share a `performance.now()` origin.
  */
 export type SyncMessage<State, Notice> =
   /** Board loaded: asks the console for a snapshot. */

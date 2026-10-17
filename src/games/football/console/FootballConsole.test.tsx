@@ -374,6 +374,42 @@ describe('FootballConsole', () => {
     })
   })
 
+  describe('system clock changes', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    const clockText = () => screen.getByRole('time').textContent
+
+    it('leaves the match clock alone and warns when the system clock jumps', () => {
+      const { store } = setup()
+      act(() => store.dispatch({ type: 'start-clock', at: performance.now() }))
+      act(() => void vi.advanceTimersByTime(5_000))
+      expect(clockText()).toBe('00:05')
+
+      // The wall clock jumps forward a day while the monotonic clock carries on.
+      act(() => vi.setSystemTime(Date.now() + 86_400_000))
+      act(() => void vi.advanceTimersByTime(1_000))
+      expect(clockText()).toBe('00:06')
+      expect(screen.getByRole('alert')).toHaveTextContent(/jumped forward/)
+
+      act(() => vi.setSystemTime(Date.now() - 2 * 86_400_000))
+      act(() => void vi.advanceTimersByTime(1_000))
+      expect(clockText()).toBe('00:07')
+      expect(screen.getByRole('alert')).toHaveTextContent(/moved back/)
+    })
+
+    it('stays quiet when nothing changed, and warns only while running', () => {
+      const { store } = setup()
+      act(() => void vi.advanceTimersByTime(10_000))
+      act(() => vi.setSystemTime(Date.now() + 3_600_000))
+      act(() => void vi.advanceTimersByTime(2_000))
+      expect(screen.queryByRole('alert')).toBeNull()
+      act(() => store.dispatch({ type: 'start-clock', at: performance.now() }))
+      act(() => void vi.advanceTimersByTime(3_000))
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+  })
+
   describe('stoppage time', () => {
     // The control settles for 1000 ms before it commits, so these run on fake
     // timers. fireEvent, because userEvent's own waits hang under them.

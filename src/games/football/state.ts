@@ -16,8 +16,11 @@ export type PeriodKind = 'play' | 'break' | 'shootout'
 
 /**
  * `{ baseSeconds, runningSince }`: every window derives the displayed time as
- * `baseSeconds + (Date.now() - runningSince) / 1000` while running, so no tick
- * actions exist. `runningSince` is an epoch-ms timestamp, or null when stopped.
+ * `baseSeconds + (performance.now() - runningSince) / 1000` while running, so
+ * no tick actions exist. `runningSince` is a monotonic reading (never the wall
+ * clock, which can jump) from the owning window's `performance.now()`, or null
+ * when stopped. That origin is per document, so a clock never crosses a window
+ * boundary or storage raw: see `foldClock` / `anchorClock` in `clock.ts`.
  */
 export interface Clock {
   baseSeconds: number
@@ -151,7 +154,8 @@ export interface FootballState {
 }
 
 /**
- * Actions that depend on time carry `at` (epoch ms) so the reducer stays pure.
+ * Actions that depend on time carry `at` (the console's `performance.now()`)
+ * so the reducer stays pure.
  * Later engine tickets may extend this union.
  */
 export type FootballAction =
@@ -228,7 +232,7 @@ interface NoticeBase {
    * arrive, with a different `at`.
    */
   id: string
-  /** Epoch ms of the action that produced it. */
+  /** The console's monotonic reading at the action; only unique within a session. */
   at: number
   team: TeamSide
   /** Match minute of the event: `floor(clockSeconds / 60)`. */

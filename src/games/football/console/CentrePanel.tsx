@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
-import { useNow } from '../../../match/useNow'
+import { monotonicNow, useNow } from '../../../match/useNow'
 import { clockControl, displayedSeconds, formatClock } from '../clock'
 import { findPeriod, MAX_STOPPAGE_MINUTES } from '../config'
 import type { FootballAction, FootballState } from '../state'
@@ -53,7 +53,7 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
   const applyClock = (time?: { minutes: number; seconds: number }) => {
     setSheetOpen(false)
     if (!time) return
-    dispatch({ type: 'set-clock', ...time, at: Date.now() })
+    dispatch({ type: 'set-clock', ...time, at: monotonicNow() })
     onToast(`Clock set to ${formatClock(time.minutes * 60 + time.seconds)}`)
   }
 
@@ -86,8 +86,8 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
           onClick={() =>
             dispatch(
               control.kind === 'pause'
-                ? { type: 'stop-clock', at: Date.now() }
-                : { type: 'start-clock', at: Date.now() },
+                ? { type: 'stop-clock', at: monotonicNow() }
+                : { type: 'start-clock', at: monotonicNow() },
             )
           }
         >
@@ -112,7 +112,7 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
                     dispatch({
                       type: 'set-period',
                       periodId: p.id,
-                      at: Date.now(),
+                      at: monotonicNow(),
                     })
                   }}
                 />

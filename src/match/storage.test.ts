@@ -29,8 +29,23 @@ describe('match backup storage', () => {
   it('round-trips state per sport', () => {
     const storage = new MemoryStorage()
     saveBackup('football', { n: 3 }, storage)
-    expect(loadBackup('football', isCount, storage)).toEqual({ n: 3 })
+    expect(loadBackup('football', isCount, storage)?.state).toEqual({ n: 3 })
+    expect(typeof loadBackup('football', isCount, storage)?.savedAt).toBe(
+      'number',
+    )
     expect(loadBackup('volleyball', isCount, storage)).toBeNull()
+  })
+
+  it('still reads a version 1 backup, with no save time', () => {
+    const storage = new MemoryStorage()
+    storage.setItem(
+      'libero:match:football',
+      JSON.stringify({ version: 1, state: { n: 2 } }),
+    )
+    expect(loadBackup('football', isCount, storage)).toEqual({
+      state: { n: 2 },
+      savedAt: null,
+    })
   })
 
   it('returns null when nothing is stored', () => {
