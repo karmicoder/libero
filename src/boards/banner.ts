@@ -25,6 +25,17 @@ export const BANNER_HOLD_MS = 9_000
  */
 export const BANNER_FOLLOW_UP_MS = 4_500
 
+/** Dwell times a sport may override; football's are the defaults above. */
+export interface BannerTiming {
+  holdMs: number
+  followUpMs: number
+}
+
+export const DEFAULT_BANNER_TIMING: BannerTiming = {
+  holdMs: BANNER_HOLD_MS,
+  followUpMs: BANNER_FOLLOW_UP_MS,
+}
+
 /** From a notice arriving to the banner starting to leave. */
-export const bannerVisibleMs = () =>
-  bannerEnterDelayMs() + bannerEnterMs() + BANNER_HOLD_MS
+export const bannerVisibleMs = (holdMs: number = BANNER_HOLD_MS) =>
+  bannerEnterDelayMs() + bannerEnterMs() + holdMs

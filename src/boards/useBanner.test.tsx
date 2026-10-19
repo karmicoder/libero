@@ -175,6 +175,47 @@ describe('useBanner', () => {
     })
   })
 
+  describe('per-sport timing', () => {
+    const timing = { holdMs: 2_000, followUpMs: 1_000 }
+
+    it('holds for the sport hold time instead of the default', () => {
+      const f = feed()
+      const { result } = renderHook(() =>
+        useBanner(f.subscribe, undefined, timing),
+      )
+      f.push({ id: 1 })
+      const visible = bannerVisibleMs(timing.holdMs)
+      expect(visible).toBeLessThan(BANNER_VISIBLE_MS)
+      act(() => void vi.advanceTimersByTime(visible - 1))
+      expect(result.current?.phase).toBe('in')
+      act(() => void vi.advanceTimersByTime(1))
+      expect(result.current?.phase).toBe('out')
+    })
+
+    it('shows a follow-up after the sport follow-up time', () => {
+      const f = feed()
+      const followUp = (n: Notice): Notice | undefined =>
+        n.id === 10 ? { id: 11 } : undefined
+      const { result } = renderHook(() =>
+        useBanner(f.subscribe, followUp, timing),
+      )
+      f.push({ id: 10 })
+      act(() => void vi.advanceTimersByTime(timing.followUpMs))
+      expect(result.current?.notice).toEqual({ id: 11 })
+    })
+
+    it('keeps a banner showing when the board passes a fresh timing object', () => {
+      const f = feed()
+      const { result, rerender } = renderHook(() =>
+        useBanner(f.subscribe, undefined, { holdMs: 2_000, followUpMs: 1_000 }),
+      )
+      f.push({ id: 1 })
+      rerender()
+      expect(f.count()).toBe(1)
+      expect(result.current?.notice).toEqual({ id: 1 })
+    })
+  })
+
   it('unsubscribes and stops its timers on unmount', () => {
     const f = feed()
     const { result, unmount } = renderHook(() => useBanner(f.subscribe))

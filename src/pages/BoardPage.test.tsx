@@ -33,7 +33,7 @@ describe('Board page', () => {
   })
 
   it('says so for a sport with no scoreboard', () => {
-    renderAt('/match/volleyball/board')
+    renderAt('/match/basketball/board')
     expect(
       screen.getByRole('heading', { name: 'Scoreboard not available' }),
     ).toBeInTheDocument()
@@ -44,6 +44,13 @@ describe('Board page', () => {
     expect(document.documentElement.dataset.theme).toBe('light')
     unmount()
     expect(document.documentElement.dataset.theme).toBeUndefined()
+  })
+
+  it('shows the volleyball scoreboard once it is registered', () => {
+    renderAt('/match/volleyball/board')
+    expect(
+      screen.getByText('Waiting for the scorer console'),
+    ).toBeInTheDocument()
   })
 
   it('ignores an unknown theme value', () => {

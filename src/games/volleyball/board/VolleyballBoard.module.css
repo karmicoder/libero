@@ -1,0 +1,227 @@
+/*
+ * The board is a 16:9 stage scaled to the window and letterboxed. Every
+ * dimension is a multiple of --u, one unit of the 1280x720 design, so the
+ * layout depends only on the aspect ratio, never on pixel sizes.
+ */
+
+.viewport {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+.stage {
+  inline-size: min(100vw, 100dvh * 16 / 9);
+  aspect-ratio: 16 / 9;
+  container-type: inline-size;
+}
+
+.board {
+  --u: calc(100cqw / 1280);
+  --pad: calc(var(--u) * 56);
+  --stroke: calc(var(--u) * 3);
+  --centre-width: calc(var(--u) * 380);
+  --name-size: calc(var(--u) * 52);
+  --score-size: calc(var(--u) * 288);
+  --set-size: calc(var(--u) * 176);
+  --result-size: calc(var(--u) * 32);
+  --label-size: calc(var(--u) * 26);
+  --result-label-size: calc(var(--u) * 24);
+  --pip-size: calc(var(--u) * 32);
+  --serve-size: calc(var(--u) * 56);
+  --slot-height: calc(var(--u) * 128);
+
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) var(--centre-width)
+    minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  column-gap: calc(var(--u) * 16);
+  inline-size: 100%;
+  block-size: 100%;
+  padding: calc(var(--u) * 40) var(--pad) calc(var(--u) * 60);
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 8);
+  min-inline-size: 0;
+}
+
+.name {
+  max-inline-size: 100%;
+  overflow: hidden;
+  font-size: var(--name-size);
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--score-size);
+  font-weight: 500;
+  line-height: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.sets {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 16);
+  margin: calc(var(--u) * 8) 0 0;
+}
+
+.label {
+  margin: 0;
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tile);
+}
+
+.pips {
+  display: flex;
+  gap: calc(var(--u) * 16);
+}
+
+.pip,
+.pipWon {
+  inline-size: var(--pip-size);
+  block-size: var(--pip-size);
+  border: var(--stroke) solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.pipWon {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+/*
+ * The serve dot sits in the centre column beside the serving side's score,
+ * mirrored for the visitor, level with the numerals.
+ */
+.serve {
+  position: absolute;
+  inset-block-start: calc(var(--u) * 248);
+  inline-size: var(--serve-size);
+  block-size: var(--serve-size);
+  border-radius: 50%;
+  background: var(--brand);
+  pointer-events: none;
+}
+
+.serveVisitor {
+  inset-inline-start: calc(var(--u) * 465);
+}
+
+.serveHome {
+  inset-inline-start: calc(var(--u) * 759);
+}
+
+.centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: start;
+  gap: calc(var(--u) * 16);
+  margin-block-start: calc(var(--u) * 112);
+  text-align: center;
+}
+
+.setNumber {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--set-size);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 16);
+}
+
+.resultLabel {
+  font-size: var(--result-label-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tile);
+}
+
+.resultScore {
+  font-family: var(--font-display);
+  font-size: var(--result-size);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Bottom-corner areas reserved for update banners (#84). Hidden, not removed,
+ * so the layout keeps their space.
+ */
+.slot,
+.slotEnd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-row: 2;
+  block-size: var(--slot-height);
+  margin-block-end: calc(var(--u) * 24);
+  border: var(--stroke) dotted var(--text-muted);
+  border-radius: calc(var(--u) * 16);
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  visibility: hidden;
+}
+
+.slot {
+  grid-column: 1;
+}
+
+.slotEnd {
+  grid-column: 3;
+}
+
+.wordmark {
+  position: absolute;
+  inset-inline-end: var(--pad);
+  inset-block-end: calc(var(--u) * 14);
+  font-size: calc(var(--u) * 20);
+  color: var(--text-tile);
+}
+
+.disconnected {
+  position: absolute;
+  inset-inline-end: var(--pad);
+  inset-block-start: calc(var(--u) * 14);
+  margin: 0;
+  font-size: var(--label-size);
+  color: var(--text-muted);
+}
