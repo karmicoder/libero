@@ -3,24 +3,20 @@ import styles from './SportTile.module.css'
 
 interface SportTileProps {
   sport: SportDefinition
-  checked: boolean
   onSelect: () => void
 }
 
-/** One choice in the sport radio group. The native radio stays in the DOM for
- *  keyboard and screen readers; the whole tile is its visual. */
-export function SportTile({ sport, checked, onSelect }: SportTileProps) {
+/** One sport on the select screen. Activating a ready tile starts the match;
+ *  coming-soon tiles are disabled. */
+export function SportTile({ sport, onSelect }: SportTileProps) {
   const ready = sport.status === 'ready'
   return (
-    <label className={styles.tile}>
-      <input
-        type="radio"
-        name="sport"
-        value={sport.id}
-        checked={checked}
-        disabled={!ready}
-        onChange={onSelect}
-      />
+    <button
+      type="button"
+      className={styles.tile}
+      disabled={!ready}
+      onClick={onSelect}
+    >
       <svg
         className={styles.icon}
         viewBox="0 0 24 24"
@@ -33,6 +29,6 @@ export function SportTile({ sport, checked, onSelect }: SportTileProps) {
       <span className={`eyebrow ${styles.status}`}>
         {ready ? 'Ready' : 'Coming soon'}
       </span>
-    </label>
+    </button>
   )
 }
