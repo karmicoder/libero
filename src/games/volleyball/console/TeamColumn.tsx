@@ -74,7 +74,7 @@ export function TeamColumn({
         <button
           type="button"
           className={styles.minus}
-          aria-label={`Remove point for ${name}`}
+          aria-label={`Subtract one from ${name}`}
           disabled={finished || score === 0}
           onClick={onMinus}
         >

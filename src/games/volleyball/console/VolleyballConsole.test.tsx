@@ -48,7 +48,7 @@ const score = (side: 'Visitor' | 'Home') =>
 const point = (side: 'Visitor' | 'Home') =>
   screen.getByRole('button', { name: `Point for ${side}` })
 const minus = (side: 'Visitor' | 'Home') =>
-  screen.getByRole('button', { name: `Remove point for ${side}` })
+  screen.getByRole('button', { name: `Subtract one from ${side}` })
 const serve = (i: number) =>
   screen.getAllByRole('button', { name: /^Serve/ })[i]
 
