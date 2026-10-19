@@ -118,7 +118,7 @@ export function MatchSession<State, Action, Message, Config = unknown>({
       <h1>{confirmingNew ? 'Discard saved match?' : 'Resume match?'}</h1>
       <p className="eyebrow">
         {confirmingNew
-          ? 'The saved score, clock and events will be deleted'
+          ? 'The saved match will be deleted'
           : 'A match from earlier is still saved on this device'}
       </p>
       {!confirmingNew && wasRunning && (
