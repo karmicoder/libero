@@ -136,6 +136,44 @@ test.describe('update banners', () => {
     await expect(banner(board)).toHaveAttribute('data-team', 'visitor')
   })
 
+  test('a goal banner lines up with its team column and the board margin', async ({
+    context,
+  }) => {
+    const { console_, board } = await openConsoleAndBoard(context)
+    await announceGoal(console_, 'Home')
+    const el = banner(board)
+    await expect(el).toHaveAttribute('data-team', 'home')
+    await el.evaluate((node) =>
+      Promise.all(
+        node
+          .getAnimations()
+          .map((a: { finished: Promise<unknown> }) => a.finished),
+      ),
+    )
+
+    const box = await el.boundingBox()
+    const score = await boardScore(board, 'Home').boundingBox()
+    const wordmark = await board.getByLabel('Libero').last().boundingBox()
+    expect(box && score && wordmark).toBeTruthy()
+
+    // Centred under the Home column (its score is centred in the column).
+    const centre = (b: { x: number; width: number }) => b.x + b.width / 2
+    expect(Math.abs(centre(box!) - centre(score!))).toBeLessThan(1.5)
+    // Never past the right margin the wordmark sits on.
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      wordmark!.x + wordmark!.width + 0.5,
+    )
+
+    // Even spacing: divider | icon | scorer.
+    const divider = await el.locator('[class*="divider"]').boundingBox()
+    const icon = await el.getByRole('img', { name: 'Goal' }).boundingBox()
+    const scorer = await el.locator('svg + span').first().boundingBox()
+    expect(divider && icon && scorer).toBeTruthy()
+    const before = icon!.x - (divider!.x + divider!.width)
+    const after = scorer!.x - (icon!.x + icon!.width)
+    expect(Math.abs(before - after)).toBeLessThan(1.5)
+  })
+
   test('the banner waits for the goal details, and skipping shows none', async ({
     context,
   }) => {

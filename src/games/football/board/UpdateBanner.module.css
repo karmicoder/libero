@@ -5,7 +5,7 @@
 
 .banner {
   --banner-height: calc(var(--u) * 100);
-  --banner-reach: calc(var(--u) * 96);
+  --banner-gap: calc(var(--u) * 20);
   --banner-size: calc(var(--u) * 44);
   --minute-size: calc(var(--u) * 32);
   --icon-size: calc(var(--u) * 48);
@@ -16,7 +16,8 @@
   align-self: stretch;
   display: flex;
   align-items: center;
-  gap: calc(var(--u) * 20);
+  justify-content: center;
+  gap: var(--banner-gap);
   min-inline-size: 0;
   block-size: var(--banner-height);
   padding-inline: calc(var(--u) * 28);
@@ -30,15 +31,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The scoring team's corner, reaching a little under the centre column. */
+/* The scoring team's column, so it centres under that team's score. */
 .visitor {
-  grid-column: 1 / 3;
-  margin-inline-end: calc(var(--centre-width) - var(--banner-reach));
+  grid-column: 1;
 }
 
 .home {
-  grid-column: 2 / 4;
-  margin-inline-start: calc(var(--centre-width) - var(--banner-reach));
+  grid-column: 3;
 }
 
 .in {
@@ -126,7 +125,7 @@
 }
 
 .event {
-  gap: calc(var(--u) * 28);
+  gap: var(--banner-gap);
   min-inline-size: 0;
   white-space: nowrap;
 }
