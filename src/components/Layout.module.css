@@ -1,0 +1,30 @@
+.app {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  block-size: var(--size-control-lg);
+  padding-inline: var(--space-4);
+  border-block-end: var(--border-width) solid var(--border-subtle);
+}
+
+.wordmarkLink {
+  font-size: var(--text-md);
+  text-decoration: none;
+  color: var(--text-tile);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.main:focus {
+  outline: none;
+}

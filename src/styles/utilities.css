@@ -1,0 +1,60 @@
+/* Reusable classes shared across components. Component-specific styling lives
+   in a CSS Module next to the component. */
+
+.skip-link {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Page body inside the app shell; used by every route. */
+.page {
+  flex: 1;
+  padding: var(--space-10) clamp(var(--space-4), 4.5vw, var(--gutter-max))
+    var(--space-8);
+}
+
+.page .eyebrow {
+  margin: var(--space-3) 0 0;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  block-size: var(--size-control-lg);
+  padding-inline: var(--space-7);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-md);
+  font-weight: 700;
+  transition:
+    transform var(--duration-fast) var(--ease-enter),
+    background var(--duration-fast);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.primary svg {
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
+}
