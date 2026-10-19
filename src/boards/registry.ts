@@ -14,32 +14,58 @@ export interface BoardProps<State, Notice> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyBoard = ComponentType<BoardProps<any, any>>
 
+/** One way to present a sport's state; chosen per window with `?layout=`. */
+export interface BoardLayout {
+  id: string
+  label: string
+  Board: AnyBoard
+}
+
+export interface BoardLayouts {
+  layouts: BoardLayout[]
+  /** The layout used when none is asked for or the id is unknown. */
+  defaultId: string
+}
+
 type Listener = () => void
 
 /**
- * Scoreboard components keyed by `sportId`, kept apart from `SportDefinition`
+ * Scoreboard layouts keyed by `sportId`, kept apart from `SportDefinition`
  * (data-only), `EngineRegistry` (rules) and `ConsoleRegistry` (scorer UI).
  */
 export class BoardRegistry {
-  #boards = new Map<string, AnyBoard>()
+  #sports = new Map<string, BoardLayouts>()
   #listeners = new Set<Listener>()
 
-  register = (sportId: string, board: AnyBoard): void => {
-    this.#boards.set(sportId, board)
+  register = (sportId: string, entry: BoardLayouts): void => {
+    this.#sports.set(sportId, entry)
     this.#listeners.forEach((l) => l())
   }
 
-  get = <State, Notice>(
-    sportId: string,
-  ): ComponentType<BoardProps<State, Notice>> | undefined =>
-    this.#boards.get(sportId)
+  /** The sport's layouts as registered (a stable reference), if any. */
+  layouts = (sportId: string): BoardLayouts | undefined =>
+    this.#sports.get(sportId)
 
-  has = (sportId: string): boolean => this.#boards.has(sportId)
+  has = (sportId: string): boolean => this.#sports.has(sportId)
 
   subscribe = (listener: Listener): (() => void) => {
     this.#listeners.add(listener)
     return () => this.#listeners.delete(listener)
   }
+}
+
+/**
+ * The layout asked for, else the sport's default, else its first. Undefined
+ * only for an entry with no layouts.
+ */
+export function resolveLayout(
+  entry: BoardLayouts | undefined,
+  layoutId?: string | null,
+): BoardLayout | undefined {
+  if (!entry) return undefined
+  const byId = (id?: string | null) =>
+    id ? entry.layouts.find((l) => l.id === id) : undefined
+  return byId(layoutId) ?? byId(entry.defaultId) ?? entry.layouts[0]
 }
 
 export const boardRegistry = new BoardRegistry()
