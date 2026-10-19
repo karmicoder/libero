@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNow } from '../../../match/useNow'
+import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
+import { monotonicNow, useNow } from '../../../match/useNow'
 import { clockControl, displayedSeconds, formatClock } from '../clock'
 import { findPeriod, MAX_STOPPAGE_MINUTES } from '../config'
 import type { FootballAction, FootballState } from '../state'
@@ -52,12 +53,15 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
   const applyClock = (time?: { minutes: number; seconds: number }) => {
     setSheetOpen(false)
     if (!time) return
-    dispatch({ type: 'set-clock', ...time, at: Date.now() })
+    dispatch({ type: 'set-clock', ...time, at: monotonicNow() })
     onToast(`Clock set to ${formatClock(time.minutes * 60 + time.seconds)}`)
   }
 
-  const setStoppage = (minutes: number) =>
-    dispatch({ type: 'set-stoppage', minutes })
+  // Repeated presses settle into one dispatch, so the board shows +4′ rather
+  // than +1′, +2′, +3′, +4′.
+  const stoppage = useDebouncedCommit(state.stoppageMinutes ?? 0, (minutes) =>
+    dispatch({ type: 'set-stoppage', minutes }),
+  )
 
   return (
     <section className={styles.centre} aria-label="Match clock">
@@ -82,8 +86,8 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
           onClick={() =>
             dispatch(
               control.kind === 'pause'
-                ? { type: 'stop-clock', at: Date.now() }
-                : { type: 'start-clock', at: Date.now() },
+                ? { type: 'stop-clock', at: monotonicNow() }
+                : { type: 'start-clock', at: monotonicNow() },
             )
           }
         >
@@ -102,13 +106,15 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
                   name="period"
                   className="visually-hidden"
                   checked={p.id === state.periodId}
-                  onChange={() =>
+                  onChange={() => {
+                    // A period change resets stoppage time, so settle it first.
+                    stoppage.flush()
                     dispatch({
                       type: 'set-period',
                       periodId: p.id,
-                      at: Date.now(),
+                      at: monotonicNow(),
                     })
-                  }
+                  }}
                 />
                 <span>{p.abbreviation}</span>
                 <span className="visually-hidden"> ({p.name})</span>
@@ -118,30 +124,44 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
         </fieldset>
 
         {state.config.stoppageTime.enabled && (
-          <fieldset className={styles.stoppage}>
+          <fieldset
+            className={styles.stoppage}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) stoppage.flush()
+            }}
+          >
             <legend className="eyebrow">Stoppage time</legend>
             <div className={styles.stoppageRow}>
               <button
                 type="button"
                 className={styles.step}
                 aria-label="Decrease stoppage time"
-                disabled={!canAdjustStoppage || !state.stoppageMinutes}
-                onClick={() => setStoppage((state.stoppageMinutes ?? 0) - 1)}
+                disabled={!canAdjustStoppage || !stoppage.value}
+                onClick={() => stoppage.set(stoppage.value - 1)}
               >
                 −
               </button>
-              <output className={styles.stoppageValue} aria-live="off">
-                {state.stoppageMinutes ? `+${state.stoppageMinutes}′` : 'off'}
+              <output
+                className={styles.stoppageValue}
+                aria-live="off"
+                data-pending={stoppage.pending || undefined}
+              >
+                {stoppage.value ? `+${stoppage.value}′` : 'off'}
+                {stoppage.pending && (
+                  <span className="visually-hidden">
+                    {' '}
+                    (not yet shown on the board)
+                  </span>
+                )}
               </output>
               <button
                 type="button"
                 className={styles.step}
                 aria-label="Increase stoppage time"
                 disabled={
-                  !canAdjustStoppage ||
-                  (state.stoppageMinutes ?? 0) >= MAX_STOPPAGE_MINUTES
+                  !canAdjustStoppage || stoppage.value >= MAX_STOPPAGE_MINUTES
                 }
-                onClick={() => setStoppage((state.stoppageMinutes ?? 0) + 1)}
+                onClick={() => stoppage.set(stoppage.value + 1)}
               >
                 +
               </button>

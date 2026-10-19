@@ -52,8 +52,8 @@ fieldset {
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 3px;
+  outline: var(--outline-width) solid var(--focus-ring);
+  outline-offset: var(--outline-width);
 }
 
 /* Semantic utilities */
@@ -68,7 +68,7 @@ fieldset {
 }
 
 .eyebrow {
-  font-size: 0.8125rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;

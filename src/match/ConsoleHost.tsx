@@ -1,15 +1,19 @@
 import {
+  useCallback,
   useEffect,
   useState,
   useSyncExternalStore,
   type ComponentType,
 } from 'react'
 import type { ConsoleProps } from '../consoles/registry'
+import { engineRegistry } from '../engines/registry'
+import type { ClockTiming } from '../engines/types'
 import { openBroadcastChannel } from '../sync/broadcastChannel'
 import { ConsoleLink } from '../sync/ConsoleLink'
 import type { ChannelOpener } from '../sync/types'
 import styles from './ConsoleHost.module.css'
 import type { MatchStore } from './MatchStore'
+import { monotonicNow } from './useNow'
 
 interface Props<State, Action, Message> {
   sportId: string
@@ -17,6 +21,8 @@ interface Props<State, Action, Message> {
   Console: ComponentType<ConsoleProps<State, Action, Message>>
   /** Defaults to a `BroadcastChannel` named for the sport. */
   openChannel?: ChannelOpener<State, Message>
+  /** Defaults to the sport's engine's `clockTiming`. */
+  timing?: ClockTiming<State>
 }
 
 /**
@@ -29,26 +35,36 @@ export function ConsoleHost<State, Action, Message>({
   store,
   Console,
   openChannel = () => openBroadcastChannel<State, Message>(sportId),
+  timing = engineRegistry.get<State, unknown, Message>(sportId)?.clockTiming,
 }: Props<State, Action, Message>) {
+  // State leaves this window with its elapsed time folded in and comes back
+  // anchored to our own monotonic clock; see `ClockTiming`.
+  const outgoing = useCallback(
+    (state: State) => (timing ? timing.fold(state, monotonicNow()) : state),
+    [timing],
+  )
   const [link] = useState(
     () =>
       new ConsoleLink<State, Message>(openChannel, {
-        getState: store.getState,
-        onHandover: store.replaceState,
+        getState: () => outgoing(store.getState()),
+        onHandover: (state) =>
+          store.replaceState(
+            timing ? timing.anchor(state, monotonicNow()) : state,
+          ),
       }),
   )
 
   useEffect(() => {
     link.start()
     const stops = [
-      store.subscribe(() => link.publish(store.getState())),
+      store.subscribe(() => link.publish(outgoing(store.getState()))),
       store.subscribeNotices(link.notice.bind(link)),
     ]
     return () => {
       stops.forEach((stop) => stop())
       link.stop()
     }
-  }, [link, store])
+  }, [link, store, outgoing])
 
   const { role, boardConnected } = useSyncExternalStore(
     link.subscribe,

@@ -1,6 +1,6 @@
 import type { GameEngine } from '../../../engines/types'
 import { cautionedNumbers } from '../cards'
-import { clockSeconds } from '../clock'
+import { anchorClock, clockSeconds, foldClock, pauseClock } from '../clock'
 import {
   configProblems,
   defaultMatchConfig,
@@ -381,6 +381,13 @@ export const footballEngine: GameEngine<
   MatchConfig
 > = {
   isState: isFootballState,
+  clockTiming: {
+    isRunning: (state) => state.clock.runningSince !== null,
+    fold: foldClock,
+    anchor: anchorClock,
+    pause: pauseClock,
+    legacyEpochRunningSince: (state) => state.clock.runningSince,
+  },
   initialState: (config = defaultMatchConfig()) => ({
     config,
     clock: stopped(0),

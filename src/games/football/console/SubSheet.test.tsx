@@ -21,10 +21,79 @@ const key = (name: string | RegExp) => screen.getByRole('button', { name })
 const confirm = () => key(/^Confirm/)
 
 describe('SubSheet', () => {
-  it('is a labelled dialog that takes focus and names the team', () => {
+  it('tabs from the Off field to the On field, then on to Add pair', async () => {
+    const { user } = setup(5)
+    // The sheet opens with Off focused, so one Tab reaches On.
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
+    await user.keyboard('4')
+    await user.tab()
+    expect(screen.getByRole('button', { name: /^On/ })).toHaveFocus()
+    // Next is disabled once On is the active field.
+    await user.tab()
+    expect(key(/^\+ Add pair/)).toHaveFocus()
+  })
+
+  it('keeps focus on the On field after pressing it with the keyboard', async () => {
+    const { user } = setup(5)
+    await user.tab()
+    await user.keyboard('{Enter}')
+    const on = screen.getByRole('button', { name: /^On/ })
+    expect(on).toHaveAttribute('aria-pressed', 'true')
+    expect(on).toHaveFocus()
+    await user.keyboard('7')
+    expect(on).toHaveTextContent('7')
+    await user.tab()
+    expect(key('Next ›')).toBeDisabled()
+    expect(key(/^\+ Add pair/)).toHaveFocus()
+  })
+
+  it('types into the On field after tabbing to it, without pressing it', async () => {
+    const { user } = setup(5)
+    await user.keyboard('4')
+    await user.tab()
+    await user.keyboard('7')
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveTextContent('4')
+    expect(screen.getByRole('button', { name: /^On/ })).toHaveTextContent('7')
+  })
+
+  it('moves focus to the On field after Next, so Tab carries on from there', async () => {
+    const { user } = setup(5)
+    await user.keyboard('4{Enter}')
+    const on = screen.getByRole('button', { name: /^On/ })
+    expect(on).toHaveAttribute('aria-pressed', 'true')
+    expect(on).toHaveFocus()
+    await user.keyboard('7')
+    expect(on).toHaveTextContent('7')
+    await user.tab()
+    expect(key(/^\+ Add pair/)).toHaveFocus()
+  })
+
+  it('moves focus back to the Off field after adding a pair', async () => {
+    const { user } = setup(5)
+    await user.keyboard('4{Enter}7{Enter}')
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: /^On/ })).toHaveFocus()
+  })
+
+  it('selects a field by clicking it, and digits still type into it', async () => {
+    const { user } = setup(5)
+    const on = screen.getByRole('button', { name: /^On/ })
+    await user.click(on)
+    expect(on).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    await user.keyboard('7')
+    expect(on).toHaveTextContent('7')
+  })
+
+  it('is a labelled dialog that focuses its Off field and names the team', () => {
     setup(5)
     const dialog = screen.getByRole('dialog', { name: 'Make a substitution' })
-    expect(dialog).toHaveFocus()
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    expect(screen.getByRole('button', { name: /^Off/ })).toHaveFocus()
     expect(dialog).toHaveAttribute('aria-modal', 'false')
     expect(screen.getByText('Substitution · United')).toBeInTheDocument()
     expect(screen.getByText('No pairs yet')).toBeInTheDocument()

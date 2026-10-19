@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defaultMatchConfig } from './config'
 import {
+  anchorClock,
   clockControl,
   clockSeconds,
   displayedSeconds,
+  foldClock,
   formatClock,
+  pauseClock,
 } from './clock'
 import type { FootballState } from './state'
 
@@ -127,5 +130,50 @@ describe('clockControl', () => {
     expect(clockControl(state({ config, periodId: 'b' }), now)).toEqual({
       kind: 'disabled',
     })
+  })
+})
+
+describe('moving a running clock between documents', () => {
+  const running = (baseSeconds: number, runningSince: number) =>
+    state({ clock: { baseSeconds, runningSince } })
+
+  it('folds elapsed time in, so a receiver with another origin shows the same time', () => {
+    // Console's performance.now() is ~3h in; the board's document just opened.
+    const consoleNow = 10_800_000
+    const sent = structuredClone(
+      foldClock(running(60, consoleNow - 5_000), consoleNow),
+    )
+    const boardNow = 40
+    const received = anchorClock(sent, boardNow)
+    expect(clockSeconds(received.clock, boardNow)).toBe(65)
+    expect(clockSeconds(received.clock, boardNow + 2_000)).toBe(67)
+  })
+
+  it('leaves a stopped clock alone', () => {
+    const stopped = state()
+    expect(foldClock(stopped, 5)).toBe(stopped)
+    expect(anchorClock(stopped, 5)).toBe(stopped)
+    expect(pauseClock(stopped, 5)).toBe(stopped)
+  })
+
+  it('pauses at the elapsed time', () => {
+    expect(pauseClock(running(60, 1_000), 4_000).clock).toEqual({
+      baseSeconds: 63,
+      runningSince: null,
+    })
+  })
+
+  it('is unaffected by the wall clock, which it never reads', () => {
+    const s = running(0, 1_000)
+    const before = clockSeconds(s.clock, 11_000)
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(Date.now() + 86_400_000)
+      expect(clockSeconds(s.clock, 11_000)).toBe(before)
+      vi.setSystemTime(Date.now() - 2 * 86_400_000)
+      expect(clockSeconds(s.clock, 11_000)).toBe(before)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

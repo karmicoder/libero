@@ -83,9 +83,11 @@ A sport that is not `ready`, or has no engine and console registered, shows a
   device) as `snapshot` (full state) and `notice` messages. A board never runs the
   reducer and does not update while disconnected. Clocks are
   `{ baseSeconds, runningSince }`, so each window derives its own display time
-  from `Date.now()`; there are no tick actions.
+  from the monotonic `performance.now()` (so system clock changes can't move
+  it); there are no tick actions.
 - **Resume.** The console keeps a best-effort backup of the match in
-  `localStorage` and offers to resume it after a reload.
+  `localStorage` and offers to resume it after a reload. A running clock comes
+  back stopped; you can add the estimated time since the last save.
 
 ### Opening the scoreboard in a second window
 

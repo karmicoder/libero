@@ -28,16 +28,19 @@ const show = (n?: number) => (n === undefined ? '–' : `#${n}`)
  * guidance, not validation: it shows a warning but confirming stays enabled.
  * Like the other sheets it is a non-modal dialog covering a team column,
  * accepts the physical keyboard (digits, Backspace, Enter for next, add or
- * confirm, Esc to cancel), and focuses itself when it opens.
+ * confirm, Esc to cancel), and focuses its Off field when it opens.
  */
 export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
   const titleId = useId()
   const sheet = useRef<HTMLDivElement>(null)
+  const fieldButtons = useRef<Partial<Record<Field, HTMLButtonElement>>>({})
   const [field, setField] = useState<Field>('off')
   const [entry, setEntry] = useState<Record<Field, string>>({ off: '', on: '' })
   const [queued, setQueued] = useState<SubstitutionPair[]>([])
 
-  useEffect(() => sheet.current?.focus(), [])
+  // Off starts selected, so it gets focus too: with focus on the sheet itself
+  // the first Tab would only land on the already highlighted Off.
+  useEffect(() => fieldButtons.current.off?.focus(), [])
 
   const pending: SubstitutionPair = {
     off: parseNumber(entry.off),
@@ -49,11 +52,14 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
   const overLimit = remaining !== undefined && pairs.length > remaining
 
   // Buttons that disable themselves would drop focus, and with it the
-  // keyboard handler, so focus goes back to the sheet.
-  const next = () => {
-    setField('on')
-    sheet.current?.focus()
+  // keyboard handler, so focus moves to the field now being entered. Sending
+  // it to the sheet instead would make the next Tab land on Off, which
+  // selects Off again.
+  const focusField = (value: Field) => {
+    setField(value)
+    fieldButtons.current[value]?.focus()
   }
+  const next = () => focusField('on')
   const type = (key: string) =>
     setEntry((v) => ({ ...v, [field]: typeDigit(v[field], key) }))
   const erase = () => setEntry((v) => ({ ...v, [field]: backspace(v[field]) }))
@@ -61,14 +67,16 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
     if (!hasPending) return
     setQueued([...queued, pending])
     setEntry({ off: '', on: '' })
-    setField('off')
-    sheet.current?.focus()
+    focusField('off')
   }
   const remove = (index: number) =>
     setQueued(queued.filter((_, i) => i !== index))
   const confirm = () => {
     if (pairs.length > 0) onConfirm(pairs)
   }
+
+  const isFieldButton = (target: EventTarget | null) =>
+    Object.values(fieldButtons.current).some((button) => button === target)
 
   const handleKey = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -83,8 +91,12 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
     } else if (e.key === 'Backspace') {
       e.preventDefault()
       erase()
-    } else if (e.key === 'Enter' && e.target === e.currentTarget) {
-      // On a focused button Enter already presses that button.
+    } else if (
+      e.key === 'Enter' &&
+      (e.target === e.currentTarget || isFieldButton(e.target))
+    ) {
+      // On any other focused button Enter already presses that button. The
+      // field buttons are excluded: focusing one already selects it.
       e.preventDefault()
       if (field === 'off' && entry.off !== '') next()
       else if (hasPending) add()
@@ -122,21 +134,31 @@ export function SubSheet({ teamName, remaining, onConfirm, onCancel }: Props) {
       </h2>
 
       <div className={styles.entryRow}>
-        <fieldset className={styles.fields}>
-          <legend className="visually-hidden">Number being entered</legend>
+        <div
+          className={styles.fields}
+          role="group"
+          aria-label="Number being entered"
+        >
           {FIELDS.map(([value, label]) => (
-            <label key={value} className={styles.field}>
-              <input
-                type="radio"
-                name="sub-field"
-                checked={field === value}
-                onChange={() => setField(value)}
-              />
+            <button
+              key={value}
+              type="button"
+              ref={(el) => {
+                if (el) fieldButtons.current[value] = el
+              }}
+              className={styles.field}
+              aria-pressed={field === value}
+              // Focus selects too, so Tab-ing to a field makes it the one
+              // that digits type into. Click covers browsers that don't
+              // focus buttons on click.
+              onFocus={() => setField(value)}
+              onClick={() => setField(value)}
+            >
               <span className="eyebrow">{label}</span>
               <span className={styles.value}>{entry[value] || '–'}</span>
-            </label>
+            </button>
           ))}
-        </fieldset>
+        </div>
         <div className={styles.steps}>
           <button
             type="button"

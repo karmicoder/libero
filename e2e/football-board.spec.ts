@@ -82,6 +82,27 @@ test('the board keeps following a console that was reloaded and resumed', async 
   await expect(boardScore(board, 'Home')).toHaveText('2')
 })
 
+test('stoppage time reaches the board only after it has settled', async ({
+  context,
+}) => {
+  const { console_, board } = await openConsoleAndBoard(context)
+  const more = console_.getByRole('button', { name: 'Increase stoppage time' })
+  await more.click()
+  await more.click()
+  await more.click()
+  // Nothing yet: the board never shows the intermediate +1′ or +2′ either.
+  await expect(board.getByText('Stoppage time')).toHaveCount(0)
+  await expect(console_.getByText('+3′')).toHaveAttribute(
+    'data-pending',
+    'true',
+  )
+  // One update with the final value once the control has settled.
+  await expect(board.getByText('+3′')).toBeVisible()
+  await expect(console_.getByText('+3′')).not.toHaveAttribute('data-pending')
+  const results = await new AxeBuilder({ page: console_ }).analyze()
+  expect(results.violations).toEqual([])
+})
+
 test('undo on the console is reflected on the board', async ({ context }) => {
   const { console_, board } = await openConsoleAndBoard(context)
   await goalButton(console_, 'Home').click()
