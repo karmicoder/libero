@@ -1,0 +1,98 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-inline-size: 0;
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-xl);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 16rem;
+  border: 0;
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile-hover);
+  color: inherit;
+  transition: background var(--duration-fast);
+}
+
+.tile:hover:not(:disabled) {
+  background: var(--border-tile-hover);
+}
+
+.score,
+.scorePending {
+  font-family: var(--font-display);
+  font-size: var(--text-score);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Not on the board yet. */
+.scorePending {
+  color: var(--text-muted);
+}
+
+.hint {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+}
+
+.serve,
+.minus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--size-control);
+  padding-inline: var(--space-5);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  transition: background var(--duration-fast);
+}
+
+.serve:hover:not(:disabled),
+.minus:hover:not(:disabled) {
+  background: var(--surface-tile-hover);
+}
+
+.serveDot {
+  inline-size: var(--size-dot);
+  block-size: var(--size-dot);
+  border: var(--border-width) solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.serve[aria-pressed='true'] {
+  border-color: var(--positive);
+  color: var(--positive);
+}
+
+.serve[aria-pressed='true'] .serveDot {
+  background: var(--positive);
+  border-color: var(--positive);
+}
