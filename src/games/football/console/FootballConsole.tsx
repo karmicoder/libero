@@ -15,6 +15,7 @@ import type {
 import { cardToast } from './cardToast'
 import { CentrePanel } from './CentrePanel'
 import styles from './FootballConsole.module.css'
+import { InHeader } from '../../../components/HeaderSlot'
 import { SettingsScreen } from './SettingsScreen'
 import { TeamColumn } from './TeamColumn'
 
@@ -210,7 +211,7 @@ export function FootballConsole({
   return (
     <div className={styles.console}>
       <h1 className="visually-hidden">Football scorer console</h1>
-      <div className={styles.topBar}>
+      <InHeader>
         <p
           className={boardConnected ? styles.connected : styles.disconnected}
           role="status"
@@ -245,7 +246,7 @@ export function FootballConsole({
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
           </button>
         </div>
-      </div>
+      </InHeader>
 
       {jump && (
         <div className={styles.warning} role="alert">

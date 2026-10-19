@@ -10,14 +10,6 @@
   padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-10));
 }
 
-.topBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
 .connected,
 .disconnected {
   display: flex;
@@ -46,6 +38,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+  margin-inline-start: auto;
 }
 
 .topButton {

@@ -14,6 +14,19 @@ for (const colorScheme of ['dark', 'light'] as const) {
   })
 }
 
+test('board status and actions share the app header row', async ({ page }) => {
+  await page.goto('/match/football')
+  const header = page.getByRole('banner')
+  await expect(header.getByRole('status')).toBeVisible()
+  await expect(
+    header.getByRole('link', { name: 'Open scoreboard' }),
+  ).toBeVisible()
+  await expect(header.getByRole('button', { name: 'Settings' })).toBeVisible()
+  // One row of the 56px header, not two stacked bars.
+  const box = await header.boundingBox()
+  expect(box!.height).toBeLessThan(70)
+})
+
 test('score a goal, run the clock, and resume after a reload', async ({
   page,
 }) => {
