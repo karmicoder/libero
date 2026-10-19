@@ -28,6 +28,8 @@ Run `npm run format` and `npm run check` before finishing a change.
 
 ## Design principles
 
+Motion rules, tokens and patterns are in `docs/design-language.md`; use the `--motion-*` tokens and the shared `src/motion/` roll, never literal durations or easings.
+
 - **UX guidance over hard validation.** The user knows best what the scoreboard should show. Warn and guide in the UI; block only when needed for state validity (e.g. removing the current period, having no `play` period).
 - **"10-foot" scoreboard.** Boards are read from across a room: huge, high-contrast, glanceable type. Layout is defined by aspect ratio (a scaled 16:9 stage), not pixel sizes.
 

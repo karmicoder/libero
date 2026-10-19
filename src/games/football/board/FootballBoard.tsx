@@ -1,6 +1,7 @@
 import type { BoardProps } from '../../../boards/registry'
 import { useBanner } from '../../../boards/useBanner'
 import { useNow } from '../../../match/useNow'
+import { RollingNumber } from '../../../motion/RollingNumber'
 import { displayedSeconds, formatClock } from '../clock'
 import { findPeriod } from '../config'
 import type { FootballMessage, FootballState, TeamSide } from '../state'
@@ -26,7 +27,7 @@ function Team({ side, state }: { side: TeamSide; state: FootballState }) {
     <section className={styles.team} aria-label={`${SIDE_LABEL[side]} team`}>
       <h2 className={styles.name}>{team.name || SIDE_LABEL[side]}</h2>
       <p className={styles.score} aria-label={`${SIDE_LABEL[side]} score`}>
-        {team.score}
+        <RollingNumber value={team.score} />
       </p>
       {limit !== undefined && (
         <p className={styles.subs}>

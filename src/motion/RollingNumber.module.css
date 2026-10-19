@@ -1,0 +1,54 @@
+/*
+ * Digit roll. Durations, easings, distances and scales are tokens, and reduced
+ * motion swaps them in tokens.css, so nothing here is tuned or special-cased.
+ * Transform and opacity only.
+ */
+
+.number {
+  display: inline-flex;
+}
+
+.digit,
+.rolling {
+  position: relative;
+  display: inline-block;
+  /* Digits roll inside their own box, like an odometer, so a travelling digit
+     never crosses the label above it. */
+  overflow: clip;
+}
+
+/* The outgoing digit, drawn from data-prev so it is not real text. */
+.rolling::before {
+  content: attr(data-prev);
+  position: absolute;
+  inset: 0;
+  animation: roll-out var(--motion-board-roll-out) var(--ease-exit) forwards;
+}
+
+.rolling .incoming {
+  display: inline-block;
+  animation: roll-in var(--motion-board-roll-in) var(--ease-enter) both;
+}
+
+@keyframes roll-out {
+  to {
+    transform: translateY(calc(-1 * var(--motion-distance-roll)));
+    opacity: 0;
+  }
+}
+
+@keyframes roll-in {
+  from {
+    transform: translateY(var(--motion-distance-roll));
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(calc(-1 * var(--motion-distance-nudge)))
+      scale(var(--motion-scale-pulse));
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
