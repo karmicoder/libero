@@ -1,0 +1,207 @@
+/* PROTOTYPE (#69): throwaway styles. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-10));
+}
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+.topActions,
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.status {
+  margin: 0;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.btn,
+.primary,
+.serveOn {
+  min-block-size: var(--size-touch);
+  padding-inline: var(--space-5);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-tile-hover);
+}
+.primary {
+  background: var(--accent);
+  color: var(--surface-page);
+  border-color: var(--accent);
+}
+.serveOn {
+  border-color: var(--positive);
+  color: var(--positive);
+}
+.prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--brand);
+  border-radius: var(--radius-button);
+  font-weight: 700;
+}
+.halves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+.half {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-tile);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+}
+.half h2 {
+  margin: 0;
+}
+.tapScore {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 14rem;
+  border: 0;
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile-hover);
+  color: inherit;
+  font-weight: 700;
+}
+.bigNum {
+  font-family: var(--font-display);
+  font-size: var(--text-score);
+  line-height: 1;
+}
+.mirror {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface-tile);
+  border: var(--border-width) solid var(--border-tile);
+  border-radius: var(--radius-tile);
+  padding: var(--space-6);
+}
+.mirrorCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+.mirrorName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+}
+.serveDot {
+  inline-size: var(--size-dot);
+  block-size: var(--size-dot);
+  border-radius: 50%;
+  background: var(--positive);
+}
+.pips {
+  display: flex;
+  gap: var(--space-2);
+}
+.pip,
+.pipOn {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: 50%;
+  border: var(--border-width) solid var(--border-tile-hover);
+}
+.pipOn {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+.barScore {
+  min-block-size: 6rem;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--brand);
+  color: #fff;
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+.scoreLine {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+}
+.scoreLine b {
+  font-size: var(--text-score);
+}
+.rally {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+.rallyHold,
+.rallySwitch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 12rem;
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+  color: inherit;
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+.rallySwitch {
+  border-color: var(--positive);
+}
+.rallyHold small,
+.rallySwitch small {
+  color: var(--text-muted);
+  font-size: var(--text-base);
+}
+.switcher {
+  position: fixed;
+  inset-block-end: var(--space-4);
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: fit-content;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 999px;
+  background: #ffd400;
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 4px 16px #0006;
+}
+.switcher button {
+  border: 0;
+  background: transparent;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
