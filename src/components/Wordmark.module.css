@@ -1,0 +1,17 @@
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18em;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+/* Mark height is 0.78 of the text size. */
+.mark {
+  display: block;
+  flex: none;
+  block-size: 0.78em;
+  inline-size: auto;
+  aspect-ratio: 46 / 43.5;
+}

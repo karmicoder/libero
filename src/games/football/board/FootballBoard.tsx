@@ -1,5 +1,6 @@
 import type { BoardProps } from '../../../boards/registry'
 import { useBanner } from '../../../boards/useBanner'
+import { Wordmark } from '../../../components/Wordmark'
 import { useNow } from '../../../match/useNow'
 import { RollingNumber } from '../../../motion/RollingNumber'
 import { displayedSeconds, formatClock } from '../clock'
@@ -109,7 +110,7 @@ export function FootballBoard({
               flip={banner.flip}
             />
           )}
-          <p className={styles.wordmark}>Libero</p>
+          <Wordmark className={styles.wordmark} />
 
           {!connected && (
             <p className={styles.disconnected} role="status">
