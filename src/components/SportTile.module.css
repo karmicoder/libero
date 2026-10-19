@@ -1,5 +1,5 @@
 .tile {
-  position: relative;
+  font: inherit;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,46 +43,19 @@
   animation-delay: calc(var(--motion-stagger) * 7);
 }
 
-.tile:not(:has(input:disabled)):hover {
+.tile:not(:disabled):hover {
   background: var(--surface-tile-hover);
   border-color: var(--border-tile-hover);
   color: var(--text);
 }
 
-.tile:not(:has(input:disabled)):active {
+.tile:not(:disabled):active {
   transform: scale(0.97);
 }
 
-.tile:has(input:checked),
-.tile:has(input:checked):hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-}
-
-.tile:has(input:checked) .status {
-  color: inherit;
-  opacity: 0.7;
-}
-
-.tile:has(input:disabled) {
+.tile:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.tile:has(input:focus-visible) {
-  outline: var(--outline-width) solid var(--focus-ring);
-  outline-offset: var(--outline-width);
-}
-
-/* The native radio stays in the DOM (keyboard, arrows, screen readers) but the
-   whole tile is its visual. */
-.tile input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: inherit;
 }
 
 .icon {

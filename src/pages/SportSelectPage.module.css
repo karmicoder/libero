@@ -4,24 +4,3 @@
   gap: var(--space-4);
   margin-block-start: var(--space-8);
 }
-
-.footer {
-  flex: none;
-  position: sticky;
-  inset-block-end: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  min-block-size: 6rem;
-  padding: var(--space-4) clamp(var(--space-4), 4.5vw, var(--gutter-max));
-  border-block-start: var(--border-width) solid var(--border-subtle);
-  background: var(--surface-page);
-}
-
-.selectedName {
-  display: block;
-  margin-block-start: var(--space-1);
-  font-size: var(--text-xl);
-  font-weight: 700;
-}

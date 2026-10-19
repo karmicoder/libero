@@ -19,27 +19,20 @@ describe('Sport selection page', () => {
   beforeEach(() => registerBuiltinSports())
   afterEach(() => sportRegistry.unregister('futsal'))
 
-  it('selects the first ready sport by default', () => {
-    renderApp()
-    expect(screen.getByRole('radio', { name: /football/i })).toBeChecked()
-    expect(
-      screen.getByRole('status', { name: 'Selected sport' }),
-    ).toHaveTextContent('Football')
-  })
-
   it('disables coming-soon sports', () => {
     renderApp()
-    expect(screen.getByRole('radio', { name: /basketball/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /basketball/i })).toBeDisabled()
   })
 
-  it('changes the selection and starts the match for it', async () => {
+  it('starts the match as soon as a ready sport is chosen', async () => {
     const user = userEvent.setup()
     renderApp()
 
-    await user.click(screen.getByRole('radio', { name: /volleyball/i }))
-    expect(screen.getByRole('radio', { name: /volleyball/i })).toBeChecked()
+    expect(
+      screen.queryByRole('button', { name: /start match/i }),
+    ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /start match/i }))
+    await user.click(screen.getByRole('button', { name: /volleyball/i }))
     expect(
       screen.getByRole('heading', { name: /volleyball match/i }),
     ).toBeInTheDocument()
@@ -53,13 +46,15 @@ describe('Sport selection page', () => {
     expect(screen.getByText(/basketball is coming soon/i)).toBeInTheDocument()
   })
 
-  it('supports arrow-key selection between ready sports', async () => {
+  it('starts a match from the keyboard', async () => {
     const user = userEvent.setup()
     renderApp()
 
-    await user.click(screen.getByRole('radio', { name: /football/i }))
-    await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('radio', { name: /volleyball/i })).toBeChecked()
+    screen.getByRole('button', { name: /football/i }).focus()
+    await user.keyboard('{Enter}')
+    expect(
+      screen.getByRole('heading', { name: /football match/i }),
+    ).toBeInTheDocument()
   })
 
   it('shows sports registered at runtime', () => {
@@ -72,6 +67,6 @@ describe('Sport selection page', () => {
         iconPath: '',
       }),
     )
-    expect(screen.getByRole('radio', { name: /futsal/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /futsal/i })).toBeEnabled()
   })
 })

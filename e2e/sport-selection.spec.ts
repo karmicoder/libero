@@ -23,14 +23,12 @@ test('a coming-soon sport cannot be opened by URL', async ({ page }) => {
   ).toBeVisible()
 })
 
-test('choose a sport and start a match', async ({ page }) => {
+test('choosing a sport starts the match', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.getByRole('radio', { name: /football/i })).toBeChecked()
-  await expect(page.getByRole('radio', { name: /basketball/i })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /basketball/i })).toBeDisabled()
 
-  await page.getByRole('radio', { name: /volleyball/i }).check()
-  await page.getByRole('button', { name: /start match/i }).click()
+  await page.getByRole('button', { name: /volleyball/i }).click()
 
   await expect(page).toHaveURL(/\/match\/volleyball$/)
   await expect(
