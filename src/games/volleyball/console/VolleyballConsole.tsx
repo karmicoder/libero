@@ -116,7 +116,9 @@ export function VolleyballConsole({
   const displayName = (side: TeamSide) =>
     state.teams[side].name || SIDE_LABEL[side]
   const winner = finished ? matchWinner(state) : null
-  const { visitor: v, home: h } = state.current
+  // The prompt follows what the columns show, pending −1 included.
+  const shown = { visitor: scores.visitor.value, home: scores.home.value }
+  const { visitor: v, home: h } = shown
   const leader =
     finished || v === h ? undefined : displayName(v > h ? 'visitor' : 'home')
   const freshSet = scores.visitor.value === 0 && scores.home.value === 0
@@ -187,7 +189,7 @@ export function VolleyballConsole({
       <SetPrompt
         leader={leader}
         setNumber={state.completed.length + 1}
-        ready={setReady(state)}
+        ready={setReady({ ...state, current: shown })}
         matchWinner={winner ? displayName(winner) : undefined}
         onEndSet={() => {
           flushScores()

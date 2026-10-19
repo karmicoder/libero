@@ -10,6 +10,10 @@
   background: var(--surface-tile);
 }
 
+.covered {
+  display: contents;
+}
+
 .name {
   margin: 0;
   font-size: var(--text-xl);
@@ -61,7 +65,8 @@
 }
 
 .serve,
-.minus {
+.minus,
+.setScore {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -77,7 +82,8 @@
 }
 
 .serve:hover:not(:disabled),
-.minus:hover:not(:disabled) {
+.minus:hover:not(:disabled),
+.setScore:hover:not(:disabled) {
   background: var(--surface-tile-hover);
 }
 

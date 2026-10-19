@@ -254,12 +254,21 @@ describe('VolleyballConsole', () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const { store } = setup((s) => ({
         ...s,
-        current: { visitor: 25, home: 20 },
+        current: { visitor: 27, home: 20 },
       }))
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       await user.click(minus('Visitor'))
       await user.click(endSet())
-      expect(store.getState().completed[0]).toMatchObject({ visitor: 24 })
+      expect(store.getState().completed[0]).toMatchObject({ visitor: 26 })
+    })
+
+    it('follows a pending −1: no longer asks once it drops below the target', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      setup((s) => ({ ...s, current: { visitor: 26, home: 24 } }))
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      expect(screen.getByText('Visitor has won set 1?')).toBeInTheDocument()
+      await user.click(minus('Visitor'))
+      expect(screen.queryByText(/has won set/)).not.toBeInTheDocument()
     })
 
     it('says who wins the match when the last set closes', async () => {
