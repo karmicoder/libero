@@ -39,11 +39,8 @@
   border-block-end: var(--border-width) solid var(--border-subtle);
 }
 
-.wordmark {
-  font-weight: 700;
+.wordmark-link {
   font-size: var(--text-md);
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
   text-decoration: none;
   color: var(--text-tile);
 }
