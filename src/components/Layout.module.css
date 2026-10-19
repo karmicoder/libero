@@ -7,8 +7,11 @@
 .header {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  block-size: var(--size-control-lg);
+  gap: var(--space-2) var(--space-6);
+  min-block-size: var(--size-control-lg);
+  padding-block: var(--space-2);
   padding-inline: var(--space-4);
   border-block-end: var(--border-width) solid var(--border-subtle);
 }
@@ -17,6 +20,11 @@
   font-size: var(--text-md);
   text-decoration: none;
   color: var(--text-tile);
+}
+
+/* Pages fill the header row through `InHeader`; their items join the row. */
+.slot {
+  display: contents;
 }
 
 .main {
