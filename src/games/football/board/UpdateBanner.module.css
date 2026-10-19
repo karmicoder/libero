@@ -105,41 +105,6 @@
   }
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-/*
- * Reduced motion: no travel, fade only. The durations are already swapped to
- * the reduced fade in tokens.css; only the keyframes differ, since a slide or
- * a flip is not a distance token that can be neutralised.
- */
-@media (prefers-reduced-motion: reduce) {
-  .in {
-    animation-name: fade-in;
-  }
-
-  .out {
-    animation-name: fade-out;
-  }
-
-  .flipOut {
-    animation-name: fade-out;
-  }
-
-  .flipIn {
-    animation-name: fade-in;
-  }
-}
-
 .minute {
   font-size: var(--minute-size);
   color: var(--text-muted);

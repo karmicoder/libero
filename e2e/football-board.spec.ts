@@ -152,22 +152,16 @@ test.describe('update banners', () => {
     await expect(banner(board)).toHaveCount(0)
   })
 
-  test('slides with motion allowed and fades with reduced motion', async ({
+  test('slides in with the token duration whatever the OS motion setting', async ({
     browser,
   }) => {
-    for (const [reducedMotion, expected] of [
-      ['no-preference', /slide-in/],
-      ['reduce', /fade-in/],
-    ] as const) {
+    // The board is read across a room, so it ignores prefers-reduced-motion.
+    for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       const context = await browser.newContext({ reducedMotion })
       const { console_, board } = await openConsoleAndBoard(context)
       await announceGoal(console_, 'Home')
-      await expect(banner(board)).toHaveCSS('animation-name', expected)
-      // Durations come from the tokens; reduced motion swaps in the 200 ms fade.
-      await expect(banner(board)).toHaveCSS(
-        'animation-duration',
-        reducedMotion === 'reduce' ? '0.2s' : '0.56s',
-      )
+      await expect(banner(board)).toHaveCSS('animation-name', /slide-in/)
+      await expect(banner(board)).toHaveCSS('animation-duration', '0.56s')
       await context.close()
     }
   })

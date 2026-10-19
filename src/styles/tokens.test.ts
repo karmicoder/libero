@@ -15,49 +15,24 @@ function declarations(block: string) {
   )
 }
 
-const baseBlock = tokens.slice(
-  tokens.indexOf(':root {'),
-  tokens.indexOf('@media (prefers-reduced-motion'),
-)
 const reducedStart = tokens.indexOf('@media (prefers-reduced-motion')
-const reducedBlock = tokens.slice(
-  reducedStart,
-  tokens.indexOf('@media (prefers-color-scheme', reducedStart),
+const reduced = declarations(
+  tokens.slice(
+    reducedStart,
+    tokens.indexOf('@media (prefers-color-scheme', reducedStart),
+  ),
 )
 
-const base = declarations(baseBlock)
-const reduced = declarations(reducedBlock)
-
-describe('motion tokens', () => {
-  it('handles reduced motion in the tokens, in one place', () => {
-    // Every board duration, distance and scale has a reduced-motion value.
-    const board = [...base.keys()].filter(
-      (name) =>
-        /^--motion-(board|distance|scale)-/.test(name) ||
-        name.startsWith('--motion-distance') ||
-        name.startsWith('--motion-scale'),
-    )
-    expect(board.length).toBeGreaterThan(0)
-    for (const name of board) expect(reduced.has(name), name).toBe(true)
-  })
-
-  it('swaps board durations for the reduced fade rather than zeroing them', () => {
-    for (const [name, value] of reduced) {
-      if (name.startsWith('--motion-board-')) {
-        expect(value, name).toBe('var(--motion-reduced-fade)')
-      }
-    }
-    expect(base.get('--motion-reduced-fade')).toBe('200ms')
-  })
-
-  it('removes travel and scale under reduced motion', () => {
-    expect(reduced.get('--motion-distance-roll')).toBe('0em')
-    expect(reduced.get('--motion-scale-pulse')).toBe('1')
-    expect(reduced.get('--motion-scale-pop-pip')).toBe('1')
-  })
-
-  it('drops console motion under reduced motion', () => {
+describe('motion tokens under reduced motion', () => {
+  it('drops console motion', () => {
     expect(reduced.get('--duration-fast')).toBe('0ms')
     expect(reduced.get('--duration-slow')).toBe('0ms')
+  })
+
+  it('leaves board motion alone (the board ignores the OS setting)', () => {
+    for (const name of reduced.keys()) {
+      expect(name, name).not.toMatch(/^--motion-(board|distance|scale)/)
+      expect(name, name).not.toMatch(/^--ease-/)
+    }
   })
 })

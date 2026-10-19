@@ -46,8 +46,9 @@
   --outline-width: 3px;
 
   /* Motion. The scale and its rules are documented in
-     docs/design-language.md. Everything below is swapped or zeroed in the
-     prefers-reduced-motion block, which is the only place that happens. */
+     docs/design-language.md. Only console motion honours reduced motion: the
+     prefers-reduced-motion block below zeroes the console durations. Board
+     motion (--motion-board-*, distances, scales) always runs. */
 
   /* Console-scale durations: quick, never in the scorer's way. */
   --duration-fast: 120ms;
@@ -67,10 +68,8 @@
   --motion-board-exit: 560ms;
   /* Each half of a card flip. */
   --motion-board-flip: 240ms;
-  /* Step between staggered items (the tile entrance). */
+  /* Step between staggered items (the console tile entrance). */
   --motion-stagger: 30ms;
-  /* What a reduced-motion user gets in place of a roll or pop. */
-  --motion-reduced-fade: 200ms;
 
   /* Easings: enter decelerates, exit accelerates, emphasis overshoots. */
   --ease-enter: cubic-bezier(0.2, 0, 0, 1);
@@ -116,23 +115,7 @@
     --duration-fast: 0ms;
     --duration-slow: 0ms;
 
-    /* Board motion is swapped, not dropped: the change still cross-fades so
-       cause and effect survive, but nothing travels or scales. */
-    --motion-board-roll-out: var(--motion-reduced-fade);
-    --motion-board-roll-in: var(--motion-reduced-fade);
-    --motion-board-indicator-out: var(--motion-reduced-fade);
-    --motion-board-indicator-in: var(--motion-reduced-fade);
-    --motion-board-highlight: var(--motion-reduced-fade);
-    --motion-board-pop: var(--motion-reduced-fade);
-    --motion-board-enter: var(--motion-reduced-fade);
-    --motion-board-exit: var(--motion-reduced-fade);
-    --motion-board-flip: var(--motion-reduced-fade);
     --motion-stagger: 0ms;
-    --motion-distance-roll: 0em;
-    --motion-distance-nudge: 0em;
-    --motion-scale-pulse: 1;
-    --motion-scale-pop-indicator: 1;
-    --motion-scale-pop-pip: 1;
   }
 }
 

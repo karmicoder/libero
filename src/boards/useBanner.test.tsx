@@ -63,8 +63,8 @@ describe('useBanner', () => {
     expect(result.current).toBeNull()
   })
 
-  it('waits for the exit as long as the exit token says (reduced motion fade)', () => {
-    // Reduced motion shortens the exit token; the timer must follow it.
+  it('waits for the exit as long as the exit token says', () => {
+    // Retuning the token must retune the timer with it.
     document.documentElement.style.setProperty('--motion-board-exit', '200ms')
     try {
       const f = feed()

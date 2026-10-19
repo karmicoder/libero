@@ -5,8 +5,7 @@
  *
  * Motion durations (the entrance delay, enter, exit and flip) are tokens in
  * `tokens.css`, which the CSS uses directly; the hook reads the same tokens so
- * its timers wait exactly as long as the animation runs, including the shorter
- * fades of reduced motion. Only the dwell times below are content timing, not
+ * its timers wait exactly as long as the animation runs. Only the dwell times below are content timing, not
  * motion.
  */
 import { motionMs } from '../motion/motionMs'

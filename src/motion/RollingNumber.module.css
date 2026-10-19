@@ -1,7 +1,7 @@
 /*
- * Digit roll. Durations, easings, distances and scales are tokens, and reduced
- * motion swaps them in tokens.css, so nothing here is tuned or special-cased.
- * Transform and opacity only.
+ * Digit roll. Durations, easings, distances and scales are tokens, so nothing
+ * here is tuned or special-cased. Board motion ignores prefers-reduced-motion
+ * (see docs/design-language.md). Transform and opacity only.
  */
 
 .number {

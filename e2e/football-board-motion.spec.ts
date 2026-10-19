@@ -47,21 +47,16 @@ test.describe('score digit roll', () => {
     })
   })
 
-  test.describe('with reduced motion', () => {
+  test.describe('with the OS set to reduce motion', () => {
     test.use({ reducedMotion: 'reduce' })
 
-    test('the roll is swapped for a short fade, not removed', async ({
+    test('the board still rolls the digit at full length', async ({
       context,
     }) => {
       const { console_, board } = await openConsoleAndBoard(context)
       await scoreHome(console_)
       await expect(homeScore(board)).toHaveText('1')
-      await expect(incoming(board)).toHaveCSS('animation-name', /roll-in/)
-      await expect(incoming(board)).toHaveCSS('animation-duration', '0.2s')
-      await expect(board.locator('html')).toHaveCSS(
-        '--motion-distance-roll',
-        /^\s*0em$/,
-      )
+      await expect(incoming(board)).toHaveCSS('animation-duration', '0.52s')
     })
   })
 
