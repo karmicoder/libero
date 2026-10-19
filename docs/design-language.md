@@ -84,7 +84,9 @@ Animation is progressive enhancement over the correct state.
 
 `prefers-reduced-motion: reduce` is handled in one place: the media block in `tokens.css`. Console durations go to 0. Board durations become `--motion-reduced-fade` (200 ms) and distances and scales neutralise (0 and 1), so a roll or pop becomes a plain cross-fade. We swap rather than zero on the board because an instant snap would lose cause and effect: the viewer would not notice that anything changed.
 
-Component CSS should not carry its own `prefers-reduced-motion` rules for token-driven motion.
+Component CSS should not carry its own `prefers-reduced-motion` rules for token-driven motion. The one exception is choosing a different keyframe set (the update banner swaps its slide and flip for a fade), because that is not a duration, distance or scale a token can neutralise.
+
+The few timers that must outlast an animation (the update banner's exit) read the duration token at runtime with `motionMs` (`src/motion/motionMs.ts`), so they stay in step with the CSS, including the reduced-motion fade. Dwell times (how long a banner holds) are content timing, not motion, and stay as constants.
 
 ### Accessibility and performance
 

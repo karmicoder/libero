@@ -60,6 +60,15 @@
   --motion-board-indicator-in: 480ms;
   --motion-board-highlight: 500ms;
   --motion-board-pop: 480ms;
+  /* Enter and exit (update banners): enter after a short beat, so the
+     audience is looking when it arrives. */
+  --motion-enter-delay: 300ms;
+  --motion-board-enter: 560ms;
+  --motion-board-exit: 560ms;
+  /* Each half of a card flip. */
+  --motion-board-flip: 240ms;
+  /* Step between staggered items (the tile entrance). */
+  --motion-stagger: 30ms;
   /* What a reduced-motion user gets in place of a roll or pop. */
   --motion-reduced-fade: 200ms;
 
@@ -115,6 +124,10 @@
     --motion-board-indicator-in: var(--motion-reduced-fade);
     --motion-board-highlight: var(--motion-reduced-fade);
     --motion-board-pop: var(--motion-reduced-fade);
+    --motion-board-enter: var(--motion-reduced-fade);
+    --motion-board-exit: var(--motion-reduced-fade);
+    --motion-board-flip: var(--motion-reduced-fade);
+    --motion-stagger: 0ms;
     --motion-distance-roll: 0em;
     --motion-distance-nudge: 0em;
     --motion-scale-pulse: 1;

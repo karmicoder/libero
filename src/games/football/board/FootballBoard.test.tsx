@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BANNER_EXIT_MS, BANNER_VISIBLE_MS } from '../../../boards/banner'
+import { bannerExitMs, bannerVisibleMs } from '../../../boards/banner'
 import { defaultMatchConfig } from '../config'
 import type { FootballMessage, FootballState } from '../state'
 import { FootballBoard } from './FootballBoard'
@@ -195,9 +195,9 @@ describe('FootballBoard', () => {
       const banner = screen.getByText('12′').closest('[data-team]')
       expect(banner).toHaveAttribute('data-team', 'visitor')
 
-      act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS))
+      act(() => void vi.advanceTimersByTime(bannerVisibleMs()))
       expect(banner).toHaveAttribute('data-phase', 'out')
-      act(() => void vi.advanceTimersByTime(BANNER_EXIT_MS))
+      act(() => void vi.advanceTimersByTime(bannerExitMs()))
       expect(screen.queryByText('12′')).toBeNull()
     })
 

@@ -81,33 +81,33 @@
   cursor: pointer;
   user-select: none;
   transition:
-    transform 140ms var(--ease-out),
-    background 140ms,
-    color 140ms,
-    border-color 140ms;
-  animation: tile-in 320ms var(--ease-out) backwards;
+    transform var(--duration-fast) var(--ease-enter),
+    background var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+  animation: tile-in var(--duration-slow) var(--ease-enter) backwards;
 }
 
 .tile:nth-of-type(2) {
-  animation-delay: 30ms;
+  animation-delay: var(--motion-stagger);
 }
 .tile:nth-of-type(3) {
-  animation-delay: 60ms;
+  animation-delay: calc(var(--motion-stagger) * 2);
 }
 .tile:nth-of-type(4) {
-  animation-delay: 90ms;
+  animation-delay: calc(var(--motion-stagger) * 3);
 }
 .tile:nth-of-type(5) {
-  animation-delay: 120ms;
+  animation-delay: calc(var(--motion-stagger) * 4);
 }
 .tile:nth-of-type(6) {
-  animation-delay: 150ms;
+  animation-delay: calc(var(--motion-stagger) * 5);
 }
 .tile:nth-of-type(7) {
-  animation-delay: 180ms;
+  animation-delay: calc(var(--motion-stagger) * 6);
 }
 .tile:nth-of-type(8) {
-  animation-delay: 210ms;
+  animation-delay: calc(var(--motion-stagger) * 7);
 }
 
 .tile:not(:has(input:disabled)):hover {
@@ -198,8 +198,8 @@
   font-size: 1.125rem;
   font-weight: 700;
   transition:
-    transform 120ms var(--ease-out),
-    background 120ms;
+    transform var(--duration-fast) var(--ease-enter),
+    background var(--duration-fast);
 }
 
 .primary:hover:not(:disabled) {

@@ -1,23 +1,9 @@
-import type { CSSProperties } from 'react'
-import {
-  BANNER_ENTER_DELAY_MS,
-  BANNER_ENTER_MS,
-  BANNER_EXIT_MS,
-  BANNER_FLIP_HALF_MS,
-} from '../../../boards/banner'
 import type { FootballMessage } from '../state'
 import { MAX_PAIRS_SHOWN } from './followUp'
 import { BallIcon, CardIcon, SubIcon } from './icons'
 import styles from './UpdateBanner.module.css'
 
 const flipClass = { out: 'flipOut', in: 'flipIn' } as const
-
-const timing = {
-  '--enter-delay': `${BANNER_ENTER_DELAY_MS}ms`,
-  '--enter-ms': `${BANNER_ENTER_MS}ms`,
-  '--exit-ms': `${BANNER_EXIT_MS}ms`,
-  '--flip-ms': `${BANNER_FLIP_HALF_MS}ms`,
-} as CSSProperties
 
 function Content({ notice }: { notice: FootballMessage }) {
   switch (notice.type) {
@@ -77,7 +63,7 @@ function Content({ notice }: { notice: FootballMessage }) {
 /**
  * One update banner, in the scoring team's bottom corner (visitor left, home
  * right), extending under the centre column. Slides in after a short delay and
- * out again; with reduced motion it fades. Timing lives in `boards/banner.ts`.
+ * out again; with reduced motion it fades. Durations and easings are the `--motion-board-*` tokens; `boards/banner.ts` reads the same tokens for its timers.
  */
 export function UpdateBanner({
   notice,
@@ -100,7 +86,6 @@ export function UpdateBanner({
             ? styles[flipClass[flip]]
             : styles.in,
       ].join(' ')}
-      style={timing}
       role="status"
       data-team={notice.team}
       data-phase={phase}

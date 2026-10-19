@@ -42,21 +42,21 @@
 }
 
 .in {
-  animation: slide-in var(--enter-ms) var(--ease-out) var(--enter-delay)
-    backwards;
+  animation: slide-in var(--motion-board-enter) var(--ease-enter)
+    var(--motion-enter-delay) backwards;
 }
 
 .out {
-  animation: slide-out var(--exit-ms) var(--ease-out) forwards;
+  animation: slide-out var(--motion-board-exit) var(--ease-exit) forwards;
 }
 
 /* A follow-up turns the card edge-on, then back face-on with the new page. */
 .flipOut {
-  animation: flip-out var(--flip-ms) ease-in forwards;
+  animation: flip-out var(--motion-board-flip) var(--ease-exit) forwards;
 }
 
 .flipIn {
-  animation: flip-in var(--flip-ms) ease-out;
+  animation: flip-in var(--motion-board-flip) var(--ease-enter);
 }
 
 @keyframes flip-out {
@@ -117,7 +117,11 @@
   }
 }
 
-/* Reduced motion: no travel, fade only. */
+/*
+ * Reduced motion: no travel, fade only. The durations are already swapped to
+ * the reduced fade in tokens.css; only the keyframes differ, since a slide or
+ * a flip is not a distance token that can be neutralised.
+ */
 @media (prefers-reduced-motion: reduce) {
   .in {
     animation-name: fade-in;

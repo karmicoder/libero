@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  BANNER_EXIT_MS,
-  BANNER_FLIP_HALF_MS,
   BANNER_FOLLOW_UP_MS,
-  BANNER_VISIBLE_MS,
+  bannerExitMs,
+  bannerFlipMs,
+  bannerVisibleMs,
 } from './banner'
 
 export interface BannerState<Notice> {
@@ -56,16 +56,17 @@ export function useBanner<Notice>(
       })
       const next = followUp?.(notice)
       if (next !== undefined) {
+        const flip = bannerFlipMs()
         hold = setTimeout(() => {
           setBanner((b) => (b ? { ...b, flip: 'out' } : b))
-          hold = setTimeout(() => show(next, true), BANNER_FLIP_HALF_MS)
-        }, BANNER_FOLLOW_UP_MS - BANNER_FLIP_HALF_MS)
+          hold = setTimeout(() => show(next, true), flip)
+        }, BANNER_FOLLOW_UP_MS - flip)
         return
       }
       hold = setTimeout(() => {
         setBanner((b) => (b ? { ...b, phase: 'out' } : b))
-        exit = setTimeout(() => setBanner(null), BANNER_EXIT_MS)
-      }, BANNER_VISIBLE_MS)
+        exit = setTimeout(() => setBanner(null), bannerExitMs())
+      }, bannerVisibleMs())
     }
 
     const unsubscribe = subscribeNotices(show)

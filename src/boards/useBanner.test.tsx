@@ -1,15 +1,22 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  BANNER_ENTER_DELAY_MS,
-  BANNER_ENTER_MS,
-  BANNER_EXIT_MS,
-  BANNER_FLIP_HALF_MS,
   BANNER_FOLLOW_UP_MS,
   BANNER_HOLD_MS,
-  BANNER_VISIBLE_MS,
+  bannerEnterDelayMs,
+  bannerEnterMs,
+  bannerExitMs,
+  bannerFlipMs,
+  bannerVisibleMs,
 } from './banner'
 import { useBanner } from './useBanner'
+
+// The motion durations come from the tokens (see src/test/setup.ts).
+const BANNER_ENTER_DELAY_MS = bannerEnterDelayMs()
+const BANNER_ENTER_MS = bannerEnterMs()
+const BANNER_EXIT_MS = bannerExitMs()
+const BANNER_FLIP_HALF_MS = bannerFlipMs()
+const BANNER_VISIBLE_MS = bannerVisibleMs()
 
 type Notice = { id: number }
 
@@ -54,6 +61,24 @@ describe('useBanner', () => {
     expect(result.current).not.toBeNull()
     act(() => void vi.advanceTimersByTime(1))
     expect(result.current).toBeNull()
+  })
+
+  it('waits for the exit as long as the exit token says (reduced motion fade)', () => {
+    // Reduced motion shortens the exit token; the timer must follow it.
+    document.documentElement.style.setProperty('--motion-board-exit', '200ms')
+    try {
+      const f = feed()
+      const { result } = renderHook(() => useBanner(f.subscribe))
+      f.push({ id: 1 })
+      act(() => void vi.advanceTimersByTime(bannerVisibleMs()))
+      expect(result.current?.phase).toBe('out')
+      act(() => void vi.advanceTimersByTime(199))
+      expect(result.current).not.toBeNull()
+      act(() => void vi.advanceTimersByTime(1))
+      expect(result.current).toBeNull()
+    } finally {
+      document.documentElement.style.removeProperty('--motion-board-exit')
+    }
   })
 
   it('stays ~9s after sliding in (300ms delay + 560ms in + 9s)', () => {

@@ -163,6 +163,11 @@ test.describe('update banners', () => {
       const { console_, board } = await openConsoleAndBoard(context)
       await announceGoal(console_, 'Home')
       await expect(banner(board)).toHaveCSS('animation-name', expected)
+      // Durations come from the tokens; reduced motion swaps in the 200 ms fade.
+      await expect(banner(board)).toHaveCSS(
+        'animation-duration',
+        reducedMotion === 'reduce' ? '0.2s' : '0.56s',
+      )
       await context.close()
     }
   })
