@@ -42,21 +42,21 @@
 }
 
 .in {
-  animation: slide-in var(--enter-ms) var(--ease-out) var(--enter-delay)
-    backwards;
+  animation: slide-in var(--motion-board-enter) var(--ease-enter)
+    var(--motion-enter-delay) backwards;
 }
 
 .out {
-  animation: slide-out var(--exit-ms) var(--ease-out) forwards;
+  animation: slide-out var(--motion-board-exit) var(--ease-exit) forwards;
 }
 
 /* A follow-up turns the card edge-on, then back face-on with the new page. */
 .flipOut {
-  animation: flip-out var(--flip-ms) ease-in forwards;
+  animation: flip-out var(--motion-board-flip) var(--ease-exit) forwards;
 }
 
 .flipIn {
-  animation: flip-in var(--flip-ms) ease-out;
+  animation: flip-in var(--motion-board-flip) var(--ease-enter);
 }
 
 @keyframes flip-out {
@@ -87,7 +87,7 @@
     transform: translateY(calc(var(--travel) * -1));
     clip-path: inset(var(--travel) 0 0 0);
   }
-  /* Explicit, because inset() to the implied \`none\` flips at the midpoint. */
+  /* Explicit, because inset() to the implied none flips at the midpoint. */
   to {
     transform: none;
     clip-path: inset(0);
@@ -102,37 +102,6 @@
   to {
     transform: translateY(calc(var(--travel) * -1));
     clip-path: inset(var(--travel) 0 0 0);
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-/* Reduced motion: no travel, fade only. */
-@media (prefers-reduced-motion: reduce) {
-  .in {
-    animation-name: fade-in;
-  }
-
-  .out {
-    animation-name: fade-out;
-  }
-
-  .flipOut {
-    animation-name: fade-out;
-  }
-
-  .flipIn {
-    animation-name: fade-in;
   }
 }
 

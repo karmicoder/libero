@@ -51,14 +51,49 @@
   --border-width: 2px;
   --outline-width: 3px;
 
-  /* Motion. Zeroed below for users who prefer reduced motion. */
+  /* Motion. The scale and its rules are documented in
+     docs/design-language.md. Only console motion honours reduced motion: the
+     prefers-reduced-motion block below zeroes the console durations. Board
+     motion (--motion-board-*, distances, scales) always runs. */
+
+  /* Console-scale durations: quick, never in the scorer's way. */
   --duration-fast: 120ms;
   --duration-slow: 320ms;
-  --duration-stagger: 30ms;
+
+  /* Board-scale durations: legible from across a room. */
+  --motion-board-roll-out: 420ms;
+  --motion-board-roll-in: 520ms;
+  --motion-board-indicator-out: 320ms;
+  --motion-board-indicator-in: 480ms;
+  --motion-board-highlight: 500ms;
+  --motion-board-pop: 480ms;
+  /* Enter and exit (update banners): enter after a short beat, so the
+     audience is looking when it arrives. */
+  --motion-enter-delay: 300ms;
+  --motion-board-enter: 560ms;
+  --motion-board-exit: 560ms;
+  /* Each half of a card flip. */
+  --motion-board-flip: 240ms;
+  /* Step between staggered items (the console tile entrance). */
+  --motion-stagger: 30ms;
+
+  /* Easings: enter decelerates, exit accelerates, emphasis overshoots. */
+  --ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: ease-in;
+  --ease-emphasis: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Distances are in em so they scale with the text that moves. */
+  --motion-distance-roll: 0.6em;
+  --motion-distance-nudge: 0.04em;
+
+  /* Scales. */
+  --motion-scale-pulse: 1.05;
+  --motion-scale-pop-indicator: 1.18;
+  --motion-scale-pop-pip: 1.25;
 
   --radius-tile: 24px;
   --radius-button: 14px;
-  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: var(--ease-enter);
 
   /* dark (default) */
   color-scheme: dark;
@@ -82,9 +117,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
+    /* Console motion is dropped. */
     --duration-fast: 0ms;
     --duration-slow: 0ms;
-    --duration-stagger: 0ms;
+
+    --motion-stagger: 0ms;
   }
 }
 

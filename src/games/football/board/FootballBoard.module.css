@@ -148,7 +148,7 @@
 
   /* Slides down from under the period name, like the update banners. */
   --travel: calc(var(--u) * 60);
-  animation: pill-in 560ms var(--ease-out) backwards;
+  animation: pill-in var(--motion-board-enter) var(--ease-enter) backwards;
 }
 
 @keyframes pill-in {
@@ -160,19 +160,6 @@
   to {
     transform: none;
     clip-path: inset(0);
-  }
-}
-
-@keyframes pill-fade {
-  from {
-    opacity: 0;
-  }
-}
-
-/* Reduced motion: no travel, fade only. */
-@media (prefers-reduced-motion: reduce) {
-  .pill {
-    animation-name: pill-fade;
   }
 }
 

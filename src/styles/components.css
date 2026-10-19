@@ -83,33 +83,33 @@
   cursor: pointer;
   user-select: none;
   transition:
-    transform var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-enter),
     background var(--duration-fast),
     color var(--duration-fast),
     border-color var(--duration-fast);
-  animation: tile-in var(--duration-slow) var(--ease-out) backwards;
+  animation: tile-in var(--duration-slow) var(--ease-enter) backwards;
 }
 
 .tile:nth-of-type(2) {
-  animation-delay: calc(1 * var(--duration-stagger));
+  animation-delay: var(--motion-stagger);
 }
 .tile:nth-of-type(3) {
-  animation-delay: calc(2 * var(--duration-stagger));
+  animation-delay: calc(var(--motion-stagger) * 2);
 }
 .tile:nth-of-type(4) {
-  animation-delay: calc(3 * var(--duration-stagger));
+  animation-delay: calc(var(--motion-stagger) * 3);
 }
 .tile:nth-of-type(5) {
-  animation-delay: calc(4 * var(--duration-stagger));
+  animation-delay: calc(var(--motion-stagger) * 4);
 }
 .tile:nth-of-type(6) {
-  animation-delay: calc(5 * var(--duration-stagger));
+  animation-delay: calc(var(--motion-stagger) * 5);
 }
 .tile:nth-of-type(7) {
-  animation-delay: calc(6 * var(--duration-stagger));
+  animation-delay: calc(var(--motion-stagger) * 6);
 }
 .tile:nth-of-type(8) {
-  animation-delay: calc(7 * var(--duration-stagger));
+  animation-delay: calc(var(--motion-stagger) * 7);
 }
 
 .tile:not(:has(input:disabled)):hover {
@@ -200,7 +200,7 @@
   font-size: var(--text-md);
   font-weight: 700;
   transition:
-    transform var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-enter),
     background var(--duration-fast);
 }
 
