@@ -162,9 +162,10 @@
   grid-column: 3;
 }
 
+/* Letter-spacing trails the last letter; pull it back so the glyph meets --pad. */
 .wordmark {
   position: absolute;
-  inset-inline-end: var(--pad);
+  inset-inline-end: calc(var(--pad) - 0.32em);
   inset-block-end: calc(var(--u) * 14);
   margin: 0;
   font-size: var(--label-size);

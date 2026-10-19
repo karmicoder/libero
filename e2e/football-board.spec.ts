@@ -98,6 +98,40 @@ test('undo on the console is reflected on the board', async ({ context }) => {
 test.describe('update banners', () => {
   const banner = (board: Page) => board.locator('[data-phase]')
 
+  test('the banner lines up with its team column and the board margins', async ({
+    context,
+  }) => {
+    const { console_, board } = await openConsoleAndBoard(context)
+    await announceGoal(console_, 'Home')
+    await expect(banner(board)).toHaveAttribute('data-phase', 'in')
+    // Let the slide-in finish so the box is at rest.
+    await expect(banner(board)).toHaveCSS('transform', 'none')
+
+    const box = async (loc: ReturnType<Page['locator']>) =>
+      (await loc.boundingBox())!
+    const b = await box(banner(board))
+    const score = await box(boardScore(board, 'Home'))
+    const stage = await box(board.getByTestId('board-stage'))
+    const mark = board.getByText('Libero', { exact: true })
+    const markBox = await box(mark)
+    const tracking = parseFloat(
+      await mark.evaluate(
+        (el) =>
+          el.ownerDocument.defaultView!.getComputedStyle(el).letterSpacing,
+      ),
+    )
+
+    // Centred under the Home column (score is centred in it), within a pixel.
+    expect(b.x + b.width / 2).toBeCloseTo(score.x + score.width / 2, 0)
+    // Both end at the board's right margin; the wordmark's last glyph ends
+    // before its trailing letter-spacing does.
+    const margin = stage.x + stage.width - (stage.width * 40) / 1280
+    expect(Math.abs(b.x + b.width - margin)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(markBox.x + markBox.width - tracking - margin),
+    ).toBeLessThanOrEqual(1)
+  })
+
   test('a goal shows a banner in the scoring team’s corner', async ({
     context,
   }) => {
