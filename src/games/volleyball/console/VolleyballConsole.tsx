@@ -5,13 +5,14 @@ import type { ConsoleProps } from '../../../consoles/registry'
 import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
 import { useMatchState } from '../../../match/useMatchState'
 import { monotonicNow } from '../../../match/useNow'
-import { isDecider, matchWinner, setsWon, setTarget } from '../rules'
+import { isDecider, matchWinner, setReady, setsWon, setTarget } from '../rules'
 import type {
   TeamSide,
   VolleyballAction,
   VolleyballMessage,
   VolleyballState,
 } from '../state'
+import { SetPrompt } from './SetPrompt'
 import { TeamColumn } from './TeamColumn'
 import styles from './VolleyballConsole.module.css'
 
@@ -112,6 +113,12 @@ export function VolleyballConsole({
   useUndoHotkey(undo)
 
   const finished = state.status === 'finished'
+  const displayName = (side: TeamSide) =>
+    state.teams[side].name || SIDE_LABEL[side]
+  const winner = finished ? matchWinner(state) : null
+  const { visitor: v, home: h } = state.current
+  const leader =
+    finished || v === h ? undefined : displayName(v > h ? 'visitor' : 'home')
   const freshSet = scores.visitor.value === 0 && scores.home.value === 0
 
   const column = (side: TeamSide) => (
@@ -130,6 +137,10 @@ export function VolleyballConsole({
       onServe={() => {
         flushScores()
         dispatch({ type: 'set-server', team: side })
+      }}
+      onSetScore={(next) => {
+        flushScores()
+        setScore(side)(next)
       }}
       onMinus={() => scores[side].set(Math.max(0, scores[side].value - 1))}
     />
@@ -172,6 +183,17 @@ export function VolleyballConsole({
         {column('visitor')}
         {column('home')}
       </div>
+
+      <SetPrompt
+        leader={leader}
+        setNumber={state.completed.length + 1}
+        ready={setReady(state)}
+        matchWinner={winner ? displayName(winner) : undefined}
+        onEndSet={() => {
+          flushScores()
+          dispatch({ type: 'end-set', at: monotonicNow() })
+        }}
+      />
 
       {toast && (
         <p className={styles.toast} role="status">

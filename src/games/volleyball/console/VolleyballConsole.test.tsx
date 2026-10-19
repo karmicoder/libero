@@ -158,6 +158,127 @@ describe('VolleyballConsole', () => {
     })
   })
 
+  describe('Set score keypad', () => {
+    const open = (side: 'Visitor' | 'Home') =>
+      screen.getByRole('button', { name: `Set score for ${side}` })
+
+    it('applies one absolute score with the on-screen keys', async () => {
+      const { store } = setup((s) => ({
+        ...s,
+        current: { visitor: 3, home: 7 },
+      }))
+      const user = userEvent.setup()
+      await user.click(open('Home'))
+      expect(screen.getByRole('dialog')).toHaveAccessibleName(
+        'Set score · Home',
+      )
+      expect(screen.getByLabelText('New score')).toHaveTextContent('7')
+
+      await user.click(screen.getByRole('button', { name: '1' }))
+      await user.click(screen.getByRole('button', { name: '2' }))
+      expect(screen.getByLabelText('New score')).toHaveTextContent('12')
+      await user.click(screen.getByRole('button', { name: 'Apply' }))
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(store.getState().current).toEqual({ visitor: 3, home: 12 })
+      expect(store.getState().history).toHaveLength(1)
+      expect(open('Home')).toHaveFocus()
+    })
+
+    it('takes the keyboard: digits, Backspace, Enter applies', async () => {
+      const { store } = setup()
+      const user = userEvent.setup()
+      await user.click(open('Visitor'))
+      await user.keyboard('25{Backspace}4{Enter}')
+      expect(store.getState().current.visitor).toBe(24)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('cancels with Esc and applies nothing for an empty entry', async () => {
+      const { store } = setup((s) => ({
+        ...s,
+        current: { visitor: 3, home: 7 },
+      }))
+      const user = userEvent.setup()
+      await user.click(open('Home'))
+      await user.keyboard('9{Escape}')
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(store.getState().current.home).toBe(7)
+
+      await user.click(open('Home'))
+      await user.click(screen.getByRole('button', { name: 'Apply' }))
+      expect(store.getState().history).toBeUndefined()
+    })
+
+    it('is disabled once the match is finished', () => {
+      setup((s) => ({ ...s, status: 'finished' }))
+      expect(open('Home')).toBeDisabled()
+    })
+  })
+
+  describe('End set', () => {
+    const endSet = () => screen.getByRole('button', { name: 'End set' })
+
+    it('asks "<Team> has won set N?" at the threshold and closes the set', async () => {
+      const { store } = setup((s) => ({
+        ...s,
+        current: { visitor: 25, home: 20 },
+      }))
+      const user = userEvent.setup()
+      expect(screen.getByText('Visitor has won set 1?')).toBeInTheDocument()
+      await user.click(endSet())
+      expect(store.getState().completed).toHaveLength(1)
+      expect(store.getState().current).toEqual({ visitor: 0, home: 0 })
+      expect(screen.queryByText(/has won set/)).not.toBeInTheDocument()
+    })
+
+    it('does not ask below the threshold but offers End set early', async () => {
+      const { store } = setup((s) => ({
+        ...s,
+        current: { visitor: 10, home: 12 },
+      }))
+      const user = userEvent.setup()
+      expect(screen.queryByText(/has won set/)).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'End set early' }))
+      expect(store.getState().completed).toEqual([
+        { visitor: 10, home: 12, firstServer: 'home' },
+      ])
+    })
+
+    it('offers nothing when the score is tied', () => {
+      setup()
+      expect(screen.queryByRole('button', { name: /End set/ })).toBeNull()
+    })
+
+    it('commits a pending −1 before ending the set', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { store } = setup((s) => ({
+        ...s,
+        current: { visitor: 25, home: 20 },
+      }))
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.click(minus('Visitor'))
+      await user.click(endSet())
+      expect(store.getState().completed[0]).toMatchObject({ visitor: 24 })
+    })
+
+    it('says who wins the match when the last set closes', async () => {
+      const { store } = setup((s) => ({
+        ...s,
+        completed: [
+          { visitor: 25, home: 20, firstServer: 'home' },
+          { visitor: 25, home: 20, firstServer: 'visitor' },
+        ],
+        current: { visitor: 25, home: 20 },
+      }))
+      const user = userEvent.setup()
+      await user.click(endSet())
+      expect(store.getState().status).toBe('finished')
+      expect(screen.getByText('Visitor wins the match')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /End set/ })).toBeNull()
+    })
+  })
+
   describe('status line', () => {
     it('shows set number, target and sets won', () => {
       setup((s) => ({

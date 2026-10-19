@@ -1,4 +1,6 @@
+import { useRef, useState } from 'react'
 import type { TeamSide } from '../state'
+import { ScoreSheet } from './ScoreSheet'
 import styles from './TeamColumn.module.css'
 
 interface Props {
@@ -15,6 +17,8 @@ interface Props {
   onPoint: () => void
   onServe: () => void
   onMinus: () => void
+  /** Apply an absolute score from the keypad. */
+  onSetScore: (score: number) => void
 }
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -33,8 +37,15 @@ export function TeamColumn({
   onPoint,
   onServe,
   onMinus,
+  onSetScore,
 }: Props) {
   const label = SIDE_LABEL[side]
+  const [keypad, setKeypad] = useState(false)
+  const opener = useRef<HTMLButtonElement>(null)
+  const close = () => {
+    setKeypad(false)
+    opener.current?.focus()
+  }
   return (
     <section className={styles.column} aria-label={`${label} team`}>
       <h2 className={styles.name}>{name}</h2>
@@ -84,7 +95,29 @@ export function TeamColumn({
         >
           −1
         </button>
+        <button
+          ref={opener}
+          type="button"
+          className={styles.minus}
+          aria-label={`Set score for ${name}`}
+          disabled={finished}
+          onClick={() => setKeypad(true)}
+        >
+          Set score
+        </button>
       </div>
+
+      {keypad && (
+        <ScoreSheet
+          teamName={name}
+          currentScore={score}
+          onApply={(next) => {
+            if (next !== undefined) onSetScore(next)
+            close()
+          }}
+          onCancel={close}
+        />
+      )}
     </section>
   )
 }

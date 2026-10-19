@@ -1,4 +1,5 @@
 .column {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -55,7 +56,7 @@
 
 .actions {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: var(--space-3);
 }
 
