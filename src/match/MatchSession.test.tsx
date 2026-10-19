@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { useSyncExternalStore } from 'react'
@@ -6,6 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineRegistry } from '../engines/registry'
 import type { FootballAction, FootballState } from '../games/football/state'
 import { footballEngine } from '../games/football/engine/football'
+import { volleyballEngine } from '../games/volleyball/engine/volleyball'
+import type {
+  VolleyballAction,
+  VolleyballState,
+} from '../games/volleyball/state'
 import { MatchSession } from './MatchSession'
 import type { MatchStore } from './MatchStore'
 
@@ -237,6 +242,64 @@ describe('MatchSession', () => {
     )
     expect(
       screen.getByRole('heading', { name: 'Match not available' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('MatchSession with volleyball', () => {
+  beforeEach(() => localStorage.clear())
+
+  function renderVolleyball() {
+    const registry = new EngineRegistry()
+    registry.register('volleyball', volleyballEngine)
+    return render(
+      <MemoryRouter>
+        <MatchSession<VolleyballState, VolleyballAction, never>
+          sportId="volleyball"
+          registry={registry}
+        >
+          {(store) => (
+            <button
+              type="button"
+              onClick={() =>
+                store.dispatch({ type: 'point', team: 'home', at: 1 })
+              }
+            >
+              Home point
+            </button>
+          )}
+        </MatchSession>
+      </MemoryRouter>,
+    )
+  }
+
+  it('resumes a saved volleyball match and words the discard neutrally', async () => {
+    const user = userEvent.setup()
+    renderVolleyball().unmount()
+    renderVolleyball()
+    await user.click(screen.getByRole('button', { name: 'Home point' }))
+    const saved = JSON.parse(localStorage.getItem('libero:match:volleyball')!)
+    expect(saved.state.current.home).toBe(1)
+
+    cleanup()
+    renderVolleyball()
+    expect(
+      screen.getByRole('heading', { name: 'Resume match?' }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'New match' }))
+    expect(
+      screen.getByText('The saved match will be deleted'),
+    ).toBeInTheDocument()
+  })
+
+  it('ignores a backup that is not a volleyball state', () => {
+    localStorage.setItem(
+      'libero:match:volleyball',
+      JSON.stringify({ version: 2, savedAt: 1, state: { clock: {} } }),
+    )
+    renderVolleyball()
+    expect(
+      screen.getByRole('button', { name: 'Home point' }),
     ).toBeInTheDocument()
   })
 })
