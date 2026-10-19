@@ -31,7 +31,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The scoring team's corner: exactly its column of the board. */
+/* Exactly the scoring team's column of the board (see the board grid). */
 .visitor {
   grid-column: 1;
 }
@@ -158,6 +158,8 @@
 .event {
   gap: calc(var(--u) * 20);
   min-inline-size: 0;
+  /* The column is narrow: clip a long run rather than spill past the board. */
+  overflow: hidden;
   white-space: nowrap;
 }
 

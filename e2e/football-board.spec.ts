@@ -122,7 +122,9 @@ test.describe('update banners', () => {
     )
 
     // Centred under the Home column (score is centred in it), within a pixel.
-    expect(b.x + b.width / 2).toBeCloseTo(score.x + score.width / 2, 0)
+    expect(
+      Math.abs(b.x + b.width / 2 - (score.x + score.width / 2)),
+    ).toBeLessThanOrEqual(1)
     // Both end at the board's right margin; the wordmark's last glyph ends
     // before its trailing letter-spacing does.
     const margin = stage.x + stage.width - (stage.width * 40) / 1280

@@ -165,12 +165,14 @@
 /* Letter-spacing trails the last letter; pull it back so the glyph meets --pad. */
 .wordmark {
   position: absolute;
-  inset-inline-end: calc(var(--pad) - 0.32em);
+  --tracking: 0.32em;
+
+  inset-inline-end: calc(var(--pad) - var(--tracking));
   inset-block-end: calc(var(--u) * 14);
   margin: 0;
   font-size: var(--label-size);
   font-weight: 700;
-  letter-spacing: 0.32em;
+  letter-spacing: var(--tracking);
   text-transform: uppercase;
   color: var(--text-muted);
 }
