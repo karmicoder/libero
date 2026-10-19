@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { SportTile } from '../components/SportTile'
 import { useSports } from '../sports/useSports'
+import styles from './SportSelectPage.module.css'
 
 export function SportSelectPage() {
   const sports = useSports()
@@ -19,41 +21,22 @@ export function SportSelectPage() {
       <div className="page">
         <h1>Choose a sport</h1>
         <p className="eyebrow">Pick a scoreboard to start a match</p>
-        <fieldset className="sport-grid">
+        <fieldset className={styles.grid}>
           <legend className="visually-hidden">Sport</legend>
-          {sports.map((sport) => {
-            const ready = sport.status === 'ready'
-            return (
-              <label key={sport.id} className="tile">
-                <input
-                  type="radio"
-                  name="sport"
-                  value={sport.id}
-                  checked={selected?.id === sport.id}
-                  disabled={!ready}
-                  onChange={() => setChosenId(sport.id)}
-                />
-                <svg
-                  className="tile-icon"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d={sport.iconPath} />
-                </svg>
-                <span className="tile-name">{sport.name}</span>
-                <span className="eyebrow">
-                  {ready ? 'Ready' : 'Coming soon'}
-                </span>
-              </label>
-            )
-          })}
+          {sports.map((sport) => (
+            <SportTile
+              key={sport.id}
+              sport={sport}
+              checked={selected?.id === sport.id}
+              onSelect={() => setChosenId(sport.id)}
+            />
+          ))}
         </fieldset>
       </div>
-      <footer className="app-footer">
+      <footer className={styles.footer}>
         <div>
           <span className="eyebrow">Selected</span>
-          <output className="selected-name" aria-label="Selected sport">
+          <output className={styles.selectedName} aria-label="Selected sport">
             {selected?.name ?? 'None'}
           </output>
         </div>

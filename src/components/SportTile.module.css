@@ -1,0 +1,108 @@
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  /* Per-tile dimension with no shared meaning. */
+  min-block-size: 14.5rem;
+  border-radius: var(--radius-tile);
+  background: var(--surface-tile);
+  border: var(--border-width) solid var(--border-tile);
+  color: var(--text-tile);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform var(--duration-fast) var(--ease-enter),
+    background var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+  animation: tileIn var(--duration-slow) var(--ease-enter) backwards;
+}
+
+.tile:nth-of-type(2) {
+  animation-delay: var(--motion-stagger);
+}
+.tile:nth-of-type(3) {
+  animation-delay: calc(var(--motion-stagger) * 2);
+}
+.tile:nth-of-type(4) {
+  animation-delay: calc(var(--motion-stagger) * 3);
+}
+.tile:nth-of-type(5) {
+  animation-delay: calc(var(--motion-stagger) * 4);
+}
+.tile:nth-of-type(6) {
+  animation-delay: calc(var(--motion-stagger) * 5);
+}
+.tile:nth-of-type(7) {
+  animation-delay: calc(var(--motion-stagger) * 6);
+}
+.tile:nth-of-type(8) {
+  animation-delay: calc(var(--motion-stagger) * 7);
+}
+
+.tile:not(:has(input:disabled)):hover {
+  background: var(--surface-tile-hover);
+  border-color: var(--border-tile-hover);
+  color: var(--text);
+}
+
+.tile:not(:has(input:disabled)):active {
+  transform: scale(0.97);
+}
+
+.tile:has(input:checked),
+.tile:has(input:checked):hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.tile:has(input:checked) .status {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.tile:has(input:disabled) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tile:has(input:focus-visible) {
+  outline: var(--outline-width) solid var(--focus-ring);
+  outline-offset: var(--outline-width);
+}
+
+/* The native radio stays in the DOM (keyboard, arrows, screen readers) but the
+   whole tile is its visual. */
+.tile input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.icon {
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
+}
+
+.name {
+  font-size: var(--text-title);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+@keyframes tileIn {
+  from {
+    transform: translateY(var(--space-3));
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
