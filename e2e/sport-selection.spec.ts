@@ -32,6 +32,6 @@ test('choosing a sport starts the match', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/match\/volleyball$/)
   await expect(
-    page.getByRole('heading', { name: /volleyball match/i }),
+    page.getByRole('button', { name: 'Point for Home', exact: true }),
   ).toBeVisible()
 })
