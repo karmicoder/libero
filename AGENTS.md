@@ -34,6 +34,8 @@ Motion rules, tokens and patterns are in `docs/design-language.md`; use the `--m
 - **"10-foot" scoreboard.** Boards are read from across a room: huge, high-contrast, glanceable type. Layout is defined by aspect ratio (a scaled 16:9 stage), not pixel sizes.
 - **Debounce repeated-press adjustments, never discrete events.** Controls where the operator nudges a number with repeated presses (stoppage time ±; later manual subs remaining ± in #15) use `useDebouncedCommit` (`src/match/`): the console shows the pending value at once, marks it pending, and dispatches once after 1000 ms unchanged, so the boards never flash intermediate values. Flush on blur and before a dependent dispatch (e.g. period change). Goals, cards, substitutions and clock start/stop dispatch immediately. Timers here only pace the UI; they never feed the game clock.
 
+- **Design reference:** the [Libero design file](https://claude.ai/artifact/FkDq4wb6biKzZRSYZP3ceU) (Claude Design) holds the marks and per-screen designs, e.g. Semiotics at `#page-151d9038de02`. Read it with the Artifact tool's `read` action (`list` with `scope: "files"` for its files). Check it for UI work and note any deviation in the PR.
+
 ## Conventions
 
 - Semantic HTML: real `button`, `h1`-`h3`, `fieldset`, native form controls. Never `div` or `span` with click handlers.
