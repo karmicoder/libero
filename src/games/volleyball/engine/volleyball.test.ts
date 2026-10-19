@@ -411,6 +411,24 @@ describe('isState', () => {
     ).toBe(false)
     expect(volleyballEngine.isState?.({ ...good, history: [{}] })).toBe(false)
     expect(
+      volleyballEngine.isState?.({
+        ...good,
+        config: { ...good.config, winBy: 0 },
+      }),
+    ).toBe(false)
+    expect(
+      volleyballEngine.isState?.({
+        ...good,
+        current: { visitor: -1, home: 0 },
+      }),
+    ).toBe(false)
+    expect(
+      volleyballEngine.isState?.({
+        ...good,
+        current: { visitor: NaN, home: 0 },
+      }),
+    ).toBe(false)
+    expect(
       volleyballEngine.isState?.({ ...good, config: { setsToWin: 3 } }),
     ).toBe(false)
   })
