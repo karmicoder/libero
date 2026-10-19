@@ -125,6 +125,18 @@ describe('VolleyballConsole', () => {
       expect(store.getState().history).toHaveLength(1)
     })
 
+    it('names the pending −1 on Undo and offers Serve first at 0-0', () => {
+      setup((s) => ({ ...s, current: { visitor: 0, home: 1 } }))
+      expect(serve(0)).toHaveTextContent(/^Serve$/)
+      act(() => minus('Home').click())
+      expect(serve(0)).toHaveTextContent('Serve first')
+      expect(
+        screen.getByRole('button', {
+          name: 'Undo · Score correction for Home',
+        }),
+      ).toBeEnabled()
+    })
+
     it('is disabled at 0', () => {
       setup()
       expect(minus('Home')).toBeDisabled()

@@ -56,7 +56,11 @@ export function TeamColumn({
           Tap for point
         </span>
       </button>
-      <output className="visually-hidden" aria-label={`${label} score`}>
+      <output
+        className="visually-hidden"
+        aria-label={`${label} score`}
+        aria-live="off"
+      >
         {score}
       </output>
 

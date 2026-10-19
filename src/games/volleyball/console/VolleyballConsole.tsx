@@ -84,25 +84,35 @@ export function VolleyballConsole({
     scores.home.flush()
   }
 
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
+  const showToast = (text: string) =>
+    setToast((t) => ({ text, key: (t?.key ?? 0) + 1 }))
   useEffect(() => {
     if (toast === null) return
     const timer = setTimeout(() => setToast(null), TOAST_MS)
     return () => clearTimeout(timer)
   }, [toast])
 
-  const lastStep = state.history?.at(-1)
+  // A pending −1 is flushed before undoing, so it is the step Undo reverts.
+  const pendingSide = (['visitor', 'home'] as const).find(
+    (side) => scores[side].pending,
+  )
+  const lastStep = pendingSide
+    ? {
+        label: `Score correction for ${state.teams[pendingSide].name || SIDE_LABEL[pendingSide]}`,
+      }
+    : state.history?.at(-1)
   const undo = () => {
     flushScores()
     const step = store.getState().history?.at(-1)
     if (!step) return
     dispatch({ type: 'undo', at: monotonicNow() })
-    setToast(`Undid ${step.label.toLowerCase()}`)
+    showToast(`Undid ${step.label.toLowerCase()}`)
   }
   useUndoHotkey(undo)
 
   const finished = state.status === 'finished'
-  const freshSet = state.current.visitor === 0 && state.current.home === 0
+  const freshSet = scores.visitor.value === 0 && scores.home.value === 0
 
   const column = (side: TeamSide) => (
     <TeamColumn
@@ -165,7 +175,7 @@ export function VolleyballConsole({
 
       {toast && (
         <p className={styles.toast} role="status">
-          {toast}
+          {toast.text}
         </p>
       )}
     </div>
