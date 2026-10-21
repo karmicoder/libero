@@ -55,20 +55,17 @@ Lint impact notes the current `eslint.config.js`: boundary rules cover `src/game
 
 ## Placement (the one architectural decision)
 
-Neutral cross-sport types and helpers need a home. Two options:
-
-- `src/games/shared/` (flat, no `board/` `engine/` `console/` subdirectories). The existing glob `src/games/*/*.{ts,tsx}` already matches it, so the neutral-seam rule applies with no lint change. Cost: `src/games/` stops meaning "one directory per sport" (README and the `src/games/<sport>/` wording would need a line).
-- `src/shared/`. Clearer, but needs its own `no-restricted-imports` block.
+Decided with the user: `src/games/shared/`, flat, types and pure helpers only (no `board/`, `engine/` or `console/` subdirectories). The existing glob `src/games/*/*.{ts,tsx}` already matches it, so the neutral-seam rule applies with no lint change. The cost is that `src/games/` stops meaning one directory per sport, so the README gets a line. The alternative, `src/shared/`, would have needed its own `no-restricted-imports` block.
 
 Shared React lives beside what it serves: `src/consoles/` (console chrome, sheets, settings frame) and `src/boards/` (stage, banner frame). Both are currently unlinted, so each extraction ticket adds the rule at the same time.
 
 ## Decision: what to extract and in what order
 
-1. **Team basics and validation guards** (new neutral home).
-2. **Console chrome** (`useUndoHotkey`, `useToast`, `ConsoleTopBar`). Before #105 (reset), which would otherwise add a third copy of the top-bar wiring.
-3. **Sheet pattern** (`SheetFrame`, `Keypad`, digit entry). Independent of the rest.
-4. **Board stage** (`BoardStage`). Before #89 (minimal layout), which would be the third user.
-5. **Banner frame**. After 4.
-6. **Settings frame**. Last.
+1. **Team basics and validation guards** (#108, in `src/games/shared/`).
+2. **Console chrome** (#109) (`useUndoHotkey`, `useToast`, `ConsoleTopBar`). Before #105 (reset), which would otherwise add a third copy of the top-bar wiring.
+3. **Sheet pattern** (#110) (`SheetFrame`, `Keypad`, digit entry). Independent of the rest.
+4. **Board stage** (#111) (`BoardStage`). Before #89 (minimal layout), which would be the third user.
+5. **Banner frame** (#112). After 4.
+6. **Settings frame** (#113). Last.
 
 Not now: undo (blocked on #79, with these findings as input), notice ids, config validation, pips, team column. 2, 3 and 4 can run in parallel once 1 has landed.
