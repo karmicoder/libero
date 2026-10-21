@@ -104,7 +104,7 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
                 <input
                   type="radio"
                   name="period"
-                  className="visually-hidden"
+                  className="assistive-only"
                   checked={p.id === state.periodId}
                   onChange={() => {
                     // A period change resets stoppage time, so settle it first.
@@ -117,7 +117,7 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
                   }}
                 />
                 <span>{p.abbreviation}</span>
-                <span className="visually-hidden"> ({p.name})</span>
+                <span className="assistive-only"> ({p.name})</span>
               </label>
             ))}
           </div>
@@ -148,7 +148,7 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
               >
                 {stoppage.value ? `+${stoppage.value}′` : 'off'}
                 {stoppage.pending && (
-                  <span className="visually-hidden">
+                  <span className="assistive-only">
                     {' '}
                     (not yet shown on the board)
                   </span>

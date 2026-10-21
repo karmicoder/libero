@@ -32,21 +32,25 @@
 }
 
 .tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   min-block-size: 16rem;
-  border: 0;
   border-radius: var(--radius-tile);
   background: var(--surface-tile-hover);
-  color: inherit;
   transition: background var(--duration-fast);
 }
 
-.tile:hover:not(:disabled) {
+.tile:has(.point:hover:not(:disabled)) {
   background: var(--border-tile-hover);
+}
+
+.tile:has(.point:focus-visible) {
+  outline: var(--outline-width) solid var(--focus-ring);
+  outline-offset: var(--outline-width);
 }
 
 .score,
@@ -63,9 +67,23 @@
   color: var(--text-muted);
 }
 
-.hint {
+.point {
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text-muted);
   font-weight: 700;
+}
+
+.point::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.point:focus-visible {
+  outline: none;
 }
 
 .actions {
@@ -97,7 +115,8 @@
   background: var(--surface-tile-hover);
 }
 
-.serveDot {
+.serve::before {
+  content: '';
   inline-size: var(--size-dot);
   block-size: var(--size-dot);
   border: var(--border-width) solid var(--text-muted);
@@ -109,7 +128,7 @@
   color: var(--positive);
 }
 
-.serve[aria-pressed='true'] .serveDot {
+.serve[aria-pressed='true']::before {
   background: var(--positive);
   border-color: var(--positive);
 }

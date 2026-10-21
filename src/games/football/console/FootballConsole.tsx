@@ -210,7 +210,7 @@ export function FootballConsole({
 
   return (
     <div className={styles.console}>
-      <h1 className="visually-hidden">Football scorer console</h1>
+      <h1 className="assistive-only">Football scorer console</h1>
       <InHeader>
         <p
           className={boardConnected ? styles.connected : styles.disconnected}

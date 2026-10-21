@@ -541,7 +541,9 @@ describe('FootballConsole', () => {
   describe('substitutions', () => {
     it('shows pips for the per-period limit', () => {
       setup()
-      expect(screen.getAllByText('5 of 5 left this period')).toHaveLength(2)
+      expect(
+        screen.getAllByRole('img', { name: '5 of 5 left this period' }),
+      ).toHaveLength(2)
     })
 
     it('records a substitution, drops a pip and returns focus', async () => {
@@ -579,7 +581,7 @@ describe('FootballConsole', () => {
         substitutions: { enabled: false },
       })
       expect(screen.queryByRole('button', { name: 'Substitution' })).toBeNull()
-      expect(screen.queryByText(/left this period/)).toBeNull()
+      expect(screen.queryByRole('img', { name: /left this period/ })).toBeNull()
     })
   })
 

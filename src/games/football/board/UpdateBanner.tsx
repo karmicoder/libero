@@ -14,13 +14,13 @@ function Content({ notice }: { notice: FootballMessage }) {
           <span>
             {notice.scorer ?? '–'}
             {notice.scorer === undefined && (
-              <span className="visually-hidden"> scorer unknown</span>
+              <span className="assistive-only"> scorer unknown</span>
             )}
           </span>
           {notice.assist !== undefined && (
             <span className={styles.assist}>
               <span aria-hidden="true">A</span>
-              <span className="visually-hidden">Assist </span>
+              <span className="assistive-only">Assist </span>
               {notice.assist}
             </span>
           )}

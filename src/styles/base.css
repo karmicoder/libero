@@ -58,7 +58,7 @@ fieldset {
 
 /* Semantic utilities */
 
-.visually-hidden {
+.assistive-only {
   position: absolute;
   inline-size: 1px;
   block-size: 1px;

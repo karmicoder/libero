@@ -64,7 +64,11 @@ function Team({
       </p>
       <p className={styles.sets}>
         <span className={styles.label}>Sets</span>
-        <span className={styles.pips} aria-hidden="true">
+        <span
+          className={styles.pips}
+          role="img"
+          aria-label={`${won} of ${state.config.setsToWin} sets won`}
+        >
           {Array.from({ length: state.config.setsToWin }, (_, i) => (
             <span
               key={i === won - 1 && popping ? `${i}:${gen}` : i}
@@ -78,17 +82,14 @@ function Team({
             />
           ))}
         </span>
-        <span className="visually-hidden">
-          {won} of {state.config.setsToWin} sets won
-        </span>
       </p>
       {serving && (
         <span
           key={serveFrom === null ? 'still' : `in:${gen}`}
           className={`${serveFrom === null ? styles.serve : styles.serveIn} ${sideClass}`}
-        >
-          <span className="visually-hidden">Serving</span>
-        </span>
+          role="img"
+          aria-label="Serving"
+        />
       )}
       {serveFrom === side && !finished && (
         <span
@@ -119,7 +120,7 @@ export function VolleyballBoard({
     <div className={styles.viewport}>
       <div className={styles.stage} data-testid="board-stage">
         <div className={styles.board}>
-          <h1 className="visually-hidden">Volleyball scoreboard</h1>
+          <h1 className="assistive-only">Volleyball scoreboard</h1>
 
           <Team side="visitor" state={state} transitions={transitions} />
 

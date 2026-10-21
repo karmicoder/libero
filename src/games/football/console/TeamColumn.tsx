@@ -164,16 +164,17 @@ export function TeamColumn({
         {pipCount !== undefined && (
           <p className={styles.subs}>
             <span className="eyebrow">Subs</span>
-            <span className={styles.pips} aria-hidden="true">
+            <span
+              className={styles.pips}
+              role="img"
+              aria-label={`${left} of ${pipCount} left this period`}
+            >
               {Array.from({ length: pipCount }, (_, i) => (
                 <span
                   key={i}
                   className={i < left ? styles.pipLeft : styles.pip}
                 />
               ))}
-            </span>
-            <span className="visually-hidden">
-              {left} of {pipCount} left this period
             </span>
           </p>
         )}

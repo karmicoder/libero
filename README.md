@@ -107,6 +107,6 @@ is a follow-up ([#23](https://github.com/karmicoder/libero/issues/23)).
 
 - Semantic markup first: real `button`, `h1`, `fieldset`, native form controls. No `div` buttons.
 - Plain CSS with custom properties. No utility-first frameworks; utility classes
-  carry meaning (`.eyebrow`, `.visually-hidden`, later `.danger`), not appearance.
+  carry meaning (`.eyebrow`, `.assistive-only`, later `.danger`), not appearance.
 - Themes are token sets in `src/styles/tokens.css`. Default follows
   `prefers-color-scheme`; `<html data-theme="...">` overrides it.

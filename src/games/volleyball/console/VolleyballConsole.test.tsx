@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -48,7 +48,11 @@ const score = (side: 'Visitor' | 'Home') =>
 const point = (side: 'Visitor' | 'Home') =>
   screen.getByRole('button', { name: `Point for ${side}` })
 const minus = (side: 'Visitor' | 'Home') =>
-  screen.getByRole('button', { name: `Subtract one from ${side}` })
+  screen.getByRole('button', { name: `−1 point from ${side}` })
+const statusItems = () =>
+  within(screen.getByRole('list'))
+    .getAllByRole('listitem')
+    .map((li) => li.textContent)
 const serve = (i: number) =>
   screen.getAllByRole('button', { name: /^Serve/ })[i]
 
@@ -82,7 +86,7 @@ describe('VolleyballConsole', () => {
       expect(point('Visitor')).toBeDisabled()
       expect(serve(0)).toBeDisabled()
       expect(minus('Home')).toBeDisabled()
-      expect(screen.getByText(/Match over · Home wins/)).toBeInTheDocument()
+      expect(statusItems()).toEqual(['Match over', 'Home wins', 'Sets 0–3'])
     })
   })
 
@@ -294,9 +298,7 @@ describe('VolleyballConsole', () => {
         ...s,
         completed: [{ visitor: 25, home: 20, firstServer: 'home' }],
       }))
-      expect(
-        screen.getByText('Set 2 · First to 25 · Sets 1–0'),
-      ).toBeInTheDocument()
+      expect(statusItems()).toEqual(['Set 2', 'First to 25', 'Sets 1–0'])
     })
 
     it('tags the decider with its target', () => {
@@ -309,9 +311,12 @@ describe('VolleyballConsole', () => {
           { visitor: 20, home: 25, firstServer: 'visitor' },
         ],
       }))
-      expect(
-        screen.getByText('Set 5 · Decider · First to 15 · Sets 2–2'),
-      ).toBeInTheDocument()
+      expect(statusItems()).toEqual([
+        'Set 5',
+        'Decider',
+        'First to 15',
+        'Sets 2–2',
+      ])
     })
   })
 

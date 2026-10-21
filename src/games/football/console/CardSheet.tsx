@@ -124,7 +124,7 @@ export function CardSheet({
 
       <div className={styles.toggles}>
         <fieldset className={styles.segment}>
-          <legend className="visually-hidden">Card colour</legend>
+          <legend className="assistive-only">Card colour</legend>
           {COLORS.map(([value, label]) => (
             <label key={value} className={styles.option} data-color={value}>
               <input
@@ -138,7 +138,7 @@ export function CardSheet({
           ))}
         </fieldset>
         <fieldset className={styles.segment}>
-          <legend className="visually-hidden">Team</legend>
+          <legend className="assistive-only">Team</legend>
           {TEAMS.map((value) => (
             <label key={value} className={styles.option}>
               <input

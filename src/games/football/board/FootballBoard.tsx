@@ -33,16 +33,17 @@ function Team({ side, state }: { side: TeamSide; state: FootballState }) {
       {limit !== undefined && (
         <p className={styles.subs}>
           <span className={styles.subsLabel}>Subs</span>
-          <span className={styles.pips} aria-hidden="true">
+          <span
+            className={styles.pips}
+            role="img"
+            aria-label={`${left} of ${limit} left this period`}
+          >
             {Array.from({ length: limit }, (_, i) => (
               <span
                 key={i}
                 className={i < left ? styles.pipLeft : styles.pip}
               />
             ))}
-          </span>
-          <span className="visually-hidden">
-            {left} of {limit} left this period
           </span>
         </p>
       )}
@@ -69,7 +70,7 @@ export function FootballBoard({
     <div className={styles.viewport}>
       <div className={styles.stage} data-testid="board-stage">
         <div className={styles.board}>
-          <h1 className="visually-hidden">Football scoreboard</h1>
+          <h1 className="assistive-only">Football scoreboard</h1>
 
           <Team side="visitor" state={state} />
 
@@ -86,7 +87,7 @@ export function FootballBoard({
               <h2 className={styles.period}>{period?.name}</h2>
               {showStoppage && (
                 <p className={styles.pill}>
-                  <span className="visually-hidden">Stoppage time </span>+
+                  <span className="assistive-only">Stoppage time </span>+
                   {state.stoppageMinutes}′
                 </p>
               )}

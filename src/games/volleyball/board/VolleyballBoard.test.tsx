@@ -53,15 +53,21 @@ describe('VolleyballBoard', () => {
     )
     const visitor = screen.getByRole('region', { name: 'Visitor team' })
     const home = screen.getByRole('region', { name: 'Home team' })
-    expect(within(visitor).getByText('2 of 3 sets won')).toBeInTheDocument()
-    expect(within(home).getByText('1 of 3 sets won')).toBeInTheDocument()
+    expect(
+      within(visitor).getByRole('img', { name: '2 of 3 sets won' }),
+    ).toBeInTheDocument()
+    expect(
+      within(home).getByRole('img', { name: '1 of 3 sets won' }),
+    ).toBeInTheDocument()
   })
 
   it('follows the configured sets to win', () => {
     renderBoard(
       state({ config: { ...defaultVolleyballConfig(), setsToWin: 2 } }),
     )
-    expect(screen.getAllByText('0 of 2 sets won')).toHaveLength(2)
+    expect(
+      screen.getAllByRole('img', { name: '0 of 2 sets won' }),
+    ).toHaveLength(2)
   })
 
   it('numbers the live set and lists the completed ones', () => {
@@ -86,8 +92,10 @@ describe('VolleyballBoard', () => {
     renderBoard(state({ serving: 'visitor' }))
     const visitor = screen.getByRole('region', { name: 'Visitor team' })
     const home = screen.getByRole('region', { name: 'Home team' })
-    expect(within(visitor).getByText('Serving')).toBeInTheDocument()
-    expect(within(home).queryByText('Serving')).toBeNull()
+    expect(
+      within(visitor).getByRole('img', { name: 'Serving' }),
+    ).toBeInTheDocument()
+    expect(within(home).queryByRole('img', { name: 'Serving' })).toBeNull()
   })
 
   it('keeps the deciding set number once the match is finished', () => {

@@ -51,19 +51,23 @@ function useUndoHotkey(onUndo: () => void, enabled: boolean) {
   }, [onUndo, enabled])
 }
 
-function statusLine(state: VolleyballState): string {
+function statusItems(state: VolleyballState): string[] {
   const won = setsWon(state)
   const sets = `Sets ${won.visitor}–${won.home}`
   const winner = matchWinner(state)
   if (state.status === 'finished' && winner) {
-    return `Match over · ${state.teams[winner].name || SIDE_LABEL[winner]} wins · ${sets}`
+    return [
+      'Match over',
+      `${state.teams[winner].name || SIDE_LABEL[winner]} wins`,
+      sets,
+    ]
   }
   return [
     `Set ${state.completed.length + 1}`,
     ...(isDecider(state) ? ['Decider'] : []),
     `First to ${setTarget(state)}`,
     sets,
-  ].join(' · ')
+  ]
 }
 
 export function VolleyballConsole({
@@ -169,13 +173,12 @@ export function VolleyballConsole({
 
   return (
     <div className={styles.console}>
-      <h1 className="visually-hidden">Volleyball scorer console</h1>
+      <h1 className="assistive-only">Volleyball scorer console</h1>
       <InHeader>
         <p
           className={boardConnected ? styles.connected : styles.disconnected}
           role="status"
         >
-          <span className={styles.dot} aria-hidden="true" />
           {boardConnected ? 'Board connected' : 'No board connected'}
         </p>
         <div className={styles.topActions}>
@@ -207,7 +210,11 @@ export function VolleyballConsole({
         </div>
       </InHeader>
 
-      <p className={styles.status}>{statusLine(state)}</p>
+      <ul className={styles.status}>
+        {statusItems(state).map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
 
       {settingsOpen ? (
         <SettingsScreen

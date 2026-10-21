@@ -67,30 +67,25 @@ export function TeamColumn({
           onChange={(e) => onRename(e.target.value)}
         />
 
-        <button
-          type="button"
-          className={styles.tile}
-          aria-label={`Point for ${name}`}
-          disabled={finished}
-          onClick={onPoint}
-        >
-          <span
+        {/* The point button stretches over the whole tile (see .point::after). */}
+        <div className={styles.tile}>
+          <output
             className={pending ? styles.scorePending : styles.score}
-            aria-hidden="true"
+            aria-label={`${label} score`}
+            aria-live="off"
           >
             {score}
-          </span>
-          <span className={styles.hint} aria-hidden="true">
+          </output>
+          <button
+            type="button"
+            className={styles.point}
+            aria-label={`Point for ${name}`}
+            disabled={finished}
+            onClick={onPoint}
+          >
             Tap for point
-          </span>
-        </button>
-        <output
-          className="visually-hidden"
-          aria-label={`${label} score`}
-          aria-live="off"
-        >
-          {score}
-        </output>
+          </button>
+        </div>
 
         <div className={styles.actions}>
           <button
@@ -100,13 +95,12 @@ export function TeamColumn({
             disabled={finished}
             onClick={onServe}
           >
-            <span className={styles.serveDot} aria-hidden="true" />
             {freshSet ? 'Serve first' : 'Serve'}
           </button>
           <button
             type="button"
             className={styles.minus}
-            aria-label={`Subtract one from ${name}`}
+            aria-label={`−1 point from ${name}`}
             disabled={finished || score === 0}
             onClick={onMinus}
           >
