@@ -75,9 +75,13 @@ test('points, serve, set end and match win reach the board', async ({
 
   await console_.getByRole('button', { name: 'Serve' }).first().click()
   const visitorColumn = board.getByRole('region', { name: 'Visitor team' })
-  await expect(visitorColumn.getByText('Serving')).toBeAttached()
   await expect(
-    board.getByRole('region', { name: 'Home team' }).getByText('Serving'),
+    visitorColumn.getByRole('img', { name: 'Serving' }),
+  ).toBeAttached()
+  await expect(
+    board
+      .getByRole('region', { name: 'Home team' })
+      .getByRole('img', { name: 'Serving' }),
   ).toHaveCount(0)
 
   // Reaching the target only offers to end the set; nothing closes by itself.
