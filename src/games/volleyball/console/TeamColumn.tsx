@@ -5,7 +5,11 @@ import styles from './TeamColumn.module.css'
 
 interface Props {
   side: TeamSide
+  /** The name to show: falls back to the side's label when empty. */
   name: string
+  /** The name as typed, possibly empty. */
+  rawName: string
+  onRename: (name: string) => void
   /** The score to show: the pending −1 value if there is one. */
   score: number
   /** The −1 has not been committed to the match yet. */
@@ -29,6 +33,8 @@ const SIDE_LABEL: Record<TeamSide, string> = {
 export function TeamColumn({
   side,
   name,
+  rawName,
+  onRename,
   score,
   pending,
   serving,
@@ -52,7 +58,14 @@ export function TeamColumn({
     <section className={styles.column} aria-label={`${label} team`}>
       {/* Inert while the keypad covers it, so Tab and taps can't reach it. */}
       <div className={styles.covered} inert={sheetOpen}>
-        <h2 className={styles.name}>{name}</h2>
+        <input
+          className={styles.name}
+          type="text"
+          aria-label={`${label} team name`}
+          value={rawName}
+          placeholder={label}
+          onChange={(e) => onRename(e.target.value)}
+        />
 
         <button
           type="button"

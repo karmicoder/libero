@@ -348,6 +348,55 @@ describe('VolleyballConsole', () => {
     })
   })
 
+  describe('team names', () => {
+    it('edits each name inline', async () => {
+      const { store } = setup()
+      const user = userEvent.setup()
+      const input = screen.getByRole('textbox', { name: 'Home team name' })
+      await user.clear(input)
+      await user.type(input, 'Lions')
+      expect(store.getState().teams.home.name).toBe('Lions')
+      expect(
+        screen.getByRole('button', { name: 'Point for Lions' }),
+      ).toBeInTheDocument()
+      expect(store.getState().teams.visitor.name).toBe('Visitor')
+    })
+  })
+
+  describe('settings', () => {
+    const open = async () => {
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'Settings' }))
+      return user
+    }
+
+    it('replaces the columns and applies the saved rules mid-match', async () => {
+      const { store } = setup()
+      const user = userEvent.setup()
+      await user.click(point('Home'))
+      await user.click(screen.getByRole('button', { name: 'Settings' }))
+      expect(screen.queryByRole('button', { name: /^Point for/ })).toBeNull()
+      const target = screen.getByRole('spinbutton', { name: /^Points per set/ })
+      await user.clear(target)
+      await user.type(target, '21')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+      expect(store.getState().config.pointsPerSet).toBe(21)
+      expect(store.getState().current.home).toBe(1)
+      expect(screen.getByText('Settings saved')).toBeInTheDocument()
+      expect(screen.getByText(/First to 21/)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Settings' })).toHaveFocus()
+    })
+
+    it('cancel leaves the config alone', async () => {
+      const { store } = setup()
+      const user = await open()
+      await user.clear(screen.getByRole('spinbutton', { name: /^Win by/ }))
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(store.getState().config).toEqual(defaultVolleyballConfig())
+      expect(point('Home')).toBeInTheDocument()
+    })
+  })
+
   it('shows board status and links to the scoreboard', () => {
     setup()
     expect(screen.getByText('No board connected')).toBeInTheDocument()

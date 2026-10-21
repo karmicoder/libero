@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { InHeader } from '../../../components/HeaderSlot'
 import type { ConsoleProps } from '../../../consoles/registry'
@@ -13,6 +13,7 @@ import type {
   VolleyballState,
 } from '../state'
 import { SetPrompt } from './SetPrompt'
+import { SettingsScreen } from './SettingsScreen'
 import { TeamColumn } from './TeamColumn'
 import styles from './VolleyballConsole.module.css'
 
@@ -27,8 +28,9 @@ const SIDE_LABEL: Record<TeamSide, string> = {
  * Ctrl/Cmd+Z undoes, unless it already means something: in a text field (the
  * browser's own undo) or while a dialog is open.
  */
-function useUndoHotkey(onUndo: () => void) {
+function useUndoHotkey(onUndo: () => void, enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
       if (!(e.ctrlKey || e.metaKey)) return
@@ -46,7 +48,7 @@ function useUndoHotkey(onUndo: () => void) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onUndo])
+  }, [onUndo, enabled])
 }
 
 function statusLine(state: VolleyballState): string {
@@ -110,7 +112,22 @@ export function VolleyballConsole({
     dispatch({ type: 'undo', at: monotonicNow() })
     showToast(`Undid ${step.label.toLowerCase()}`)
   }
-  useUndoHotkey(undo)
+
+  // The settings screen replaces the columns; closing it refocuses its button.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsButton = useRef<HTMLButtonElement>(null)
+  const settingsWasOpen = useRef(false)
+  useEffect(() => {
+    if (settingsWasOpen.current && !settingsOpen) {
+      settingsButton.current?.focus()
+    }
+    settingsWasOpen.current = settingsOpen
+  }, [settingsOpen])
+  const openSettings = () => {
+    flushScores()
+    setSettingsOpen(true)
+  }
+  useUndoHotkey(undo, !settingsOpen)
 
   const finished = state.status === 'finished'
   const displayName = (side: TeamSide) =>
@@ -126,7 +143,9 @@ export function VolleyballConsole({
   const column = (side: TeamSide) => (
     <TeamColumn
       side={side}
-      name={state.teams[side].name || SIDE_LABEL[side]}
+      name={displayName(side)}
+      rawName={state.teams[side].name}
+      onRename={(name) => dispatch({ type: 'set-team-name', team: side, name })}
       score={scores[side].value}
       pending={scores[side].pending}
       serving={state.serving === side}
@@ -170,8 +189,17 @@ export function VolleyballConsole({
           </Link>
           <button
             type="button"
+            ref={settingsButton}
             className={styles.topButton}
-            disabled={!lastStep}
+            disabled={settingsOpen}
+            onClick={openSettings}
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            className={styles.topButton}
+            disabled={!lastStep || settingsOpen}
             onClick={undo}
           >
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
@@ -181,21 +209,35 @@ export function VolleyballConsole({
 
       <p className={styles.status}>{statusLine(state)}</p>
 
-      <div className={styles.columns}>
-        {column('visitor')}
-        {column('home')}
-      </div>
+      {settingsOpen ? (
+        <SettingsScreen
+          config={state.config}
+          onSave={(config) => {
+            dispatch({ type: 'update-config', config })
+            setSettingsOpen(false)
+            showToast('Settings saved')
+          }}
+          onCancel={() => setSettingsOpen(false)}
+        />
+      ) : (
+        <>
+          <div className={styles.columns}>
+            {column('visitor')}
+            {column('home')}
+          </div>
 
-      <SetPrompt
-        leader={leader}
-        setNumber={state.completed.length + 1}
-        ready={setReady({ ...state, current: shown })}
-        matchWinner={winner ? displayName(winner) : undefined}
-        onEndSet={() => {
-          flushScores()
-          dispatch({ type: 'end-set', at: monotonicNow() })
-        }}
-      />
+          <SetPrompt
+            leader={leader}
+            setNumber={state.completed.length + 1}
+            ready={setReady({ ...state, current: shown })}
+            matchWinner={winner ? displayName(winner) : undefined}
+            onEndSet={() => {
+              flushScores()
+              dispatch({ type: 'end-set', at: monotonicNow() })
+            }}
+          />
+        </>
+      )}
 
       {toast && (
         <p className={styles.toast} role="status">
