@@ -71,6 +71,71 @@
   font-weight: 500;
   line-height: 0.85;
   font-variant-numeric: tabular-nums;
+  /* Anchors the set-win overlay. */
+  position: relative;
+}
+
+.winnerName {
+  max-inline-size: 100%;
+  overflow: hidden;
+  font-size: var(--name-size);
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--brand);
+}
+
+.final {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--result-size);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/*
+ * Set win (#71): the closed set's score is drawn over the live digits, which
+ * are already truthfully 0-0. It holds, then fades to reveal them. A newer
+ * change unmounts it. The winner's score is highlighted; the loser's is quiet.
+ */
+.ghost,
+.ghostWon {
+  --ghost-hold: 2500ms;
+
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-page);
+  animation: ghost-out var(--motion-board-exit) var(--ease-exit)
+    var(--ghost-hold) forwards;
+}
+
+.ghost {
+  color: var(--text-muted);
+}
+
+.ghostWon {
+  color: var(--brand);
+  /* The highlight plays on the numerals, so the backdrop stays still. */
+  animation:
+    ghost-highlight var(--motion-board-highlight) var(--ease-emphasis),
+    ghost-out var(--motion-board-exit) var(--ease-exit) var(--ghost-hold)
+      forwards;
+}
+
+@keyframes ghost-highlight {
+  50% {
+    transform: scale(var(--motion-scale-pulse));
+  }
+}
+
+@keyframes ghost-out {
+  to {
+    opacity: 0;
+  }
 }
 
 .sets {
@@ -95,23 +160,43 @@
 }
 
 .pip,
-.pipWon {
+.pipWon,
+.pipPop {
   inline-size: var(--pip-size);
   block-size: var(--pip-size);
   border: var(--stroke) solid var(--text-muted);
   border-radius: 50%;
 }
 
-.pipWon {
+.pipWon,
+.pipPop {
   background: var(--text);
   border-color: var(--text);
+}
+
+.pipPop {
+  animation: pip-pop var(--motion-board-pop) var(--ease-emphasis);
+}
+
+@keyframes pip-pop {
+  from {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(var(--motion-scale-pop-pip));
+  }
+  to {
+    transform: none;
+  }
 }
 
 /*
  * The serve dot sits in the centre column beside the serving side's score,
  * mirrored for the visitor, level with the numerals.
  */
-.serve {
+.serve,
+.serveIn,
+.serveOut {
   position: absolute;
   inset-block-start: calc(var(--u) * 248);
   inline-size: var(--serve-size);
@@ -119,6 +204,34 @@
   border-radius: 50%;
   background: var(--brand);
   pointer-events: none;
+}
+
+/* Indicator move: the old dot scales out, the new one pops in. */
+.serveIn {
+  animation: serve-in var(--motion-board-indicator-in) var(--ease-emphasis);
+}
+
+.serveOut {
+  animation: serve-out var(--motion-board-indicator-out) var(--ease-exit)
+    forwards;
+}
+
+@keyframes serve-in {
+  from {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(var(--motion-scale-pop-indicator));
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes serve-out {
+  to {
+    transform: scale(0);
+  }
 }
 
 .serveVisitor {
