@@ -43,9 +43,9 @@ Work is tracked in [GitHub Issues](https://github.com/karmicoder/libero/issues).
 - `src/sync/`: `SyncChannel` and its `BroadcastChannel` transport
 - `src/pages/`: route components. `SportSelectPage` is home, `MatchPage` renders the scorer console, `BoardPage` renders the scoreboard
 - `src/styles/`: tokens (themes), base element styles, shared utility classes
-- `e2e/`: Playwright specs
+- `e2e/`: Playwright specs (console and board sync, axe scans) for football and volleyball
 
-Each sport lives in `src/games/<sport>/` (football today):
+Each sport lives in `src/games/<sport>/` (`football` and `volleyball`):
 
 - `state.ts`: the neutral, types-only game state. Engine and board both import it; ESLint enforces that they import nothing else from each other
 - `engine/`: the pure reducer
