@@ -79,6 +79,13 @@ describe('volleyball SettingsScreen', () => {
       expect(saved().cap).toBe(35)
     })
 
+    it('suggests from the saved rules while a field is empty', async () => {
+      const { user } = setup()
+      await user.clear(field('Points per set'))
+      await user.click(screen.getByRole('switch', { name: /Cap/ }))
+      expect(field('Cap')).toHaveValue(35)
+    })
+
     it('warns when smaller than the larger target', async () => {
       const { user } = setup()
       await user.click(screen.getByRole('switch', { name: /Cap/ }))

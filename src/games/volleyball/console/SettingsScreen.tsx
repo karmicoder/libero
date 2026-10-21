@@ -103,7 +103,10 @@ export function SettingsScreen({ config, onSave, onCancel }: Props) {
   const toggleCap = (on: boolean) => {
     setCapOn(on)
     if (on && raw.cap.trim() === '')
-      setField('cap', String(suggestedCap(draft)))
+      setField(
+        'cap',
+        String(suggestedCap(configProblems(draft).length ? config : draft)),
+      )
   }
 
   return (
