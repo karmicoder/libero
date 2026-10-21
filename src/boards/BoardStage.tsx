@@ -15,7 +15,8 @@ interface BoardStageProps {
 
 /** The scaled 16:9 stage and chrome every scoreboard shares. The sport's
  * `children` fill its grid; the update slots, wordmark and disconnected
- * status are added here. */
+ * status are added here. The grid class must define `--pad`, `--label-size`
+ * and `--slot-height` (and may set `--slot-margin`); the chrome reads them. */
 export function BoardStage({
   title,
   connected,

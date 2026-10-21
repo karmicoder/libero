@@ -23,14 +23,9 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
-  // Engine/layout seam: rules (engine) and presentation (board, console) share
-  // only the neutral top-level modules (`state.ts` types, pure helpers like
-  // `clock.ts`) that sit directly in `src/games/<sport>/`. The console reaches the engine through
-  // `EngineRegistry` (src/engines), never the sport's engine directory.
-  // The patterns match import strings, so they cover relative imports only. If
-  // a path alias (e.g. `@/`) is ever added, extend them to match it.
   // Shared board code is sport-agnostic: it never reaches into a sport or an
   // engine. Sports pass in their grid class and children.
+  // Like the blocks below, the patterns match relative import strings only.
   {
     files: ['src/boards/**/*.{ts,tsx}'],
     ignores: ['src/boards/builtin.ts', 'src/boards/**/*.test.{ts,tsx}'],
@@ -49,6 +44,12 @@ export default defineConfig([
       ],
     },
   },
+  // Engine/layout seam: rules (engine) and presentation (board, console) share
+  // only the neutral top-level modules (`state.ts` types, pure helpers like
+  // `clock.ts`) that sit directly in `src/games/<sport>/`. The console reaches the engine through
+  // `EngineRegistry` (src/engines), never the sport's engine directory.
+  // The patterns match import strings, so they cover relative imports only. If
+  // a path alias (e.g. `@/`) is ever added, extend them to match it.
   {
     files: ['src/games/*/engine/**/*.{ts,tsx}'],
     rules: {
