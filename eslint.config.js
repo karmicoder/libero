@@ -29,6 +29,26 @@ export default defineConfig([
   // `EngineRegistry` (src/engines), never the sport's engine directory.
   // The patterns match import strings, so they cover relative imports only. If
   // a path alias (e.g. `@/`) is ever added, extend them to match it.
+  // Shared board code is sport-agnostic: it never reaches into a sport or an
+  // engine. Sports pass in their grid class and children.
+  {
+    files: ['src/boards/**/*.{ts,tsx}'],
+    ignores: ['src/boards/builtin.ts', 'src/boards/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/engines', '**/engines/**', '**/games', '**/games/**'],
+              message:
+                'Shared board code must not import engines or sport code. Sports pass their layout in.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ['src/games/*/engine/**/*.{ts,tsx}'],
     rules: {

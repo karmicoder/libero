@@ -1,6 +1,6 @@
+import { BoardStage } from '../../../boards/BoardStage'
 import type { BoardProps } from '../../../boards/registry'
 import { useBanner } from '../../../boards/useBanner'
-import { Wordmark } from '../../../components/Wordmark'
 import { useNow } from '../../../match/useNow'
 import { RollingNumber } from '../../../motion/RollingNumber'
 import { displayedSeconds, formatClock } from '../clock'
@@ -67,59 +67,44 @@ export function FootballBoard({
     (state.stoppageMinutes ?? 0) > 0
 
   return (
-    <div className={styles.viewport}>
-      <div className={styles.stage} data-testid="board-stage">
-        <div className={styles.board}>
-          <h1 className="assistive-only">Football scoreboard</h1>
+    <BoardStage
+      title="Football scoreboard"
+      connected={connected}
+      gridClassName={styles.board}
+      banner={
+        banner && (
+          <UpdateBanner
+            key={banner.key}
+            notice={banner.notice}
+            phase={banner.phase}
+            flip={banner.flip}
+          />
+        )
+      }
+    >
+      <Team side="visitor" state={state} />
 
-          <Team side="visitor" state={state} />
-
-          <section className={styles.centre} aria-label="Match clock">
-            <div className={styles.readout}>
-              {showClock && (
-                <time
-                  className={styles.clock}
-                  dateTime={`PT${displayedSeconds(state.clock, now)}S`}
-                >
-                  {formatClock(displayedSeconds(state.clock, now))}
-                </time>
-              )}
-              <h2 className={styles.period}>{period?.name}</h2>
-              {showStoppage && (
-                <p className={styles.pill}>
-                  <span className="assistive-only">Stoppage time </span>+
-                  {state.stoppageMinutes}′
-                </p>
-              )}
-            </div>
-          </section>
-
-          <Team side="home" state={state} />
-
-          {/* Keeps the bottom row's height; the banner is drawn over it. */}
-          <div className={styles.slot} aria-hidden="true">
-            Updates
-          </div>
-          <div className={styles.slotEnd} aria-hidden="true">
-            Updates
-          </div>
-          {banner && (
-            <UpdateBanner
-              key={banner.key}
-              notice={banner.notice}
-              phase={banner.phase}
-              flip={banner.flip}
-            />
+      <section className={styles.centre} aria-label="Match clock">
+        <div className={styles.readout}>
+          {showClock && (
+            <time
+              className={styles.clock}
+              dateTime={`PT${displayedSeconds(state.clock, now)}S`}
+            >
+              {formatClock(displayedSeconds(state.clock, now))}
+            </time>
           )}
-          <Wordmark className={styles.wordmark} />
-
-          {!connected && (
-            <p className={styles.disconnected} role="status">
-              Disconnected from console
+          <h2 className={styles.period}>{period?.name}</h2>
+          {showStoppage && (
+            <p className={styles.pill}>
+              <span className="assistive-only">Stoppage time </span>+
+              {state.stoppageMinutes}′
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </section>
+
+      <Team side="home" state={state} />
+    </BoardStage>
   )
 }
