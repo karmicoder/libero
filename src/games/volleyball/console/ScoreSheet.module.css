@@ -1,7 +1,7 @@
-/* Covers the team column; the column is its positioning context. */
+/* Covers the team column's content: it shares that grid cell, and stretches
+   the column if it needs more room. */
 .sheet {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -40,14 +40,14 @@
   min-block-size: var(--size-step);
   border: var(--border-width) solid var(--border-tile-hover);
   border-radius: var(--radius-button);
-  background: transparent;
+  background: var(--surface-tile-hover);
   font-size: var(--text-xl);
   font-weight: 700;
   transition: background var(--duration-fast);
 }
 
 .key:hover {
-  background: var(--surface-tile-hover);
+  background: color-mix(in srgb, var(--surface-tile-hover), var(--text) 10%);
 }
 
 .actions {
