@@ -1,6 +1,6 @@
+import { BoardStage } from '../../../boards/BoardStage'
 import type { BoardProps } from '../../../boards/registry'
 import { useBanner } from '../../../boards/useBanner'
-import { Wordmark } from '../../../components/Wordmark'
 import { RollingNumber } from '../../../motion/RollingNumber'
 import { matchWinner, setsWon } from '../rules'
 import type { TeamSide, VolleyballMessage, VolleyballState } from '../state'
@@ -117,64 +117,50 @@ export function VolleyballBoard({
     : state.completed.length + 1
 
   return (
-    <div className={styles.viewport}>
-      <div className={styles.stage} data-testid="board-stage">
-        <div className={styles.board}>
-          <h1 className="assistive-only">Volleyball scoreboard</h1>
+    <BoardStage
+      title="Volleyball scoreboard"
+      connected={connected}
+      gridClassName={styles.board}
+      banner={
+        banner &&
+        banner.notice.type === 'set-won' && (
+          <SetBanner
+            key={banner.key}
+            notice={banner.notice}
+            phase={banner.phase}
+            names={{
+              visitor: state.teams.visitor.name || SIDE_LABEL.visitor,
+              home: state.teams.home.name || SIDE_LABEL.home,
+            }}
+          />
+        )
+      }
+    >
+      <Team side="visitor" state={state} transitions={transitions} />
 
-          <Team side="visitor" state={state} transitions={transitions} />
+      <section className={styles.centre} aria-label="Set">
+        <h2 className={styles.label}>{finished ? 'Match over' : 'Set'}</h2>
+        <p className={styles.setNumber}>{setNumber}</p>
+        {finished && winner && (
+          <p className={styles.final}>
+            {state.teams[winner].name || SIDE_LABEL[winner]} wins
+          </p>
+        )}
+        {state.completed.length > 0 && (
+          <ol className={styles.results} aria-label="Completed sets">
+            {state.completed.map((set, i) => (
+              <li key={i} className={styles.result}>
+                <span className={styles.resultLabel}>Set {i + 1}</span>
+                <span className={styles.resultScore}>
+                  {set.visitor} – {set.home}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
-          <section className={styles.centre} aria-label="Set">
-            <h2 className={styles.label}>{finished ? 'Match over' : 'Set'}</h2>
-            <p className={styles.setNumber}>{setNumber}</p>
-            {finished && winner && (
-              <p className={styles.final}>
-                {state.teams[winner].name || SIDE_LABEL[winner]} wins
-              </p>
-            )}
-            {state.completed.length > 0 && (
-              <ol className={styles.results} aria-label="Completed sets">
-                {state.completed.map((set, i) => (
-                  <li key={i} className={styles.result}>
-                    <span className={styles.resultLabel}>Set {i + 1}</span>
-                    <span className={styles.resultScore}>
-                      {set.visitor} – {set.home}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-
-          <Team side="home" state={state} transitions={transitions} />
-
-          {/* Keeps the bottom row's height; the banner is drawn over it. */}
-          <div className={styles.slot} aria-hidden="true">
-            Updates
-          </div>
-          <div className={styles.slotEnd} aria-hidden="true">
-            Updates
-          </div>
-          {banner && banner.notice.type === 'set-won' && (
-            <SetBanner
-              key={banner.key}
-              notice={banner.notice}
-              phase={banner.phase}
-              names={{
-                visitor: state.teams.visitor.name || SIDE_LABEL.visitor,
-                home: state.teams.home.name || SIDE_LABEL.home,
-              }}
-            />
-          )}
-          <Wordmark className={styles.wordmark} />
-
-          {!connected && (
-            <p className={styles.disconnected} role="status">
-              Disconnected from console
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
+      <Team side="home" state={state} transitions={transitions} />
+    </BoardStage>
   )
 }
