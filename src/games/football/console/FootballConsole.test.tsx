@@ -582,6 +582,140 @@ describe('FootballConsole', () => {
       })
       expect(screen.queryByRole('button', { name: 'Substitution' })).toBeNull()
       expect(screen.queryByRole('img', { name: /left this period/ })).toBeNull()
+      expect(screen.queryByRole('button', { name: /subs left/ })).toBeNull()
+    })
+
+    it('hides the subs-left control when subs are unlimited', () => {
+      setup({
+        ...defaultMatchConfig(),
+        substitutions: { enabled: true },
+      })
+      expect(screen.queryByRole('button', { name: /subs left/ })).toBeNull()
+    })
+  })
+
+  describe('adjusting subs left', () => {
+    // Repeated presses settle for 1000 ms before they commit (like stoppage
+    // time), so these run on fake timers with fireEvent.
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
+    const settle = () => act(() => vi.advanceTimersByTime(1000))
+    const home = () => within(screen.getByRole('region', { name: 'Home team' }))
+    const less = () =>
+      home().getByRole('button', { name: 'Decrease subs left for Home' })
+    const more = () =>
+      home().getByRole('button', { name: 'Increase subs left for Home' })
+
+    it('commits several presses as one set-subs-remaining for that team', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      const { store } = setup()
+      fireEvent.click(less())
+      fireEvent.click(less())
+      // The console shows 3 at once; the store (and so the board) hasn't.
+      expect(
+        home().getByRole('img', { name: /^3 of 5 left this period/ }),
+      ).toBeInTheDocument()
+      expect(store.getState().subsRemaining).toEqual({ visitor: 5, home: 5 })
+      settle()
+      expect(reduce).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        type: 'set-subs-remaining',
+        team: 'home',
+        remaining: 3,
+      })
+      expect(store.getState().subsRemaining).toEqual({ visitor: 5, home: 3 })
+      expect(
+        home().getByRole('img', { name: '3 of 5 left this period' }),
+      ).toBeInTheDocument()
+    })
+
+    it('marks the count as pending until it is committed', () => {
+      setup()
+      fireEvent.click(less())
+      expect(
+        home().getByRole('img', {
+          name: '4 of 5 left this period (not yet shown on the board)',
+        }),
+      ).toBeInTheDocument()
+      settle()
+      expect(
+        home().getByRole('img', { name: '4 of 5 left this period' }),
+      ).toBeInTheDocument()
+    })
+
+    it('stays within 0 and the maximum', () => {
+      const { store } = setup({
+        ...defaultMatchConfig(),
+        substitutions: { enabled: true, perPeriod: 3 },
+      })
+      // The hand-set maximum is the larger of 5 and the limit.
+      for (let i = 0; i < 4; i++) fireEvent.click(more())
+      expect(more()).toBeDisabled()
+      settle()
+      expect(store.getState().subsRemaining.home).toBe(5)
+      for (let i = 0; i < 6; i++) fireEvent.click(less())
+      expect(less()).toBeDisabled()
+      settle()
+      expect(store.getState().subsRemaining.home).toBe(0)
+    })
+
+    it('commits at once when focus leaves the control', () => {
+      const { store } = setup()
+      act(() => less().focus())
+      fireEvent.click(less())
+      act(() => home().getByRole('button', { name: 'Card' }).focus())
+      expect(store.getState().subsRemaining.home).toBe(4)
+    })
+
+    it('commits before a substitution is recorded', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      setup()
+      const types = () => reduce.mock.calls.map(([, action]) => action.type)
+      fireEvent.click(less())
+      fireEvent.click(home().getByRole('button', { name: 'Substitution' }))
+      expect(types()).toEqual(['set-subs-remaining'])
+    })
+
+    // fireEvent moves no focus, like a Safari click, so no blur flushes these.
+    it('commits before a period change resets it', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      const { store } = setup()
+      const types = () => reduce.mock.calls.map(([, action]) => action.type)
+      fireEvent.click(less())
+      fireEvent.click(less())
+      fireEvent.click(screen.getByRole('radio', { name: /2H/ }))
+      expect(types()).toEqual(['set-subs-remaining', 'set-period'])
+      settle()
+      // The new play period starts from the full allowance.
+      expect(store.getState().subsRemaining.home).toBe(5)
+    })
+
+    it('Ctrl+Z takes back the pending change, not the step before it', () => {
+      const { store } = setup()
+      fireEvent.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Skip details' }))
+      fireEvent.click(less())
+      fireEvent.keyDown(document.body, {
+        key: 'z',
+        code: 'KeyZ',
+        ctrlKey: true,
+      })
+      settle()
+      expect(score('Home')).toHaveTextContent('1')
+      expect(store.getState().subsRemaining.home).toBe(5)
+    })
+
+    it('is undoable', () => {
+      const { store } = setup()
+      fireEvent.click(less())
+      settle()
+      const undo = screen.getByRole('button', { name: /^Undo/ })
+      expect(undo).toHaveTextContent('Undo · Substitutions left')
+      fireEvent.click(undo)
+      expect(store.getState().subsRemaining.home).toBe(5)
     })
   })
 

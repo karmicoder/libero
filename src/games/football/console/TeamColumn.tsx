@@ -7,7 +7,8 @@ import type {
   TeamSide,
 } from '../state'
 import { sentOffNumbers } from '../cards'
-import { subLimit } from '../subs'
+import { maxSubsRemaining, subLimit } from '../subs'
+import type { DebouncedCommit } from '../../../match/useDebouncedCommit'
 import { eventSummary, recentEvents } from './events'
 import { CardSheet } from './CardSheet'
 import { GoalSheet } from './GoalSheet'
@@ -39,6 +40,8 @@ interface Props {
     onConfirm: (pairs: SubstitutionPair[]) => void
     onCancel: () => void
   }
+  /** This team's subs left, as the scorer is adjusting it (owned by the console). */
+  subsLeft: DebouncedCommit<number>
 }
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -56,13 +59,15 @@ export function TeamColumn({
   cardSheet,
   onSub,
   subSheet,
+  subsLeft: subs,
 }: Props) {
   const team = state.teams[side]
   const label = SIDE_LABEL[side]
   const name = team.name || label
   const { substitutions } = state.config
   const configured = subLimit(state.config)
-  const left = state.subsRemaining[side]
+  const left = subs.value
+  const maxLeft = maxSubsRemaining(state.config)
   // Normally one pip per allowed sub; a manual raise shows the extra pips.
   const pipCount =
     configured === undefined ? undefined : Math.max(configured, left)
@@ -154,7 +159,11 @@ export function TeamColumn({
               ref={subButton}
               type="button"
               className={styles.action}
-              onClick={() => onSub(side)}
+              onClick={() => {
+                // The substitution counts down from the scorer's correction.
+                subs.flush()
+                onSub(side)
+              }}
             >
               Substitution
             </button>
@@ -162,21 +171,49 @@ export function TeamColumn({
         </div>
 
         {pipCount !== undefined && (
-          <p className={styles.subs}>
-            <span className="eyebrow">Subs</span>
-            <span
-              className={styles.pips}
-              role="img"
-              aria-label={`${left} of ${pipCount} left this period`}
-            >
-              {Array.from({ length: pipCount }, (_, i) => (
-                <span
-                  key={i}
-                  className={i < left ? styles.pipLeft : styles.pip}
-                />
-              ))}
-            </span>
-          </p>
+          <fieldset
+            className={styles.subs}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) subs.flush()
+            }}
+          >
+            <legend className="eyebrow">Subs</legend>
+            <div className={styles.subsRow}>
+              <button
+                type="button"
+                className={styles.subStep}
+                aria-label={`Decrease subs left for ${name}`}
+                disabled={left <= 0}
+                onClick={() => subs.set(left - 1)}
+              >
+                −
+              </button>
+              <span
+                className={styles.pips}
+                role="img"
+                aria-label={`${left} of ${pipCount} left this period${
+                  subs.pending ? ' (not yet shown on the board)' : ''
+                }`}
+                data-pending={subs.pending || undefined}
+              >
+                {Array.from({ length: pipCount }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < left ? styles.pipLeft : styles.pip}
+                  />
+                ))}
+              </span>
+              <button
+                type="button"
+                className={styles.subStep}
+                aria-label={`Increase subs left for ${name}`}
+                disabled={left >= maxLeft}
+                onClick={() => subs.set(left + 1)}
+              >
+                +
+              </button>
+            </div>
+          </fieldset>
         )}
 
         {sentOff.length > 0 && (

@@ -84,14 +84,44 @@
 
 .subs {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.subsRow {
+  display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin: 0;
+}
+
+.subStep {
+  inline-size: var(--size-control);
+  block-size: var(--size-control);
+  border: var(--border-width) solid var(--border-tile-hover);
+  border-radius: var(--radius-button);
+  background: transparent;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1;
+  transition: background var(--duration-fast);
+}
+
+.subStep:hover:not(:disabled) {
+  background: var(--surface-tile-hover);
 }
 
 .pips {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+
+  /* Not yet committed, so not yet on the board. */
+  &[data-pending] {
+    opacity: 0.6;
+    outline: var(--border-width) dashed var(--text-muted);
+    outline-offset: var(--space-1);
+    border-radius: var(--radius-button);
+  }
 }
 
 .pip,
