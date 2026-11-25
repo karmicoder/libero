@@ -25,14 +25,13 @@ export interface BannerState<Notice> {
  * holds, leaves and is removed; a newer notice replaces the current one at
  * once. Nothing is stored, so a refresh or reconnect never replays a banner.
  *
- * `followUp` may name a second notice to show after the first (e.g. the pairs
- * of a big substitution that didn't fit). The card flips to it, so that it
- * has replaced the first after `BANNER_FOLLOW_UP_MS` instead of the first
- * holding and leaving, and it may itself have a follow-up. It must be a
- * stable function.
+ * `followUp` may name a next page to show after a notice (e.g. the pairs of a
+ * big substitution that didn't fit). When the page has held, the card flips to
+ * the next page instead of leaving; that page holds just as long and may have
+ * a next page of its own. It must be a stable function.
  *
- * `timing` overrides the dwell times (hold, follow-up) for a sport; it defaults
- * to football's. Only its numbers matter, so an inline object is fine.
+ * `timing` overrides the dwell times for a sport; it defaults to football's.
+ * Only its numbers matter, so an inline object is fine.
  */
 export function useBanner<Notice>(
   subscribeNotices: (listener: (notice: Notice) => void) => () => void,
@@ -41,7 +40,7 @@ export function useBanner<Notice>(
 ): BannerState<Notice> | null {
   const [banner, setBanner] = useState<BannerState<Notice> | null>(null)
   const cards = useRef(0)
-  const { holdMs, followUpMs } = timing
+  const { holdMs } = timing
 
   useEffect(() => {
     let hold: ReturnType<typeof setTimeout> | undefined
@@ -60,19 +59,23 @@ export function useBanner<Notice>(
         key: cards.current,
         ...(continuing && { flip: 'in' as const }),
       })
+      // Every page holds face-on for `holdMs`: the first after sliding in,
+      // a later one after flipping in.
+      const visible = continuing
+        ? bannerFlipMs() + holdMs
+        : bannerVisibleMs(holdMs)
       const next = followUp?.(notice)
       if (next !== undefined) {
-        const flip = bannerFlipMs()
         hold = setTimeout(() => {
           setBanner((b) => (b ? { ...b, flip: 'out' } : b))
-          hold = setTimeout(() => show(next, true), flip)
-        }, followUpMs - flip)
+          hold = setTimeout(() => show(next, true), bannerFlipMs())
+        }, visible)
         return
       }
       hold = setTimeout(() => {
         setBanner((b) => (b ? { ...b, phase: 'out' } : b))
         exit = setTimeout(() => setBanner(null), bannerExitMs())
-      }, bannerVisibleMs(holdMs))
+      }, visible)
     }
 
     const unsubscribe = subscribeNotices(show)
@@ -81,7 +84,7 @@ export function useBanner<Notice>(
       unsubscribe()
       clear()
     }
-  }, [subscribeNotices, followUp, holdMs, followUpMs])
+  }, [subscribeNotices, followUp, holdMs])
 
   return banner
 }

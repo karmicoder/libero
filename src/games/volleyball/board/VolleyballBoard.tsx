@@ -12,7 +12,7 @@ import {
 import styles from './VolleyballBoard.module.css'
 
 /** A set win is the only banner, so it holds shorter than football's. */
-const BANNER_TIMING = { holdMs: 5_000, followUpMs: 0 }
+const BANNER_TIMING = { holdMs: 5_000 }
 
 const SIDE_LABEL: Record<TeamSide, string> = {
   visitor: 'Visitor',
