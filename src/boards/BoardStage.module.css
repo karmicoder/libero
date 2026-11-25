@@ -1,0 +1,80 @@
+/*
+ * The board is a 16:9 stage scaled to the window and letterboxed. Every
+ * dimension is a multiple of --u, one unit of the 1280x720 design, so the
+ * layout depends only on the aspect ratio, never on pixel sizes.
+ *
+ * A sport's grid class sets the layout (grid-template-*, padding, gaps) and
+ * the tokens the chrome here reads: --pad, --label-size, --slot-height and
+ * (optionally) --slot-margin.
+ */
+
+.viewport {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+.stage {
+  inline-size: min(100vw, 100dvh * 16 / 9);
+  aspect-ratio: 16 / 9;
+  container-type: inline-size;
+}
+
+.board {
+  --u: calc(100cqw / 1280);
+  --stroke: calc(var(--u) * 3);
+
+  position: relative;
+  display: grid;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/*
+ * Bottom-corner areas reserved for update banners. Hidden, not removed, so
+ * the layout keeps their space; banners are drawn over them.
+ */
+.slot,
+.slotEnd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-row: 2;
+  block-size: var(--slot-height);
+  margin-block-end: var(--slot-margin, 0);
+  border: var(--stroke) dotted var(--border-tile-hover);
+  border-radius: calc(var(--u) * 16);
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  visibility: hidden;
+}
+
+.slot {
+  grid-column: 1;
+}
+
+.slotEnd {
+  grid-column: 3;
+}
+
+.wordmark {
+  position: absolute;
+  inset-inline-end: var(--pad);
+  inset-block-end: calc(var(--u) * 14);
+  font-size: calc(var(--u) * 20);
+  color: var(--text-tile);
+}
+
+.disconnected {
+  position: absolute;
+  inset-inline-end: var(--pad);
+  inset-block-start: calc(var(--u) * 14);
+  margin: 0;
+  font-size: var(--label-size);
+  color: var(--text-muted);
+}

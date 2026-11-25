@@ -1,27 +1,7 @@
-/*
- * The board is a 16:9 stage scaled to the window and letterboxed. Every
- * dimension is a multiple of --u, one unit of the 1280x720 design, so the
- * layout depends only on the aspect ratio, never on pixel sizes.
- */
-
-.viewport {
-  display: grid;
-  place-items: center;
-  min-block-size: 100dvh;
-  overflow: hidden;
-  background: var(--surface-page);
-}
-
-.stage {
-  inline-size: min(100vw, 100dvh * 16 / 9);
-  aspect-ratio: 16 / 9;
-  container-type: inline-size;
-}
+/* Grid layout and tokens; the stage and chrome are in boards/BoardStage. */
 
 .board {
-  --u: calc(100cqw / 1280);
   --pad: calc(var(--u) * 56);
-  --stroke: calc(var(--u) * 3);
   --centre-width: calc(var(--u) * 380);
   --name-size: calc(var(--u) * 52);
   --score-size: calc(var(--u) * 288);
@@ -32,16 +12,14 @@
   --pip-size: calc(var(--u) * 32);
   --serve-size: calc(var(--u) * 56);
   --slot-height: calc(var(--u) * 128);
+  --slot-margin: calc(var(--u) * 24);
 
-  position: relative;
   display: grid;
   grid-template-columns:
     minmax(0, 1fr) var(--centre-width)
     minmax(0, 1fr);
   grid-template-rows: 1fr auto;
   column-gap: calc(var(--u) * 16);
-  inline-size: 100%;
-  block-size: 100%;
   padding: calc(var(--u) * 40) var(--pad) calc(var(--u) * 60);
 }
 
@@ -290,51 +268,4 @@
   font-size: var(--result-size);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-}
-
-/*
- * Bottom-corner areas reserved for update banners (#84). Hidden, not removed,
- * so the layout keeps their space.
- */
-.slot,
-.slotEnd {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  grid-row: 2;
-  block-size: var(--slot-height);
-  margin-block-end: calc(var(--u) * 24);
-  border: var(--stroke) dotted var(--text-muted);
-  border-radius: calc(var(--u) * 16);
-  font-size: var(--label-size);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  visibility: hidden;
-}
-
-.slot {
-  grid-column: 1;
-}
-
-.slotEnd {
-  grid-column: 3;
-}
-
-.wordmark {
-  position: absolute;
-  inset-inline-end: var(--pad);
-  inset-block-end: calc(var(--u) * 14);
-  font-size: calc(var(--u) * 20);
-  color: var(--text-tile);
-}
-
-.disconnected {
-  position: absolute;
-  inset-inline-end: var(--pad);
-  inset-block-start: calc(var(--u) * 14);
-  margin: 0;
-  font-size: var(--label-size);
-  color: var(--text-muted);
 }

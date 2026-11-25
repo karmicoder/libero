@@ -23,6 +23,27 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // Shared board code is sport-agnostic: it never reaches into a sport or an
+  // engine. Sports pass in their grid class and children.
+  // Like the blocks below, the patterns match relative import strings only.
+  {
+    files: ['src/boards/**/*.{ts,tsx}'],
+    ignores: ['src/boards/builtin.ts', 'src/boards/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/engines', '**/engines/**', '**/games', '**/games/**'],
+              message:
+                'Shared board code must not import engines or sport code. Sports pass their layout in.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Engine/layout seam: rules (engine) and presentation (board, console) share
   // only the neutral top-level modules (`state.ts` types, pure helpers like
   // `clock.ts`) that sit directly in `src/games/<sport>/`. The console reaches the engine through
