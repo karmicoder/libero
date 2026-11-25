@@ -49,6 +49,8 @@ export function isVolleyballState(value: unknown): value is VolleyballState {
     isSide(value.serving) &&
     isStatus(value.status) &&
     (value.history === undefined ||
-      (Array.isArray(value.history) && value.history.every(isSnapshot)))
+      (Array.isArray(value.history) && value.history.every(isSnapshot))) &&
+    (value.future === undefined ||
+      (Array.isArray(value.future) && value.future.every(isSnapshot)))
   )
 }

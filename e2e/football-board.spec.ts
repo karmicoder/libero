@@ -103,7 +103,9 @@ test('stoppage time reaches the board only after it has settled', async ({
   expect(results.violations).toEqual([])
 })
 
-test('undo on the console is reflected on the board', async ({ context }) => {
+test('undo and redo on the console are reflected on the board', async ({
+  context,
+}) => {
   const { console_, board } = await openConsoleAndBoard(context)
   await goalButton(console_, 'Home').click()
   await console_.getByRole('button', { name: 'Skip details' }).click()
@@ -113,6 +115,12 @@ test('undo on the console is reflected on the board', async ({ context }) => {
   await expect(boardScore(board, 'Home')).toHaveText('0')
   await expect(
     console_.getByRole('button', { name: 'Nothing to undo' }),
+  ).toBeDisabled()
+
+  await console_.keyboard.press('Control+Shift+Z')
+  await expect(boardScore(board, 'Home')).toHaveText('1')
+  await expect(
+    console_.getByRole('button', { name: 'Nothing to redo' }),
   ).toBeDisabled()
 })
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
 import { useMatchState } from '../../../match/useMatchState'
+import { useUndoHotkeys } from '../../../match/useUndoHotkeys'
 import { monotonicNow } from '../../../match/useNow'
 import { useWallClockJump } from '../../../match/useWallClockJump'
 import type {
@@ -43,34 +44,6 @@ function useSpaceToggle(onToggle: () => void, enabled: boolean) {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onToggle, enabled])
-}
-
-/**
- * Ctrl/Cmd+Z undoes, unless it already means something: in a text field (the
- * browser's own undo) or while a sheet or the settings screen is open (nothing under it should
- * change).
- */
-function useUndoHotkey(onUndo: () => void, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
-      if (!(e.ctrlKey || e.metaKey)) return
-      // Holding the keys must not walk back through the whole history.
-      if (e.repeat) return
-      const target = e.target as HTMLElement | null
-      if (
-        target?.closest('input, textarea, select, [contenteditable="true"]') ||
-        document.querySelector('[role="dialog"]')
-      ) {
-        return
-      }
-      e.preventDefault()
-      onUndo()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onUndo, enabled])
 }
 
 export function FootballConsole({
@@ -219,7 +192,19 @@ export function FootballConsole({
     dispatch({ type: 'undo', at: monotonicNow() })
     setToast(`Undid ${step.label.toLowerCase()}`)
   }
-  useUndoHotkey(undo, !settingsOpen)
+  // A pending correction will commit as a new step, which clears redo.
+  const nextStep =
+    subsLeft.visitor.pending || subsLeft.home.pending
+      ? undefined
+      : state.future?.at(-1)
+  const redo = () => {
+    flushSubsLeft()
+    const step = store.getState().future?.at(-1)
+    if (!step) return
+    dispatch({ type: 'redo', at: monotonicNow() })
+    setToast(`Redid ${step.label.toLowerCase()}`)
+  }
+  useUndoHotkeys({ onUndo: undo, onRedo: redo }, !settingsOpen)
 
   useSpaceToggle(() => {
     const current = store.getState()
@@ -266,6 +251,14 @@ export function FootballConsole({
             onClick={undo}
           >
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
+          </button>
+          <button
+            type="button"
+            className={styles.topButton}
+            disabled={!nextStep || settingsOpen}
+            onClick={redo}
+          >
+            {nextStep ? `Redo · ${nextStep.label}` : 'Nothing to redo'}
           </button>
         </div>
       </InHeader>

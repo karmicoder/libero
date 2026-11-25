@@ -146,6 +146,36 @@ describe('VolleyballConsole', () => {
       expect(minus('Home')).toBeDisabled()
     })
 
+    it('leaves nothing to redo while pending, since it commits as a new step', () => {
+      const { store } = setup((s) => ({
+        ...s,
+        current: { visitor: 0, home: 5 },
+      }))
+      act(() => point('Visitor').click())
+      act(() =>
+        screen
+          .getByRole('button', { name: 'Undo · Point for Visitor' })
+          .click(),
+      )
+      expect(
+        screen.getByRole('button', { name: 'Redo · Point for Visitor' }),
+      ).toBeEnabled()
+      act(() => minus('Home').click())
+      expect(
+        screen.getByRole('button', { name: 'Nothing to redo' }),
+      ).toBeDisabled()
+      act(() => {
+        document.body.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'y',
+            ctrlKey: true,
+            bubbles: true,
+          }),
+        )
+      })
+      expect(store.getState().current).toEqual({ visitor: 0, home: 4 })
+    })
+
     it('commits a pending −1 before a point', async () => {
       const { store } = setup((s) => ({
         ...s,
@@ -350,6 +380,49 @@ describe('VolleyballConsole', () => {
       await user.keyboard('{Control>}z{/Control}')
       expect(store.getState().current.home).toBe(1)
       input.remove()
+    })
+  })
+
+  describe('redo', () => {
+    it('names the undone step, redoes it from the button and with the keys', async () => {
+      const { store } = setup()
+      const user = userEvent.setup()
+      expect(
+        screen.getByRole('button', { name: 'Nothing to redo' }),
+      ).toBeDisabled()
+
+      await user.click(point('Home'))
+      await user.click(point('Visitor'))
+      const before = store.getState()
+      await user.keyboard('{Control>}z{/Control}')
+      await user.keyboard('{Control>}z{/Control}')
+      await user.click(
+        screen.getByRole('button', { name: 'Redo · Point for Home' }),
+      )
+      expect(store.getState().current).toEqual({ visitor: 0, home: 1 })
+      expect(screen.getByText('Redid point for home')).toBeInTheDocument()
+
+      await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+      expect(store.getState()).toEqual(before)
+      await user.keyboard('{Control>}z{/Control}')
+      await user.keyboard('{Control>}y{/Control}')
+      expect(store.getState()).toEqual(before)
+      expect(
+        screen.getByRole('button', { name: 'Nothing to redo' }),
+      ).toBeDisabled()
+    })
+
+    it('is cleared by a new point', async () => {
+      const { store } = setup()
+      const user = userEvent.setup()
+      await user.click(point('Home'))
+      await user.keyboard('{Control>}z{/Control}')
+      await user.click(point('Visitor'))
+      expect(
+        screen.getByRole('button', { name: 'Nothing to redo' }),
+      ).toBeDisabled()
+      await user.keyboard('{Control>}y{/Control}')
+      expect(store.getState().current).toEqual({ visitor: 1, home: 0 })
     })
   })
 

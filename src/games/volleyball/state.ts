@@ -33,14 +33,14 @@ export interface ClosedSet extends SetScore {
 
 export type VolleyballStatus = 'in-play' | 'finished'
 
-/** What undo restores. Config and team names are not in it. */
+/** What undo and redo restore. Config and team names are not in it. */
 export interface VolleyballSnapshot {
   completed: ClosedSet[]
   current: SetScore
   firstServer: TeamSide
   serving: TeamSide
   status: VolleyballStatus
-  /** Names the undone action in the toast. */
+  /** Names the step in the Undo and Redo buttons and toasts. */
   label: string
 }
 
@@ -57,6 +57,11 @@ export interface VolleyballState {
   status: VolleyballStatus
   /** Undoable steps, oldest first, capped at 30. Absent means none. */
   history?: VolleyballSnapshot[]
+  /**
+   * Undone steps that can be redone, oldest undo last, capped at 30. Cleared
+   * by any new undoable step; absent when empty.
+   */
+  future?: VolleyballSnapshot[]
 }
 
 /**
@@ -74,6 +79,7 @@ export type VolleyballAction =
   | { type: 'set-team-name'; team: TeamSide; name: string }
   | { type: 'update-config'; config: VolleyballConfig }
   | { type: 'undo'; at: number }
+  | { type: 'redo'; at: number }
 
 interface NoticeBase {
   /** `<type>@<at>`, unique per session. */

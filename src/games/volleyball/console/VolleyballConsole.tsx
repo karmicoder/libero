@@ -5,6 +5,7 @@ import type { ConsoleProps } from '../../../consoles/registry'
 import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
 import { useMatchState } from '../../../match/useMatchState'
 import { monotonicNow } from '../../../match/useNow'
+import { useUndoHotkeys } from '../../../match/useUndoHotkeys'
 import { isDecider, matchWinner, setReady, setsWon, setTarget } from '../rules'
 import type {
   TeamSide,
@@ -22,33 +23,6 @@ const TOAST_MS = 3000
 const SIDE_LABEL: Record<TeamSide, string> = {
   visitor: 'Visitor',
   home: 'Home',
-}
-
-/**
- * Ctrl/Cmd+Z undoes, unless it already means something: in a text field (the
- * browser's own undo) or while a dialog is open.
- */
-function useUndoHotkey(onUndo: () => void, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
-      if (!(e.ctrlKey || e.metaKey)) return
-      // Holding the keys must not walk back through the whole history.
-      if (e.repeat) return
-      const target = e.target as HTMLElement | null
-      if (
-        target?.closest('input, textarea, select, [contenteditable="true"]') ||
-        document.querySelector('[role="dialog"]')
-      ) {
-        return
-      }
-      e.preventDefault()
-      onUndo()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onUndo, enabled])
 }
 
 function statusItems(state: VolleyballState): string[] {
@@ -116,6 +90,15 @@ export function VolleyballConsole({
     dispatch({ type: 'undo', at: monotonicNow() })
     showToast(`Undid ${step.label.toLowerCase()}`)
   }
+  // A pending −1 will commit as a new step, which clears redo.
+  const nextStep = pendingSide ? undefined : state.future?.at(-1)
+  const redo = () => {
+    flushScores()
+    const step = store.getState().future?.at(-1)
+    if (!step) return
+    dispatch({ type: 'redo', at: monotonicNow() })
+    showToast(`Redid ${step.label.toLowerCase()}`)
+  }
 
   // The settings screen replaces the columns; closing it refocuses its button.
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -131,7 +114,7 @@ export function VolleyballConsole({
     flushScores()
     setSettingsOpen(true)
   }
-  useUndoHotkey(undo, !settingsOpen)
+  useUndoHotkeys({ onUndo: undo, onRedo: redo }, !settingsOpen)
 
   const finished = state.status === 'finished'
   const displayName = (side: TeamSide) =>
@@ -206,6 +189,14 @@ export function VolleyballConsole({
             onClick={undo}
           >
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
+          </button>
+          <button
+            type="button"
+            className={styles.topButton}
+            disabled={!nextStep || settingsOpen}
+            onClick={redo}
+          >
+            {nextStep ? `Redo · ${nextStep.label}` : 'Nothing to redo'}
           </button>
         </div>
       </InHeader>

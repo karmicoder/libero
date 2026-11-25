@@ -18,39 +18,64 @@ const otherSide = (team: TeamSide): TeamSide =>
 
 const noticeId = (type: string, at: number) => `${type}@${at}`
 
+function snapshotOf(state: VolleyballState, label: string): VolleyballSnapshot {
+  return {
+    completed: state.completed,
+    current: state.current,
+    firstServer: state.firstServer,
+    serving: state.serving,
+    status: state.status,
+    label,
+  }
+}
+
+/** `state` with both stacks replaced; an empty `future` is left out. */
+function withStacks(
+  state: VolleyballState,
+  history: VolleyballSnapshot[],
+  future: VolleyballSnapshot[],
+): VolleyballState {
+  const next = { ...state, history }
+  delete next.future
+  return future.length > 0 ? { ...next, future } : next
+}
+
+/** A new step starts a new line of history, so nothing is left to redo. */
 function withSnapshot(
   prev: VolleyballState,
   next: VolleyballState,
   label: string,
 ): VolleyballState {
-  const entry: VolleyballSnapshot = {
-    completed: prev.completed,
-    current: prev.current,
-    firstServer: prev.firstServer,
-    serving: prev.serving,
-    status: prev.status,
-    label,
-  }
-  return {
-    ...next,
-    history: [...(prev.history ?? []), entry].slice(-MAX_HISTORY),
-  }
+  const history = [...(prev.history ?? []), snapshotOf(prev, label)]
+  return withStacks(next, history.slice(-MAX_HISTORY), [])
 }
 
-/** Restores the newest snapshot wholesale; config and names are untouched. */
-function undoLast(state: VolleyballState): VolleyballState {
-  const history = state.history ?? []
-  const last = history.at(-1)
+/**
+ * Restores the newest snapshot of one stack wholesale and keeps the state it
+ * replaced, under the same label, on the other: undo takes from `history` and
+ * gives to `future`, redo the reverse. Config and names are untouched.
+ */
+function step(
+  state: VolleyballState,
+  from: 'history' | 'future',
+): VolleyballState {
+  const stacks = { history: state.history ?? [], future: state.future ?? [] }
+  const last = stacks[from].at(-1)
   if (!last) return state
-  return {
+  const to = from === 'history' ? 'future' : 'history'
+  stacks[from] = stacks[from].slice(0, -1)
+  stacks[to] = [...stacks[to], snapshotOf(state, last.label)].slice(
+    -MAX_HISTORY,
+  )
+  const restored: VolleyballState = {
     ...state,
     completed: last.completed,
     current: last.current,
     firstServer: last.firstServer,
     serving: last.serving,
     status: last.status,
-    history: history.slice(0, -1),
   }
+  return withStacks(restored, stacks.history, stacks.future)
 }
 
 function endSet(state: VolleyballState): VolleyballState {
@@ -119,7 +144,9 @@ function reduceState(
       if (configProblems(action.config).length > 0) return state
       return { ...state, config: action.config }
     case 'undo':
-      return undoLast(state)
+      return step(state, 'history')
+    case 'redo':
+      return step(state, 'future')
   }
 }
 

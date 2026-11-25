@@ -33,6 +33,7 @@ export function isFootballState(value: unknown): value is FootballState {
     typeof value.subsRemaining.home === 'number' &&
     Array.isArray(value.events) &&
     typeof value.nextEventId === 'number' &&
-    (value.history === undefined || Array.isArray(value.history))
+    (value.history === undefined || Array.isArray(value.history)) &&
+    (value.future === undefined || Array.isArray(value.future))
   )
 }
