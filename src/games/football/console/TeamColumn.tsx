@@ -8,7 +8,7 @@ import type {
 } from '../state'
 import { sentOffNumbers } from '../cards'
 import { maxSubsRemaining, subLimit } from '../subs'
-import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
+import type { DebouncedCommit } from '../../../match/useDebouncedCommit'
 import { eventSummary, recentEvents } from './events'
 import { CardSheet } from './CardSheet'
 import { GoalSheet } from './GoalSheet'
@@ -40,6 +40,8 @@ interface Props {
     onConfirm: (pairs: SubstitutionPair[]) => void
     onCancel: () => void
   }
+  /** This team's subs left, as the scorer is adjusting it (owned by the console). */
+  subsLeft: DebouncedCommit<number>
 }
 
 const SIDE_LABEL: Record<TeamSide, string> = {
@@ -57,17 +59,13 @@ export function TeamColumn({
   cardSheet,
   onSub,
   subSheet,
+  subsLeft: subs,
 }: Props) {
   const team = state.teams[side]
   const label = SIDE_LABEL[side]
   const name = team.name || label
   const { substitutions } = state.config
   const configured = subLimit(state.config)
-  // Repeated presses settle into one dispatch, so the board doesn't flash
-  // each step on the way.
-  const subs = useDebouncedCommit(state.subsRemaining[side], (remaining) =>
-    dispatch({ type: 'set-subs-remaining', team: side, remaining }),
-  )
   const left = subs.value
   const maxLeft = maxSubsRemaining(state.config)
   // Normally one pip per allowed sub; a manual raise shows the extra pips.

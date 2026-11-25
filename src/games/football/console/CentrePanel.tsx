@@ -11,12 +11,20 @@ import { clockPresets } from './clockEntry'
 interface Props {
   state: FootballState
   dispatch: (action: FootballAction) => void
+  /** Settles other pending adjustments (subs left) a period change resets. */
+  beforePeriodChange: () => void
   /** Transient confirmation text, owned by the console. */
   toast: string | null
   onToast: (message: string) => void
 }
 
-export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
+export function CentrePanel({
+  state,
+  dispatch,
+  beforePeriodChange,
+  toast,
+  onToast,
+}: Props) {
   const running = state.clock.runningSince !== null
   const now = useNow(running)
   const period = findPeriod(state.config, state.periodId)
@@ -109,6 +117,7 @@ export function CentrePanel({ state, dispatch, toast, onToast }: Props) {
                   onChange={() => {
                     // A period change resets stoppage time, so settle it first.
                     stoppage.flush()
+                    beforePeriodChange()
                     dispatch({
                       type: 'set-period',
                       periodId: p.id,

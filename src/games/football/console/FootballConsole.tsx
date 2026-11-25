@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
+import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
 import { useMatchState } from '../../../match/useMatchState'
 import { monotonicNow } from '../../../match/useNow'
 import { useWallClockJump } from '../../../match/useWallClockJump'
@@ -79,6 +80,23 @@ export function FootballConsole({
 }: ConsoleProps<FootballState, FootballAction, FootballMessage>) {
   const state = useMatchState(store)
   const { dispatch } = store
+
+  // The scorer's hand corrections to subs left settle before they dispatch.
+  // They live here, not in the columns, so the console can settle them
+  // before anything that depends on the count: a period change, an undo,
+  // the settings screen.
+  const subsLeft = {
+    visitor: useDebouncedCommit(state.subsRemaining.visitor, (remaining) =>
+      dispatch({ type: 'set-subs-remaining', team: 'visitor', remaining }),
+    ),
+    home: useDebouncedCommit(state.subsRemaining.home, (remaining) =>
+      dispatch({ type: 'set-subs-remaining', team: 'home', remaining }),
+    ),
+  }
+  const flushSubsLeft = () => {
+    subsLeft.visitor.flush()
+    subsLeft.home.flush()
+  }
 
   // Which team's column the card sheet covers, if open.
   const [cardSide, setCardSide] = useState<TeamSide | null>(null)
@@ -180,6 +198,7 @@ export function FootballConsole({
     settingsWasOpen.current = settingsOpen
   }, [settingsOpen])
   const openSettings = () => {
+    flushSubsLeft()
     setSheet(null)
     setCardSide(null)
     setSubSide(null)
@@ -192,6 +211,9 @@ export function FootballConsole({
 
   const lastStep = state.history?.at(-1)
   const undo = () => {
+    // A pending correction is the scorer's latest step, so it is what undo
+    // takes back.
+    flushSubsLeft()
     const step = store.getState().history?.at(-1)
     if (!step) return
     dispatch({ type: 'undo', at: monotonicNow() })
@@ -294,10 +316,12 @@ export function FootballConsole({
             cardSheet={cardSheetFor('visitor')}
             onSub={openSubSheet}
             subSheet={subSheetFor('visitor')}
+            subsLeft={subsLeft.visitor}
           />
           <CentrePanel
             state={state}
             dispatch={dispatch}
+            beforePeriodChange={flushSubsLeft}
             toast={toast}
             onToast={setToast}
           />
@@ -311,6 +335,7 @@ export function FootballConsole({
             cardSheet={cardSheetFor('home')}
             onSub={openSubSheet}
             subSheet={subSheetFor('home')}
+            subsLeft={subsLeft.home}
           />
         </div>
       )}

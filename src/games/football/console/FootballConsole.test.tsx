@@ -679,6 +679,35 @@ describe('FootballConsole', () => {
       expect(types()).toEqual(['set-subs-remaining'])
     })
 
+    // fireEvent moves no focus, like a Safari click, so no blur flushes these.
+    it('commits before a period change resets it', () => {
+      const reduce = vi.spyOn(engine, 'reduce')
+      const { store } = setup()
+      const types = () => reduce.mock.calls.map(([, action]) => action.type)
+      fireEvent.click(less())
+      fireEvent.click(less())
+      fireEvent.click(screen.getByRole('radio', { name: /2H/ }))
+      expect(types()).toEqual(['set-subs-remaining', 'set-period'])
+      settle()
+      // The new play period starts from the full allowance.
+      expect(store.getState().subsRemaining.home).toBe(5)
+    })
+
+    it('Ctrl+Z takes back the pending change, not the step before it', () => {
+      const { store } = setup()
+      fireEvent.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Skip details' }))
+      fireEvent.click(less())
+      fireEvent.keyDown(document.body, {
+        key: 'z',
+        code: 'KeyZ',
+        ctrlKey: true,
+      })
+      settle()
+      expect(score('Home')).toHaveTextContent('1')
+      expect(store.getState().subsRemaining.home).toBe(5)
+    })
+
     it('is undoable', () => {
       const { store } = setup()
       fireEvent.click(less())
