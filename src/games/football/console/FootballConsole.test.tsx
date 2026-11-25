@@ -713,7 +713,7 @@ describe('FootballConsole', () => {
       fireEvent.click(less())
       settle()
       const undo = screen.getByRole('button', { name: /^Undo/ })
-      expect(undo).toHaveTextContent('Undo · Substitutions left')
+      expect(undo).toHaveAccessibleName('Undo · Substitutions left')
       fireEvent.click(undo)
       expect(store.getState().subsRemaining.home).toBe(5)
     })
@@ -725,15 +725,18 @@ describe('FootballConsole', () => {
 
     it('is disabled with nothing to undo', () => {
       setup()
-      expect(undoButton()).toHaveTextContent('Nothing to undo')
+      expect(undoButton()).toHaveAccessibleName('Nothing to undo')
       expect(undoButton()).toBeDisabled()
+      expect(undoButton()).toHaveTextContent('')
     })
 
     it('names the last step and undoes it', async () => {
       const { store, user } = setup()
       await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
       await user.click(screen.getByRole('button', { name: 'Skip details' }))
-      expect(undoButton()).toHaveTextContent('Undo · Goal')
+      expect(undoButton()).toHaveAccessibleName('Undo · Goal')
+      // The icon stands in for "Undo ·"; the step stays visible.
+      expect(undoButton()).toHaveTextContent(/^Goal$/)
       await user.click(undoButton())
       expect(score('Home')).toHaveTextContent('0')
       expect(store.getState().events).toEqual([])
@@ -834,13 +837,13 @@ describe('FootballConsole', () => {
       await scoreGoal(user)
       const before = store.getState()
       await user.click(undoButton())
-      expect(redoButton()).toHaveTextContent('Redo · Goal')
+      expect(redoButton()).toHaveAccessibleName('Redo · Goal')
       await user.click(redoButton())
       expect(score('Home')).toHaveTextContent('1')
       expect(store.getState()).toEqual(before)
       expect(screen.getByText('Redid goal')).toBeInTheDocument()
       expectNoRedo()
-      expect(undoButton()).toHaveTextContent('Undo · Goal')
+      expect(undoButton()).toHaveAccessibleName('Undo · Goal')
       // The button that was clicked is gone, so focus moves to Undo.
       expect(undoButton()).toHaveFocus()
     })
@@ -915,7 +918,7 @@ describe('FootballConsole', () => {
         // The pending change was committed as the newest step instead.
         expect(store.getState().stoppageMinutes).toBe(1)
         expect(store.getState().teams.home.score).toBe(0)
-        expect(undoButton()).toHaveTextContent('Undo · Stoppage time')
+        expect(undoButton()).toHaveAccessibleName('Undo · Stoppage time')
       } finally {
         vi.useRealTimers()
       }
@@ -925,7 +928,7 @@ describe('FootballConsole', () => {
       const { store, user } = setup()
       await user.click(screen.getByRole('radio', { name: /HT/ }))
       await user.click(undoButton())
-      expect(redoButton()).toHaveTextContent('Redo · Period change')
+      expect(redoButton()).toHaveAccessibleName('Redo · Period change')
       const config = defaultMatchConfig()
       config.periods = config.periods.filter((p) => p.id !== 'ht')
       act(() => store.dispatch({ type: 'update-config', config }))
@@ -944,7 +947,7 @@ describe('FootballConsole', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Goal for Home' }))
         fireEvent.click(screen.getByRole('button', { name: 'Skip details' }))
         fireEvent.click(undoButton())
-        expect(redoButton()).toHaveTextContent('Redo · Goal')
+        expect(redoButton()).toHaveAccessibleName('Redo · Goal')
         const home = within(screen.getByRole('region', { name: 'Home team' }))
         fireEvent.click(
           home.getByRole('button', { name: 'Decrease subs left for Home' }),

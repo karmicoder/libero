@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Link } from 'react-router'
+import { Icon } from '../../../icons/Icon'
+import {
+  link,
+  linkOff,
+  openInNew,
+  redo as redoIcon,
+  settings,
+  undo as undoIcon,
+} from '../../../icons/paths'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
 import { useMatchState } from '../../../match/useMatchState'
@@ -196,6 +205,9 @@ export function FootballConsole({
   // A pending correction is the scorer's latest step: undo takes it back,
   // and it clears redo once it commits.
   const nextStep = adjustmentPending ? undefined : state.future?.at(-1)
+  // Header buttons show only the icon and step; the name says what they do.
+  const undoName = lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'
+  const redoName = nextStep && `Redo · ${nextStep.label}`
   const step = (type: 'undo' | 'redo') => {
     flushAdjustments()
     const [from, to] =
@@ -236,7 +248,7 @@ export function FootballConsole({
           className={boardConnected ? styles.connected : styles.disconnected}
           role="status"
         >
-          <span className={styles.dot} aria-hidden="true" />
+          <Icon path={boardConnected ? link : linkOff} decorative />
           {boardConnected ? 'Board connected' : 'No board connected'}
         </p>
         <div className={styles.topActions}>
@@ -245,8 +257,10 @@ export function FootballConsole({
             target="_blank"
             rel="noopener"
             className={styles.topButton}
+            aria-label="Open scoreboard"
+            title="Open scoreboard"
           >
-            Open scoreboard
+            <Icon path={openInNew} decorative />
           </Link>
           <button
             type="button"
@@ -254,8 +268,10 @@ export function FootballConsole({
             className={styles.topButton}
             disabled={settingsOpen}
             onClick={openSettings}
+            aria-label="Settings"
+            title="Settings"
           >
-            Settings
+            <Icon path={settings} decorative />
           </button>
           <button
             type="button"
@@ -263,21 +279,27 @@ export function FootballConsole({
             ref={undoButton}
             disabled={!lastStep || settingsOpen}
             onClick={undo}
+            aria-label={undoName}
+            title={undoName}
           >
-            {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
+            <Icon path={undoIcon} decorative />
+            {lastStep && <span className={styles.step}>{lastStep.label}</span>}
           </button>
           {nextStep && !settingsOpen && (
             <button
               type="button"
-              className={styles.topButton}
+              className={`${styles.topButton} ${styles.redo}`}
               onClick={() => {
                 // Render now, so Undo is enabled before it takes focus.
                 flushSync(redo)
                 // The last redo removes this button: keep focus nearby.
                 if (!store.getState().future) undoButton.current?.focus()
               }}
+              aria-label={redoName}
+              title={redoName}
             >
-              Redo · {nextStep.label}
+              <Icon path={redoIcon} decorative />
+              <span className={styles.step}>{nextStep.label}</span>
             </button>
           )}
         </div>
