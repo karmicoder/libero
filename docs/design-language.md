@@ -95,3 +95,14 @@ Timers that must outlast an animation (the update banner's exit) read the durati
 - Motion stays inside the 16:9 scaled stage; distances are in `em` of the animated text, so layout remains defined by aspect ratio.
 - Announcements for assistive technology never depend on an animation.
 - Legibility from 10 feet is a human review item: check a tuned change on a real screen at distance, not only in tests.
+
+## Icons
+
+Icons are inline SVG from `src/icons/`, a neutral module that boards, consoles and pages can all import (it imports nothing from `src/games`, `src/engines` or `src/boards`). No icon font, sprite or icon package: a glyph is a path string, so it costs a few hundred bytes, themes through `currentColor`, and renders in jsdom.
+
+- **One style.** Every glyph is Material Symbols (Apache-2.0), Outlined, weight 400, fill 0, grade 0, optical size 24. `src/icons/paths.ts` exports one `d` string per icon, named after its Material Symbols name in camelCase (`open_in_new` → `openInNew`).
+- **Adding one.** Download the SVG at that style from fonts.google.com/icons and paste its single path into `paths.ts`. `Icon` draws on Material Symbols' own `viewBox="0 -960 960 960"`, so the path goes in unchanged.
+- **Named or decorative, never neither.** `<Icon path={…} label="…" />` is a named image (`role="img"`). `<Icon path={…} decorative />` is hidden from assistive tech, for when a control's name or the text beside it already says it. The types reject an icon with neither or both.
+- **Size.** An icon is `1em` square, so inline it scales with the text. In a control, size it with `--size-icon` (e.g. `.topButton svg`). Never pixels.
+- **Icon-only controls** keep an `aria-label` equal to what the visible text would say, plus a matching native `title` as a hover hint, and stay at least `--size-touch` square. A control that names a changing thing (Undo, Redo) keeps that thing visible next to the icon and lets it ellipsize rather than drop.
+- **Colour is never the only signal.** Two states get two glyphs (`link` / `linkOff` for the board connection), not one glyph in two colours.

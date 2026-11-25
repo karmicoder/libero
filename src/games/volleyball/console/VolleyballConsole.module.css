@@ -19,32 +19,42 @@
   color: var(--text-muted);
 }
 
-.connected::before,
-.disconnected::before {
-  content: '';
-  inline-size: var(--size-dot);
-  block-size: var(--size-dot);
-  border-radius: 50%;
-  background: var(--text-muted);
+/* Linked and unlinked glyphs differ, so colour is not the only signal. */
+.connected svg,
+.disconnected svg {
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
 }
 
-.connected::before {
-  background: var(--positive);
+.connected svg {
+  color: var(--positive);
 }
 
 .topActions {
+  /* Takes the rest of the header row and fits the buttons into it, cutting
+     the undo and redo steps short rather than wrapping. Narrower than its
+     four icons (a phone), the group drops to its own row. */
+  --icon-button: max(
+    var(--size-touch),
+    var(--size-icon) + 2 * (var(--space-3) + var(--border-width))
+  );
+
+  flex: 1 1 0;
+  min-inline-size: calc(4 * var(--icon-button) + 3 * var(--space-3));
   display: flex;
-  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-3);
-  margin-inline-start: auto;
 }
 
 .topButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
+  min-inline-size: var(--size-touch);
   min-block-size: var(--size-touch);
-  padding-inline: var(--space-5);
+  padding-inline: var(--space-3);
+  flex: none;
   border: var(--border-width) solid var(--border-tile-hover);
   border-radius: var(--radius-button);
   background: transparent;
@@ -56,6 +66,32 @@
 
 .topButton:hover:not(:disabled) {
   background: var(--surface-tile-hover);
+}
+
+.topButton svg {
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
+}
+
+/* Undo and Redo shrink, cutting their step short (the title shows it all). */
+.topButton:has(.step) {
+  flex: 0 1 auto;
+  /* Shrinks no further than its icon alone, which stays put while the step
+     (and the gap before it) runs out of room. */
+  min-inline-size: var(--icon-button);
+  justify-content: flex-start;
+}
+
+/* Undo is the one that matters: Redo gives up its space first. */
+.topButton.redo {
+  flex-shrink: 8;
+}
+
+.step {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status {
