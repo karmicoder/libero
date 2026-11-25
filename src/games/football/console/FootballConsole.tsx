@@ -56,8 +56,8 @@ export function FootballConsole({
 
   // The scorer's hand corrections to subs left settle before they dispatch.
   // They live here, not in the columns, so the console can settle them
-  // before anything that depends on the count: a period change, an undo,
-  // the settings screen.
+  // before anything that depends on the count: a period change, an undo or
+  // redo, the settings screen.
   const subsLeft = {
     visitor: useDebouncedCommit(state.subsRemaining.visitor, (remaining) =>
       dispatch({ type: 'set-subs-remaining', team: 'visitor', remaining }),
@@ -66,9 +66,17 @@ export function FootballConsole({
       dispatch({ type: 'set-subs-remaining', team: 'home', remaining }),
     ),
   }
-  const flushSubsLeft = () => {
+  // Likewise stoppage time, whose repeated presses settle into one dispatch so
+  // the board shows +4′ rather than +1′, +2′, +3′, +4′.
+  const stoppage = useDebouncedCommit(state.stoppageMinutes ?? 0, (minutes) =>
+    dispatch({ type: 'set-stoppage', minutes }),
+  )
+  const adjustmentPending =
+    subsLeft.visitor.pending || subsLeft.home.pending || stoppage.pending
+  const flushAdjustments = () => {
     subsLeft.visitor.flush()
     subsLeft.home.flush()
+    stoppage.flush()
   }
 
   // Which team's column the card sheet covers, if open.
@@ -171,7 +179,7 @@ export function FootballConsole({
     settingsWasOpen.current = settingsOpen
   }, [settingsOpen])
   const openSettings = () => {
-    flushSubsLeft()
+    flushAdjustments()
     setSheet(null)
     setCardSide(null)
     setSubSide(null)
@@ -183,27 +191,30 @@ export function FootballConsole({
   )
 
   const lastStep = state.history?.at(-1)
-  const undo = () => {
-    // A pending correction is the scorer's latest step, so it is what undo
-    // takes back.
-    flushSubsLeft()
-    const step = store.getState().history?.at(-1)
-    if (!step) return
-    dispatch({ type: 'undo', at: monotonicNow() })
-    setToast(`Undid ${step.label.toLowerCase()}`)
+  // A pending correction is the scorer's latest step: undo takes it back,
+  // and it clears redo once it commits.
+  const nextStep = adjustmentPending ? undefined : state.future?.at(-1)
+  const step = (type: 'undo' | 'redo') => {
+    flushAdjustments()
+    const [from, to] =
+      type === 'undo'
+        ? (['history', 'future'] as const)
+        : (['future', 'history'] as const)
+    const before = store.getState()
+    const entry = before[from]?.at(-1)
+    if (!entry) return
+    dispatch({ type, at: monotonicNow() })
+    // A step that applied leaves its inverse on the other stack; one that no
+    // longer applies (say its period was removed) is only dropped.
+    const label = entry.label.toLowerCase()
+    setToast(
+      store.getState()[to]?.at(-1) === before[to]?.at(-1)
+        ? `Could not ${type} ${label}: it no longer applies`
+        : `${type === 'undo' ? 'Undid' : 'Redid'} ${label}`,
+    )
   }
-  // A pending correction will commit as a new step, which clears redo.
-  const nextStep =
-    subsLeft.visitor.pending || subsLeft.home.pending
-      ? undefined
-      : state.future?.at(-1)
-  const redo = () => {
-    flushSubsLeft()
-    const step = store.getState().future?.at(-1)
-    if (!step) return
-    dispatch({ type: 'redo', at: monotonicNow() })
-    setToast(`Redid ${step.label.toLowerCase()}`)
-  }
+  const undo = () => step('undo')
+  const redo = () => step('redo')
   useUndoHotkeys({ onUndo: undo, onRedo: redo }, !settingsOpen)
 
   useSpaceToggle(() => {
@@ -314,7 +325,8 @@ export function FootballConsole({
           <CentrePanel
             state={state}
             dispatch={dispatch}
-            beforePeriodChange={flushSubsLeft}
+            stoppage={stoppage}
+            beforePeriodChange={flushAdjustments}
             toast={toast}
             onToast={setToast}
           />

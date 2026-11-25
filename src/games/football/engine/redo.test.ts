@@ -233,15 +233,31 @@ describe('redo', () => {
     expect(redone.future).toBeUndefined()
   })
 
+  it('restores a manual raise above the limit, and leaves it alone otherwise', () => {
+    const config = defaultMatchConfig()
+    config.substitutions.perPeriod = 3
+    const raised = run(footballEngine.initialState(config), {
+      type: 'set-subs-remaining',
+      team: 'home',
+      remaining: 5,
+    })
+    expect(raised.subsRemaining.home).toBe(5)
+    expect(run(raised, undo(), redo())).toEqual(raised)
+    const scored = run(raised, goal('visitor'))
+    expect(run(scored, undo(), redo())).toEqual(scored)
+  })
+
   it('does not restore more substitutions than the current limit', () => {
     const s = run(
       fresh(),
-      { type: 'set-subs-remaining', team: 'home', remaining: 4 },
+      { type: 'substitution', team: 'home', pairs: [{}], at: T0 },
       undo(),
     )
     const config = defaultMatchConfig()
     config.substitutions.perPeriod = 3
     const redone = run(s, { type: 'update-config', config }, redo())
+    // The 4 left after the sub, cut back to the new limit.
     expect(redone.subsRemaining.home).toBe(3)
+    expect(redone.events).toHaveLength(1)
   })
 })

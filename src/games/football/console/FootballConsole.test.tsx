@@ -889,6 +889,43 @@ describe('FootballConsole', () => {
       expect(score('Home')).toHaveTextContent('0')
     })
 
+    it('has nothing to redo while a stoppage-time change is pending', () => {
+      vi.useFakeTimers()
+      try {
+        const { store } = setup()
+        fireEvent.click(screen.getByRole('button', { name: 'Goal for Home' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Skip details' }))
+        fireEvent.click(undoButton())
+        fireEvent.click(
+          screen.getByRole('button', { name: 'Increase stoppage time' }),
+        )
+        expect(redoButton()).toHaveTextContent('Nothing to redo')
+        fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
+        // The pending change was committed as the newest step instead.
+        expect(store.getState().stoppageMinutes).toBe(1)
+        expect(store.getState().teams.home.score).toBe(0)
+        expect(undoButton()).toHaveTextContent('Undo · Stoppage time')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('says so when the step no longer applies', async () => {
+      const { store, user } = setup()
+      await user.click(screen.getByRole('radio', { name: /HT/ }))
+      await user.click(undoButton())
+      expect(redoButton()).toHaveTextContent('Redo · Period change')
+      const config = defaultMatchConfig()
+      config.periods = config.periods.filter((p) => p.id !== 'ht')
+      act(() => store.dispatch({ type: 'update-config', config }))
+      await user.click(redoButton())
+      expect(store.getState().periodId).toBe('h1')
+      expect(
+        screen.getByText('Could not redo period change: it no longer applies'),
+      ).toBeInTheDocument()
+      expect(redoButton()).toBeDisabled()
+    })
+
     it('has nothing to redo while a subs-left change is pending', () => {
       vi.useFakeTimers()
       try {

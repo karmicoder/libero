@@ -1,6 +1,6 @@
 import { clockSeconds } from '../clock'
 import { findPeriod } from '../config'
-import { subLimit } from '../subs'
+import { maxSubsRemaining, subLimit } from '../subs'
 import type {
   FootballAction,
   FootballState,
@@ -373,20 +373,31 @@ function inPeriod(
 
 /**
  * Entries hold values from when they were recorded, and a config edit may
- * have changed what is allowed since: keep the restored counts within the
- * current config.
+ * have changed what is allowed since: keep the counts `entry` restored within
+ * the current config. A hand correction may go up to what the scorer can set
+ * by hand; anything else up to the limit. Counts it left alone are kept.
  */
-function withinConfig(state: FootballState): FootballState {
-  const max = subLimit(state.config) ?? 0
-  const fit = (n: number) => Math.min(max, Math.max(0, n))
+function withinConfig(
+  prev: FootballState,
+  next: FootballState,
+  entry: UndoEntry,
+): FootballState {
+  const limit = subLimit(next.config)
+  const max =
+    limit === undefined
+      ? 0
+      : entry.kind === 'subs-remaining'
+        ? maxSubsRemaining(next.config)
+        : limit
+  const fit = (team: 'visitor' | 'home') => {
+    const n = next.subsRemaining[team]
+    return n === prev.subsRemaining[team] ? n : Math.min(max, Math.max(0, n))
+  }
   return {
-    ...state,
-    subsRemaining: {
-      visitor: fit(state.subsRemaining.visitor),
-      home: fit(state.subsRemaining.home),
-    },
-    stoppageMinutes: state.config.stoppageTime.enabled
-      ? state.stoppageMinutes
+    ...next,
+    subsRemaining: { visitor: fit('visitor'), home: fit('home') },
+    stoppageMinutes: next.config.stoppageTime.enabled
+      ? next.stoppageMinutes
       : null,
   }
 }
@@ -419,7 +430,11 @@ function step(
   if (!applied) return withStacks(state, stacks.history, stacks.future)
   const to = from === 'history' ? 'future' : 'history'
   stacks[to] = [...stacks[to], applied.inverse].slice(-MAX_HISTORY)
-  return withinConfig(withStacks(applied.state, stacks.history, stacks.future))
+  return withinConfig(
+    state,
+    withStacks(applied.state, stacks.history, stacks.future),
+    entry,
+  )
 }
 
 /** Reverts the most recent undoable step. */
