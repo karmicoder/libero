@@ -34,8 +34,13 @@
   /* Takes the rest of the header row and fits the buttons into it, cutting
      the undo and redo steps short rather than wrapping. Narrower than its
      four icons (a phone), the group drops to its own row. */
+  --icon-button: max(
+    var(--size-touch),
+    var(--size-icon) + 2 * (var(--space-3) + var(--border-width))
+  );
+
   flex: 1 1 0;
-  min-inline-size: calc(4 * var(--size-touch) + 3 * var(--space-3));
+  min-inline-size: calc(4 * var(--icon-button) + 3 * var(--space-3));
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
@@ -71,6 +76,10 @@
 /* Undo and Redo shrink, cutting their step short (the title shows it all). */
 .topButton:has(.step) {
   flex: 0 1 auto;
+  /* Shrinks no further than its icon alone, which stays put while the step
+     (and the gap before it) runs out of room. */
+  min-inline-size: var(--icon-button);
+  justify-content: flex-start;
 }
 
 /* Undo is the one that matters: Redo gives up its space first. */

@@ -17,6 +17,13 @@ describe('Icon', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
+  it('stays an image when its label is empty', () => {
+    const { container } = render(<Icon path={settings} label="" />)
+    const svg = container.querySelector('svg')!
+    expect(svg).toHaveAttribute('role', 'img')
+    expect(svg).not.toHaveAttribute('aria-hidden')
+  })
+
   it('draws the path in the current colour', () => {
     const { container } = render(<Icon path={settings} decorative />)
     expect(container.querySelector('svg')).toHaveAttribute(

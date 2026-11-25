@@ -727,7 +727,7 @@ describe('FootballConsole', () => {
       setup()
       expect(undoButton()).toHaveAccessibleName('Nothing to undo')
       expect(undoButton()).toBeDisabled()
-      expect(undoButton()).toHaveTextContent('')
+      expect(undoButton().textContent).toBe('')
     })
 
     it('names the last step and undoes it', async () => {
