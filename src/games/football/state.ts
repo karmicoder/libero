@@ -90,17 +90,32 @@ export type MatchEvent = GoalEvent | CardEvent | SubstitutionEvent
  * cards, substitutions, pips, stoppage) without touching the clock; only
  * set-clock and period changes restore time. Starting or stopping the clock
  * and renaming a team are never undoable.
+ *
+ * Redo uses the same entries: applying one yields its own inverse, which moves
+ * to the other stack under the same label. Re-entering a period after an undo
+ * stops its clock, as undoing the period change did.
  */
 export type UndoEntry = { label: string } & (
-  | { kind: 'goal'; team: TeamSide; eventId: string }
-  /** `event` is absent when the removed point had no logged goal. */
+  | { kind: 'goal'; team: TeamSide; eventId?: string }
+  /** `event` (and `eventId` above) are absent when the point had no logged goal. */
   | { kind: 'goal-removed'; team: TeamSide; event?: GoalEvent; index: number }
   | { kind: 'cards'; eventIds: string[] }
+  /** Cards to put back, each at its index in the log, in ascending order. */
+  | { kind: 'cards-removed'; cards: { event: CardEvent; index: number }[] }
   /** `before` is the team's remaining count in `periodId`, before the sub. */
   | {
       kind: 'substitution'
       team: TeamSide
       eventId: string
+      periodId: string
+      before: number
+    }
+  /** `before` is the team's remaining count in `periodId`, after the sub. */
+  | {
+      kind: 'substitution-removed'
+      team: TeamSide
+      event: SubstitutionEvent
+      index: number
       periodId: string
       before: number
     }
@@ -151,6 +166,11 @@ export interface FootballState {
    * undo existed) means none.
    */
   history?: UndoEntry[]
+  /**
+   * Undone steps that can be redone, oldest undo last, capped at 30. Cleared
+   * by any new undoable step; absent when empty.
+   */
+  future?: UndoEntry[]
 }
 
 /**
@@ -216,6 +236,8 @@ export type FootballAction =
   | { type: 'set-subs-remaining'; team: TeamSide; remaining: number }
   /** Reverts the most recent undoable step; `at` keeps clock math pure. */
   | { type: 'undo'; at: number }
+  /** Reapplies the most recently undone step. */
+  | { type: 'redo'; at: number }
   | { type: 'update-config'; config: MatchConfig }
 
 /** A run of players receiving the same kind of card in one notice. */

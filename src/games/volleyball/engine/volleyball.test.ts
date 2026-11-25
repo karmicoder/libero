@@ -24,6 +24,7 @@ const points = (team: TeamSide, n: number): VolleyballAction[] =>
 
 const endSet = (): VolleyballAction => ({ type: 'end-set', at: at() })
 const undo = (): VolleyballAction => ({ type: 'undo', at: at() })
+const redo = (): VolleyballAction => ({ type: 'redo', at: at() })
 
 /** A set the visitor wins 25-0 and the operator closes. */
 const visitorSet = () => [...points('visitor', 25), endSet()]
@@ -324,6 +325,53 @@ describe('undo', () => {
   })
 })
 
+describe('redo', () => {
+  it('is a no-op with nothing undone', () => {
+    const s = run(fresh(), ...points('home', 1))
+    expect(run(s, redo())).toBe(s)
+  })
+
+  it('restores the exact pre-undo state', () => {
+    const before = run(fresh(), ...points('visitor', 3), ...points('home', 1))
+    const undone = run(before, undo())
+    expect(undone.future?.at(-1)?.label).toBe('Point for Home')
+    expect(run(undone, redo())).toEqual(before)
+  })
+
+  it('walks forward across a set boundary, and to the end of the match', () => {
+    const before = run(fresh({ setsToWin: 1 }), ...points('home', 25), endSet())
+    expect(before.status).toBe('finished')
+    const undone = run(before, undo(), undo(), undo())
+    expect(undone.current).toEqual({ visitor: 0, home: 23 })
+    expect(run(undone, redo(), redo(), redo())).toEqual(before)
+    expect(run(undone, redo(), redo(), redo(), redo())).toEqual(before)
+  })
+
+  it('is cleared by a new step but not by renaming', () => {
+    const undone = run(fresh(), ...points('home', 2), undo())
+    const renamed = run(undone, {
+      type: 'set-team-name',
+      team: 'home',
+      name: 'Hawks',
+    })
+    expect(run(renamed, redo()).current.home).toBe(2)
+    const scored = run(undone, ...points('visitor', 1))
+    expect(scored.future).toBeUndefined()
+    expect(run(scored, redo())).toBe(scored)
+  })
+
+  it('caps the steps to redo at 30', () => {
+    const s = run(fresh(), ...points('home', 40))
+    const undone = run(s, ...Array.from({ length: 40 }, undo))
+    expect(undone.future).toHaveLength(MAX_HISTORY)
+  })
+
+  it('emits no notice', () => {
+    const s = run(fresh(), ...points('home', 1), undo())
+    expect(volleyballEngine.reduce(s, redo()).messages).toEqual([])
+  })
+})
+
 describe('finished state', () => {
   const finished = () =>
     run(fresh({ setsToWin: 1 }), ...points('home', 25), endSet())
@@ -387,7 +435,13 @@ describe('update-config', () => {
 
 describe('isState', () => {
   it('accepts engine state, including after JSON and with history', () => {
-    const s = run(fresh({ cap: 30 }), ...visitorSet(), ...points('home', 2))
+    const s = run(
+      fresh({ cap: 30 }),
+      ...visitorSet(),
+      ...points('home', 2),
+      undo(),
+    )
+    expect(s.future).toHaveLength(1)
     expect(volleyballEngine.isState?.(JSON.parse(JSON.stringify(s)))).toBe(true)
     expect(volleyballEngine.isState?.(fresh())).toBe(true)
   })
@@ -410,6 +464,7 @@ describe('isState', () => {
       volleyballEngine.isState?.({ ...good, teams: { home: { name: 'A' } } }),
     ).toBe(false)
     expect(volleyballEngine.isState?.({ ...good, history: [{}] })).toBe(false)
+    expect(volleyballEngine.isState?.({ ...good, future: [{}] })).toBe(false)
     expect(
       volleyballEngine.isState?.({
         ...good,

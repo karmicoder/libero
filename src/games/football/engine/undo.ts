@@ -1,6 +1,6 @@
 import { clockSeconds } from '../clock'
 import { findPeriod } from '../config'
-import { subLimit } from '../subs'
+import { maxSubsRemaining, subLimit } from '../subs'
 import type {
   FootballAction,
   FootballState,
@@ -115,15 +115,25 @@ export function undoEntryFor(
   }
 }
 
-/** The state with `entry` pushed onto its history, oldest dropped past the cap. */
+/**
+ * The state with `entry` pushed onto its history, oldest dropped past the
+ * cap. A new step starts a new line of history, so nothing is left to redo.
+ */
 export function withEntry(
   state: FootballState,
   entry: UndoEntry,
 ): FootballState {
   return {
-    ...state,
+    ...withoutFuture(state),
     history: [...(state.history ?? []), entry].slice(-MAX_HISTORY),
   }
+}
+
+function withoutFuture(state: FootballState): FootballState {
+  if (state.future === undefined) return state
+  const rest = { ...state }
+  delete rest.future
+  return rest
 }
 
 function withScore(
@@ -140,106 +150,297 @@ function withScore(
   }
 }
 
-/**
- * Reverts the most recent step. The clock is left alone except by set-clock
- * (shifted back by what it moved, keeping its running state as it is now) and
- * period changes (the old period, stopped at the time it had). Counts tied to
- * a period are restored only while still in that period.
- */
-function applyUndo(state: FootballState, at: number): FootballState {
-  const history = state.history ?? []
-  const entry = history.at(-1)
-  if (!entry) return state
-  const base: FootballState = { ...state, history: history.slice(0, -1) }
+function insertAt<T>(list: T[], index: number, item: T): T[] {
+  const next = [...list]
+  next.splice(Math.min(index, next.length), 0, item)
+  return next
+}
 
+interface Applied {
+  state: FootballState
+  inverse: UndoEntry
+}
+
+/**
+ * Applies `entry` and returns the result with the entry that reverses it, or
+ * undefined when the entry no longer applies and is dropped. The clock is
+ * left alone except by set-clock (shifted by what it moved, keeping its
+ * running state as it is now) and period changes (the other period, stopped
+ * at the time it had). Counts tied to a period are restored only while still
+ * in that period.
+ */
+function applyEntry(
+  state: FootballState,
+  entry: UndoEntry,
+  at: number,
+): Applied | undefined {
+  const { label } = entry
   switch (entry.kind) {
     case 'goal': {
-      if (!state.events.some((e) => e.id === entry.eventId)) return base
+      if (entry.eventId === undefined) {
+        return {
+          state: { ...state, teams: withScore(state, entry.team, -1) },
+          inverse: {
+            label,
+            kind: 'goal-removed',
+            team: entry.team,
+            index: state.events.length,
+          },
+        }
+      }
+      const index = state.events.findIndex((e) => e.id === entry.eventId)
+      const event = state.events[index]
+      if (event?.type !== 'goal') return undefined
       return {
-        ...base,
-        events: state.events.filter((e) => e.id !== entry.eventId),
-        teams: withScore(state, entry.team, -1),
+        state: {
+          ...state,
+          events: state.events.filter((e) => e !== event),
+          teams: withScore(state, entry.team, -1),
+        },
+        inverse: {
+          label,
+          kind: 'goal-removed',
+          team: entry.team,
+          event,
+          index,
+        },
       }
     }
-    case 'goal-removed': {
-      const events = [...state.events]
-      if (entry.event) {
-        events.splice(Math.min(entry.index, events.length), 0, entry.event)
+    case 'goal-removed':
+      return {
+        state: {
+          ...state,
+          events: entry.event
+            ? insertAt(state.events, entry.index, entry.event)
+            : state.events,
+          teams: withScore(state, entry.team, 1),
+        },
+        inverse: {
+          label,
+          kind: 'goal',
+          team: entry.team,
+          ...(entry.event && { eventId: entry.event.id }),
+        },
       }
-      return { ...base, events, teams: withScore(state, entry.team, 1) }
+    case 'cards': {
+      const cards = state.events.flatMap((event, index) =>
+        event.type === 'card' && entry.eventIds.includes(event.id)
+          ? [{ event, index }]
+          : [],
+      )
+      if (cards.length === 0) return undefined
+      return {
+        state: {
+          ...state,
+          events: state.events.filter((e) => !entry.eventIds.includes(e.id)),
+        },
+        inverse: { label, kind: 'cards-removed', cards },
+      }
     }
-    case 'cards':
+    case 'cards-removed':
       return {
-        ...base,
-        events: state.events.filter((e) => !entry.eventIds.includes(e.id)),
+        state: {
+          ...state,
+          events: entry.cards.reduce<FootballState['events']>(
+            (events, { event, index }) => insertAt(events, index, event),
+            state.events,
+          ),
+        },
+        inverse: {
+          label,
+          kind: 'cards',
+          eventIds: entry.cards.map((c) => c.event.id),
+        },
       }
-    case 'substitution':
+    case 'substitution': {
+      const index = state.events.findIndex((e) => e.id === entry.eventId)
+      const event = state.events[index]
+      if (event?.type !== 'substitution') return undefined
       return {
-        ...base,
-        events: state.events.filter((e) => e.id !== entry.eventId),
-        subsRemaining:
-          state.periodId === entry.periodId
-            ? { ...state.subsRemaining, [entry.team]: entry.before }
-            : state.subsRemaining,
+        state: {
+          ...state,
+          events: state.events.filter((e) => e !== event),
+          subsRemaining: inPeriod(
+            state,
+            entry.periodId,
+            entry.team,
+            entry.before,
+          ),
+        },
+        inverse: {
+          label,
+          kind: 'substitution-removed',
+          team: entry.team,
+          event,
+          index,
+          periodId: entry.periodId,
+          before: state.subsRemaining[entry.team],
+        },
+      }
+    }
+    case 'substitution-removed':
+      return {
+        state: {
+          ...state,
+          events: insertAt(state.events, entry.index, entry.event),
+          subsRemaining: inPeriod(
+            state,
+            entry.periodId,
+            entry.team,
+            entry.before,
+          ),
+        },
+        inverse: {
+          label,
+          kind: 'substitution',
+          team: entry.team,
+          eventId: entry.event.id,
+          periodId: entry.periodId,
+          before: state.subsRemaining[entry.team],
+        },
       }
     case 'subs-remaining':
-      return state.periodId === entry.periodId
-        ? {
-            ...base,
-            subsRemaining: {
-              ...state.subsRemaining,
-              [entry.team]: entry.before,
-            },
-          }
-        : base
-    case 'stoppage':
-      return state.periodId === entry.periodId
-        ? { ...base, stoppageMinutes: entry.before }
-        : base
-    case 'clock': {
-      const running = state.clock.runningSince !== null
+      if (state.periodId !== entry.periodId) return undefined
       return {
-        ...base,
-        clock: {
-          baseSeconds: Math.max(0, clockSeconds(state.clock, at) - entry.delta),
-          runningSince: running ? at : null,
+        state: {
+          ...state,
+          subsRemaining: inPeriod(
+            state,
+            entry.periodId,
+            entry.team,
+            entry.before,
+          ),
         },
+        inverse: { ...entry, before: state.subsRemaining[entry.team] },
+      }
+    case 'stoppage':
+      if (state.periodId !== entry.periodId) return undefined
+      return {
+        state: { ...state, stoppageMinutes: entry.before },
+        inverse: { ...entry, before: state.stoppageMinutes },
+      }
+    case 'clock': {
+      const now = clockSeconds(state.clock, at)
+      const seconds = Math.max(0, now - entry.delta)
+      return {
+        state: {
+          ...state,
+          clock: {
+            baseSeconds: seconds,
+            runningSince: state.clock.runningSince !== null ? at : null,
+          },
+        },
+        inverse: { label, kind: 'clock', delta: seconds - now },
       }
     }
     case 'period':
       // A config edit may have removed the period it would go back to.
-      if (!findPeriod(state.config, entry.periodId)) return base
+      if (!findPeriod(state.config, entry.periodId)) return undefined
       return {
-        ...base,
-        periodId: entry.periodId,
-        clock: { baseSeconds: entry.seconds, runningSince: null },
-        stoppageMinutes: entry.stoppageMinutes,
-        subsRemaining: entry.subsRemaining,
+        state: {
+          ...state,
+          periodId: entry.periodId,
+          clock: { baseSeconds: entry.seconds, runningSince: null },
+          stoppageMinutes: entry.stoppageMinutes,
+          subsRemaining: entry.subsRemaining,
+        },
+        inverse: {
+          label,
+          kind: 'period',
+          periodId: state.periodId,
+          seconds: clockSeconds(state.clock, at),
+          stoppageMinutes: state.stoppageMinutes,
+          subsRemaining: state.subsRemaining,
+        },
       }
     // Saved state is only loosely validated: drop an entry of an unknown kind.
     default:
-      return base
+      return undefined
   }
+}
+
+/** The remaining counts with `team`'s set to `count`, if still in `periodId`. */
+function inPeriod(
+  state: FootballState,
+  periodId: string,
+  team: GoalEvent['team'],
+  count: number,
+): FootballState['subsRemaining'] {
+  return state.periodId === periodId
+    ? { ...state.subsRemaining, [team]: count }
+    : state.subsRemaining
 }
 
 /**
  * Entries hold values from when they were recorded, and a config edit may
- * have changed what is allowed since: keep the restored counts within the
- * current config.
+ * have changed what is allowed since: keep the counts `entry` restored within
+ * the current config. A hand correction may go up to what the scorer can set
+ * by hand; anything else up to the limit. Counts it left alone are kept.
  */
-export function undoLast(state: FootballState, at: number): FootballState {
-  const undone = applyUndo(state, at)
-  if (undone === state) return state
-  const max = subLimit(undone.config) ?? 0
-  const fit = (n: number) => Math.min(max, Math.max(0, n))
+function withinConfig(
+  prev: FootballState,
+  next: FootballState,
+  entry: UndoEntry,
+): FootballState {
+  const limit = subLimit(next.config)
+  const max =
+    limit === undefined
+      ? 0
+      : entry.kind === 'subs-remaining'
+        ? maxSubsRemaining(next.config)
+        : limit
+  const fit = (team: 'visitor' | 'home') => {
+    const n = next.subsRemaining[team]
+    return n === prev.subsRemaining[team] ? n : Math.min(max, Math.max(0, n))
+  }
   return {
-    ...undone,
-    subsRemaining: {
-      visitor: fit(undone.subsRemaining.visitor),
-      home: fit(undone.subsRemaining.home),
-    },
-    stoppageMinutes: undone.config.stoppageTime.enabled
-      ? undone.stoppageMinutes
+    ...next,
+    subsRemaining: { visitor: fit('visitor'), home: fit('home') },
+    stoppageMinutes: next.config.stoppageTime.enabled
+      ? next.stoppageMinutes
       : null,
   }
 }
+
+/** `state` with both stacks replaced; an empty `future` is left out. */
+function withStacks(
+  state: FootballState,
+  history: UndoEntry[],
+  future: UndoEntry[],
+): FootballState {
+  const next = withoutFuture({ ...state, history })
+  return future.length > 0 ? { ...next, future } : next
+}
+
+/**
+ * Applies the newest entry of one stack and moves its inverse onto the other:
+ * undo takes from `history` and gives to `future`, redo the reverse. A
+ * dropped entry is only removed.
+ */
+function step(
+  state: FootballState,
+  from: 'history' | 'future',
+  at: number,
+): FootballState {
+  const stacks = { history: state.history ?? [], future: state.future ?? [] }
+  const entry = stacks[from].at(-1)
+  if (!entry) return state
+  stacks[from] = stacks[from].slice(0, -1)
+  const applied = applyEntry(state, entry, at)
+  if (!applied) return withStacks(state, stacks.history, stacks.future)
+  const to = from === 'history' ? 'future' : 'history'
+  stacks[to] = [...stacks[to], applied.inverse].slice(-MAX_HISTORY)
+  return withinConfig(
+    state,
+    withStacks(applied.state, stacks.history, stacks.future),
+    entry,
+  )
+}
+
+/** Reverts the most recent undoable step. */
+export const undoLast = (state: FootballState, at: number) =>
+  step(state, 'history', at)
+
+/** Reapplies the most recently undone step. */
+export const redoLast = (state: FootballState, at: number) =>
+  step(state, 'future', at)

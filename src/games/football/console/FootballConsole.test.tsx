@@ -803,6 +803,163 @@ describe('FootballConsole', () => {
     })
   })
 
+  describe('redo', () => {
+    const redoButton = () => screen.getByRole('button', { name: /^Redo/ })
+    const expectNoRedo = () =>
+      expect(screen.queryByRole('button', { name: /redo/i })).toBeNull()
+    const undoButton = () => screen.getByRole('button', { name: /^Undo/ })
+    const scoreGoal = async (user: ReturnType<typeof setup>['user']) => {
+      await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+    }
+
+    it('is hidden with nothing to redo', async () => {
+      const { user } = setup()
+      expectNoRedo()
+      await scoreGoal(user)
+      expectNoRedo()
+    })
+
+    it('is hidden while the settings screen is open', async () => {
+      const { user } = setup()
+      await scoreGoal(user)
+      await user.click(undoButton())
+      expect(redoButton()).toBeEnabled()
+      await user.click(screen.getByRole('button', { name: 'Settings' }))
+      expectNoRedo()
+    })
+
+    it('names the undone step and redoes it', async () => {
+      const { store, user } = setup()
+      await scoreGoal(user)
+      const before = store.getState()
+      await user.click(undoButton())
+      expect(redoButton()).toHaveTextContent('Redo · Goal')
+      await user.click(redoButton())
+      expect(score('Home')).toHaveTextContent('1')
+      expect(store.getState()).toEqual(before)
+      expect(screen.getByText('Redid goal')).toBeInTheDocument()
+      expectNoRedo()
+      expect(undoButton()).toHaveTextContent('Undo · Goal')
+      // The button that was clicked is gone, so focus moves to Undo.
+      expect(undoButton()).toHaveFocus()
+    })
+
+    it('redoes with Ctrl+Shift+Z, Cmd+Shift+Z and Ctrl+Y', async () => {
+      const { user } = setup()
+      await scoreGoal(user)
+      for (const keys of [
+        '{Control>}{Shift>}z{/Shift}{/Control}',
+        '{Meta>}{Shift>}z{/Shift}{/Meta}',
+        '{Control>}y{/Control}',
+      ]) {
+        await user.keyboard('{Control>}z{/Control}')
+        expect(score('Home')).toHaveTextContent('0')
+        await user.keyboard(keys)
+        expect(score('Home')).toHaveTextContent('1')
+      }
+    })
+
+    it('is cleared by a new step', async () => {
+      const { user } = setup()
+      await scoreGoal(user)
+      await user.click(undoButton())
+      await user.click(screen.getByRole('button', { name: 'Goal for Visitor' }))
+      await user.click(screen.getByRole('button', { name: 'Skip details' }))
+      expectNoRedo()
+      await user.keyboard('{Control>}y{/Control}')
+      expect(score('Home')).toHaveTextContent('0')
+    })
+
+    it('ignores a held key', async () => {
+      const { user } = setup()
+      await scoreGoal(user)
+      await scoreGoal(user)
+      await user.click(undoButton())
+      await user.click(undoButton())
+      fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
+      fireEvent.keyDown(document.body, {
+        key: 'y',
+        ctrlKey: true,
+        repeat: true,
+      })
+      await screen.findByText('Redid goal')
+      expect(score('Home')).toHaveTextContent('1')
+    })
+
+    it('is left to the browser in a text field and ignored under a sheet', async () => {
+      const { user } = setup()
+      await scoreGoal(user)
+      await user.click(undoButton())
+      await user.click(screen.getByRole('textbox', { name: 'Home team name' }))
+      await user.keyboard('{Control>}y{/Control}')
+      expect(score('Home')).toHaveTextContent('0')
+      await user.click(screen.getAllByRole('button', { name: 'Card' })[0])
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+      expect(score('Home')).toHaveTextContent('0')
+    })
+
+    it('has nothing to redo while a stoppage-time change is pending', () => {
+      vi.useFakeTimers()
+      try {
+        const { store } = setup()
+        fireEvent.click(screen.getByRole('button', { name: 'Goal for Home' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Skip details' }))
+        fireEvent.click(undoButton())
+        fireEvent.click(
+          screen.getByRole('button', { name: 'Increase stoppage time' }),
+        )
+        expectNoRedo()
+        fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
+        // The pending change was committed as the newest step instead.
+        expect(store.getState().stoppageMinutes).toBe(1)
+        expect(store.getState().teams.home.score).toBe(0)
+        expect(undoButton()).toHaveTextContent('Undo · Stoppage time')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('says so when the step no longer applies', async () => {
+      const { store, user } = setup()
+      await user.click(screen.getByRole('radio', { name: /HT/ }))
+      await user.click(undoButton())
+      expect(redoButton()).toHaveTextContent('Redo · Period change')
+      const config = defaultMatchConfig()
+      config.periods = config.periods.filter((p) => p.id !== 'ht')
+      act(() => store.dispatch({ type: 'update-config', config }))
+      await user.click(redoButton())
+      expect(store.getState().periodId).toBe('h1')
+      expect(
+        screen.getByText('Could not redo period change: it no longer applies'),
+      ).toBeInTheDocument()
+      expectNoRedo()
+    })
+
+    it('has nothing to redo while a subs-left change is pending', () => {
+      vi.useFakeTimers()
+      try {
+        const { store } = setup()
+        fireEvent.click(screen.getByRole('button', { name: 'Goal for Home' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Skip details' }))
+        fireEvent.click(undoButton())
+        expect(redoButton()).toHaveTextContent('Redo · Goal')
+        const home = within(screen.getByRole('region', { name: 'Home team' }))
+        fireEvent.click(
+          home.getByRole('button', { name: 'Decrease subs left for Home' }),
+        )
+        expectNoRedo()
+        fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
+        // The pending change was committed as the newest step instead.
+        expect(store.getState().teams.home.score).toBe(0)
+        expect(store.getState().subsRemaining.home).toBe(4)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   describe('hotkeys', () => {
     it('Space toggles the clock', async () => {
       const { user } = setup()

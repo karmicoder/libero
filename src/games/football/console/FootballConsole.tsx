@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from 'react-router'
 import type { ConsoleProps } from '../../../consoles/registry'
 import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
 import { useMatchState } from '../../../match/useMatchState'
+import { useUndoHotkeys } from '../../../match/useUndoHotkeys'
 import { monotonicNow } from '../../../match/useNow'
 import { useWallClockJump } from '../../../match/useWallClockJump'
 import type {
@@ -45,34 +47,6 @@ function useSpaceToggle(onToggle: () => void, enabled: boolean) {
   }, [onToggle, enabled])
 }
 
-/**
- * Ctrl/Cmd+Z undoes, unless it already means something: in a text field (the
- * browser's own undo) or while a sheet or the settings screen is open (nothing under it should
- * change).
- */
-function useUndoHotkey(onUndo: () => void, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey) return
-      if (!(e.ctrlKey || e.metaKey)) return
-      // Holding the keys must not walk back through the whole history.
-      if (e.repeat) return
-      const target = e.target as HTMLElement | null
-      if (
-        target?.closest('input, textarea, select, [contenteditable="true"]') ||
-        document.querySelector('[role="dialog"]')
-      ) {
-        return
-      }
-      e.preventDefault()
-      onUndo()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onUndo, enabled])
-}
-
 export function FootballConsole({
   store,
   boardConnected,
@@ -83,8 +57,8 @@ export function FootballConsole({
 
   // The scorer's hand corrections to subs left settle before they dispatch.
   // They live here, not in the columns, so the console can settle them
-  // before anything that depends on the count: a period change, an undo,
-  // the settings screen.
+  // before anything that depends on the count: a period change, an undo or
+  // redo, the settings screen.
   const subsLeft = {
     visitor: useDebouncedCommit(state.subsRemaining.visitor, (remaining) =>
       dispatch({ type: 'set-subs-remaining', team: 'visitor', remaining }),
@@ -93,9 +67,17 @@ export function FootballConsole({
       dispatch({ type: 'set-subs-remaining', team: 'home', remaining }),
     ),
   }
-  const flushSubsLeft = () => {
+  // Likewise stoppage time, whose repeated presses settle into one dispatch so
+  // the board shows +4′ rather than +1′, +2′, +3′, +4′.
+  const stoppage = useDebouncedCommit(state.stoppageMinutes ?? 0, (minutes) =>
+    dispatch({ type: 'set-stoppage', minutes }),
+  )
+  const adjustmentPending =
+    subsLeft.visitor.pending || subsLeft.home.pending || stoppage.pending
+  const flushAdjustments = () => {
     subsLeft.visitor.flush()
     subsLeft.home.flush()
+    stoppage.flush()
   }
 
   // Which team's column the card sheet covers, if open.
@@ -190,6 +172,7 @@ export function FootballConsole({
   // The settings screen replaces the columns; closing it refocuses its button.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settingsButton = useRef<HTMLButtonElement>(null)
+  const undoButton = useRef<HTMLButtonElement>(null)
   const settingsWasOpen = useRef(false)
   useEffect(() => {
     if (settingsWasOpen.current && !settingsOpen) {
@@ -198,7 +181,7 @@ export function FootballConsole({
     settingsWasOpen.current = settingsOpen
   }, [settingsOpen])
   const openSettings = () => {
-    flushSubsLeft()
+    flushAdjustments()
     setSheet(null)
     setCardSide(null)
     setSubSide(null)
@@ -210,16 +193,31 @@ export function FootballConsole({
   )
 
   const lastStep = state.history?.at(-1)
-  const undo = () => {
-    // A pending correction is the scorer's latest step, so it is what undo
-    // takes back.
-    flushSubsLeft()
-    const step = store.getState().history?.at(-1)
-    if (!step) return
-    dispatch({ type: 'undo', at: monotonicNow() })
-    setToast(`Undid ${step.label.toLowerCase()}`)
+  // A pending correction is the scorer's latest step: undo takes it back,
+  // and it clears redo once it commits.
+  const nextStep = adjustmentPending ? undefined : state.future?.at(-1)
+  const step = (type: 'undo' | 'redo') => {
+    flushAdjustments()
+    const [from, to] =
+      type === 'undo'
+        ? (['history', 'future'] as const)
+        : (['future', 'history'] as const)
+    const before = store.getState()
+    const entry = before[from]?.at(-1)
+    if (!entry) return
+    dispatch({ type, at: monotonicNow() })
+    // A step that applied leaves its inverse on the other stack; one that no
+    // longer applies (say its period was removed) is only dropped.
+    const label = entry.label.toLowerCase()
+    setToast(
+      store.getState()[to]?.at(-1) === before[to]?.at(-1)
+        ? `Could not ${type} ${label}: it no longer applies`
+        : `${type === 'undo' ? 'Undid' : 'Redid'} ${label}`,
+    )
   }
-  useUndoHotkey(undo, !settingsOpen)
+  const undo = () => step('undo')
+  const redo = () => step('redo')
+  useUndoHotkeys({ onUndo: undo, onRedo: redo }, !settingsOpen)
 
   useSpaceToggle(() => {
     const current = store.getState()
@@ -262,11 +260,26 @@ export function FootballConsole({
           <button
             type="button"
             className={styles.topButton}
+            ref={undoButton}
             disabled={!lastStep || settingsOpen}
             onClick={undo}
           >
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
           </button>
+          {nextStep && !settingsOpen && (
+            <button
+              type="button"
+              className={styles.topButton}
+              onClick={() => {
+                // Render now, so Undo is enabled before it takes focus.
+                flushSync(redo)
+                // The last redo removes this button: keep focus nearby.
+                if (!store.getState().future) undoButton.current?.focus()
+              }}
+            >
+              Redo · {nextStep.label}
+            </button>
+          )}
         </div>
       </InHeader>
 
@@ -321,7 +334,8 @@ export function FootballConsole({
           <CentrePanel
             state={state}
             dispatch={dispatch}
-            beforePeriodChange={flushSubsLeft}
+            stoppage={stoppage}
+            beforePeriodChange={flushAdjustments}
             toast={toast}
             onToast={setToast}
           />

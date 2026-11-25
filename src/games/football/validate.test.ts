@@ -32,6 +32,14 @@ describe('isFootballState', () => {
     expect(isFootballState({ ...valid(), history: 'x' })).toBe(false)
   })
 
+  it('accepts steps to redo, and rejects a malformed list', () => {
+    const future = [
+      { label: 'Goal', kind: 'goal-removed', team: 'home', index: 0 },
+    ]
+    expect(isFootballState({ ...valid(), future })).toBe(true)
+    expect(isFootballState({ ...valid(), future: 'x' })).toBe(false)
+  })
+
   it('rejects non-objects and incomplete state', () => {
     expect(isFootballState(null)).toBe(false)
     expect(isFootballState('x')).toBe(false)

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useDebouncedCommit } from '../../../match/useDebouncedCommit'
+import type { DebouncedCommit } from '../../../match/useDebouncedCommit'
 import { monotonicNow, useNow } from '../../../match/useNow'
 import { clockControl, displayedSeconds, formatClock } from '../clock'
 import { findPeriod, MAX_STOPPAGE_MINUTES } from '../config'
@@ -11,7 +11,12 @@ import { clockPresets } from './clockEntry'
 interface Props {
   state: FootballState
   dispatch: (action: FootballAction) => void
-  /** Settles other pending adjustments (subs left) a period change resets. */
+  /**
+   * Stoppage minutes as the scorer nudges them. The console owns the commit
+   * so it can settle it before an undo or redo.
+   */
+  stoppage: DebouncedCommit<number>
+  /** Settles pending adjustments (stoppage, subs left) a period change resets. */
   beforePeriodChange: () => void
   /** Transient confirmation text, owned by the console. */
   toast: string | null
@@ -21,6 +26,7 @@ interface Props {
 export function CentrePanel({
   state,
   dispatch,
+  stoppage,
   beforePeriodChange,
   toast,
   onToast,
@@ -64,12 +70,6 @@ export function CentrePanel({
     dispatch({ type: 'set-clock', ...time, at: monotonicNow() })
     onToast(`Clock set to ${formatClock(time.minutes * 60 + time.seconds)}`)
   }
-
-  // Repeated presses settle into one dispatch, so the board shows +4′ rather
-  // than +1′, +2′, +3′, +4′.
-  const stoppage = useDebouncedCommit(state.stoppageMinutes ?? 0, (minutes) =>
-    dispatch({ type: 'set-stoppage', minutes }),
-  )
 
   return (
     <section className={styles.centre} aria-label="Match clock">
@@ -116,7 +116,6 @@ export function CentrePanel({
                   checked={p.id === state.periodId}
                   onChange={() => {
                     // A period change resets stoppage time, so settle it first.
-                    stoppage.flush()
                     beforePeriodChange()
                     dispatch({
                       type: 'set-period',
