@@ -5,7 +5,7 @@
  *
  * Motion durations (the entrance delay, enter, exit and flip) are tokens in
  * `tokens.css`, which the CSS uses directly; the hook reads the same tokens so
- * its timers wait exactly as long as the animation runs. Only the dwell times below are content timing, not
+ * its timers wait exactly as long as the animation runs. Only the hold time below is content timing, not
  * motion.
  */
 import { motionMs } from '../motion/motionMs'
@@ -25,7 +25,7 @@ export const bannerFlipMs = () => motionMs('--motion-board-flip')
  */
 export const BANNER_HOLD_MS = 9_000
 
-/** Dwell times a sport may override; football's are the defaults above. */
+/** The hold time a sport may override; football's is the default above. */
 export interface BannerTiming {
   holdMs: number
 }

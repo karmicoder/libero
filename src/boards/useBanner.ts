@@ -30,7 +30,7 @@ export interface BannerState<Notice> {
  * the next page instead of leaving; that page holds just as long and may have
  * a next page of its own. It must be a stable function.
  *
- * `timing` overrides the dwell times for a sport; it defaults to football's.
+ * `timing` overrides the hold time for a sport; it defaults to football's.
  * Only its numbers matter, so an inline object is fine.
  */
 export function useBanner<Notice>(

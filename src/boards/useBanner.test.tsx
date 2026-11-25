@@ -160,44 +160,44 @@ describe('useBanner', () => {
       const f = feed()
       const { result } = renderHook(() => useBanner(f.subscribe, chain))
 
-      /** Ms until the current page starts to leave (flip or exit). */
-      const untilLeaving = () => {
-        let ms = 0
-        const page = result.current?.notice.id
-        while (
-          result.current?.notice.id === page &&
-          result.current?.flip !== 'out' &&
-          result.current?.phase !== 'out'
-        ) {
-          act(() => void vi.advanceTimersByTime(1))
-          ms += 1
-        }
-        return ms
+      /** Advances to just before `ms`, checks `before`, then to `ms`. */
+      const boundary = (ms: number, before: object, at: object) => {
+        act(() => void vi.advanceTimersByTime(ms - 1))
+        expect(result.current).toMatchObject(before)
+        act(() => void vi.advanceTimersByTime(1))
+        expect(result.current).toMatchObject(at)
       }
-      /** Ms until the next page has replaced the current one. */
-      const untilNextPage = () => {
-        let ms = 0
-        const page = result.current?.notice.id
-        while (result.current?.notice.id === page) {
-          act(() => void vi.advanceTimersByTime(1))
-          ms += 1
-        }
-        return ms
-      }
+      const leadInAndHold = BANNER_ENTER_DELAY_MS + BANNER_ENTER_MS
+      const flipInAndHold = BANNER_FLIP_HALF_MS + BANNER_HOLD_MS
 
       f.push({ id: 10 })
       // The first page slides in, then holds.
-      expect(untilLeaving()).toBe(
-        BANNER_ENTER_DELAY_MS + BANNER_ENTER_MS + BANNER_HOLD_MS,
+      boundary(
+        leadInAndHold + BANNER_HOLD_MS,
+        { notice: { id: 10 }, phase: 'in' },
+        { notice: { id: 10 }, flip: 'out' },
       )
-      expect(untilNextPage()).toBe(BANNER_FLIP_HALF_MS)
+      boundary(
+        BANNER_FLIP_HALF_MS,
+        { notice: { id: 10 } },
+        { notice: { id: 11 } },
+      )
       // Each later page flips in, then holds just as long.
-      expect(result.current?.notice).toEqual({ id: 11 })
-      expect(untilLeaving()).toBe(BANNER_FLIP_HALF_MS + BANNER_HOLD_MS)
-      expect(untilNextPage()).toBe(BANNER_FLIP_HALF_MS)
-      expect(result.current?.notice).toEqual({ id: 12 })
-      expect(untilLeaving()).toBe(BANNER_FLIP_HALF_MS + BANNER_HOLD_MS)
-      expect(result.current?.phase).toBe('out')
+      boundary(
+        flipInAndHold,
+        { notice: { id: 11 }, flip: 'in' },
+        { notice: { id: 11 }, flip: 'out' },
+      )
+      boundary(
+        BANNER_FLIP_HALF_MS,
+        { notice: { id: 11 } },
+        { notice: { id: 12 } },
+      )
+      boundary(
+        flipInAndHold,
+        { notice: { id: 12 }, phase: 'in' },
+        { notice: { id: 12 }, phase: 'out' },
+      )
     })
 
     it('starts the flip a half-turn before the swap', () => {
