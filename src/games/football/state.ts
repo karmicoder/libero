@@ -95,50 +95,48 @@ export type MatchEvent = GoalEvent | CardEvent | SubstitutionEvent
  * to the other stack under the same label. Re-entering a period after an undo
  * stops its clock, as undoing the period change did.
  */
-export type UndoEntry = { label: string } &
-  /** `eventId` is absent when the point had no logged goal. */
-  (
-    | { kind: 'goal'; team: TeamSide; eventId?: string }
-    /** `event` is absent when the removed point had no logged goal. */
-    | { kind: 'goal-removed'; team: TeamSide; event?: GoalEvent; index: number }
-    | { kind: 'cards'; eventIds: string[] }
-    /** Cards to put back, each at its index in the log, in ascending order. */
-    | { kind: 'cards-removed'; cards: { event: CardEvent; index: number }[] }
-    /** `before` is the team's remaining count in `periodId`, before the sub. */
-    | {
-        kind: 'substitution'
-        team: TeamSide
-        eventId: string
-        periodId: string
-        before: number
-      }
-    /** `before` is the team's remaining count in `periodId`, after the sub. */
-    | {
-        kind: 'substitution-removed'
-        team: TeamSide
-        event: SubstitutionEvent
-        index: number
-        periodId: string
-        before: number
-      }
-    | {
-        kind: 'subs-remaining'
-        team: TeamSide
-        periodId: string
-        before: number
-      }
-    | { kind: 'stoppage'; periodId: string; before: number | null }
-    /** Seconds the set-clock moved the displayed time by (undo shifts back). */
-    | { kind: 'clock'; delta: number }
-    /** The period left behind, with the time and counts it had. */
-    | {
-        kind: 'period'
-        periodId: string
-        seconds: number
-        stoppageMinutes: number | null
-        subsRemaining: Record<TeamSide, number>
-      }
-  )
+export type UndoEntry = { label: string } & (
+  | { kind: 'goal'; team: TeamSide; eventId?: string }
+  /** `event` (and `eventId` above) are absent when the point had no logged goal. */
+  | { kind: 'goal-removed'; team: TeamSide; event?: GoalEvent; index: number }
+  | { kind: 'cards'; eventIds: string[] }
+  /** Cards to put back, each at its index in the log, in ascending order. */
+  | { kind: 'cards-removed'; cards: { event: CardEvent; index: number }[] }
+  /** `before` is the team's remaining count in `periodId`, before the sub. */
+  | {
+      kind: 'substitution'
+      team: TeamSide
+      eventId: string
+      periodId: string
+      before: number
+    }
+  /** `before` is the team's remaining count in `periodId`, after the sub. */
+  | {
+      kind: 'substitution-removed'
+      team: TeamSide
+      event: SubstitutionEvent
+      index: number
+      periodId: string
+      before: number
+    }
+  | {
+      kind: 'subs-remaining'
+      team: TeamSide
+      periodId: string
+      before: number
+    }
+  | { kind: 'stoppage'; periodId: string; before: number | null }
+  /** Seconds the set-clock moved the displayed time by (undo shifts back). */
+  | { kind: 'clock'; delta: number }
+  /** The period left behind, with the time and counts it had. */
+  | {
+      kind: 'period'
+      periodId: string
+      seconds: number
+      stoppageMinutes: number | null
+      subsRemaining: Record<TeamSide, number>
+    }
+)
 
 export interface TeamState {
   name: string
