@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from 'react-router'
 import { InHeader } from '../../../components/HeaderSlot'
 import type { ConsoleProps } from '../../../consoles/registry'
@@ -90,7 +91,8 @@ export function VolleyballConsole({
     dispatch({ type: 'undo', at: monotonicNow() })
     showToast(`Undid ${step.label.toLowerCase()}`)
   }
-  // A pending −1 will commit as a new step, which clears redo.
+  // A pending −1 will commit as a new step, which clears redo. Redo is only
+  // shown while there is something to redo.
   const nextStep = pendingSide ? undefined : state.future?.at(-1)
   const redo = () => {
     flushScores()
@@ -103,6 +105,7 @@ export function VolleyballConsole({
   // The settings screen replaces the columns; closing it refocuses its button.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settingsButton = useRef<HTMLButtonElement>(null)
+  const undoButton = useRef<HTMLButtonElement>(null)
   const settingsWasOpen = useRef(false)
   useEffect(() => {
     if (settingsWasOpen.current && !settingsOpen) {
@@ -185,19 +188,26 @@ export function VolleyballConsole({
           <button
             type="button"
             className={styles.topButton}
+            ref={undoButton}
             disabled={!lastStep || settingsOpen}
             onClick={undo}
           >
             {lastStep ? `Undo · ${lastStep.label}` : 'Nothing to undo'}
           </button>
-          <button
-            type="button"
-            className={styles.topButton}
-            disabled={!nextStep || settingsOpen}
-            onClick={redo}
-          >
-            {nextStep ? `Redo · ${nextStep.label}` : 'Nothing to redo'}
-          </button>
+          {nextStep && !settingsOpen && (
+            <button
+              type="button"
+              className={styles.topButton}
+              onClick={() => {
+                // Render now, so Undo is enabled before it takes focus.
+                flushSync(redo)
+                // The last redo removes this button: keep focus nearby.
+                if (!store.getState().future) undoButton.current?.focus()
+              }}
+            >
+              Redo · {nextStep.label}
+            </button>
+          )}
         </div>
       </InHeader>
 

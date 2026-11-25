@@ -804,20 +804,29 @@ describe('FootballConsole', () => {
   })
 
   describe('redo', () => {
-    const redoButton = () =>
-      screen.getByRole('button', { name: /^(Redo|Nothing to redo)/ })
+    const redoButton = () => screen.getByRole('button', { name: /^Redo/ })
+    const expectNoRedo = () =>
+      expect(screen.queryByRole('button', { name: /redo/i })).toBeNull()
     const undoButton = () => screen.getByRole('button', { name: /^Undo/ })
     const scoreGoal = async (user: ReturnType<typeof setup>['user']) => {
       await user.click(screen.getByRole('button', { name: 'Goal for Home' }))
       await user.click(screen.getByRole('button', { name: 'Skip details' }))
     }
 
-    it('is disabled with nothing to redo', async () => {
+    it('is hidden with nothing to redo', async () => {
       const { user } = setup()
-      expect(redoButton()).toHaveTextContent('Nothing to redo')
-      expect(redoButton()).toBeDisabled()
+      expectNoRedo()
       await scoreGoal(user)
-      expect(redoButton()).toBeDisabled()
+      expectNoRedo()
+    })
+
+    it('is hidden while the settings screen is open', async () => {
+      const { user } = setup()
+      await scoreGoal(user)
+      await user.click(undoButton())
+      expect(redoButton()).toBeEnabled()
+      await user.click(screen.getByRole('button', { name: 'Settings' }))
+      expectNoRedo()
     })
 
     it('names the undone step and redoes it', async () => {
@@ -830,8 +839,10 @@ describe('FootballConsole', () => {
       expect(score('Home')).toHaveTextContent('1')
       expect(store.getState()).toEqual(before)
       expect(screen.getByText('Redid goal')).toBeInTheDocument()
-      expect(redoButton()).toBeDisabled()
+      expectNoRedo()
       expect(undoButton()).toHaveTextContent('Undo · Goal')
+      // The button that was clicked is gone, so focus moves to Undo.
+      expect(undoButton()).toHaveFocus()
     })
 
     it('redoes with Ctrl+Shift+Z, Cmd+Shift+Z and Ctrl+Y', async () => {
@@ -855,7 +866,7 @@ describe('FootballConsole', () => {
       await user.click(undoButton())
       await user.click(screen.getByRole('button', { name: 'Goal for Visitor' }))
       await user.click(screen.getByRole('button', { name: 'Skip details' }))
-      expect(redoButton()).toHaveTextContent('Nothing to redo')
+      expectNoRedo()
       await user.keyboard('{Control>}y{/Control}')
       expect(score('Home')).toHaveTextContent('0')
     })
@@ -899,7 +910,7 @@ describe('FootballConsole', () => {
         fireEvent.click(
           screen.getByRole('button', { name: 'Increase stoppage time' }),
         )
-        expect(redoButton()).toHaveTextContent('Nothing to redo')
+        expectNoRedo()
         fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
         // The pending change was committed as the newest step instead.
         expect(store.getState().stoppageMinutes).toBe(1)
@@ -923,7 +934,7 @@ describe('FootballConsole', () => {
       expect(
         screen.getByText('Could not redo period change: it no longer applies'),
       ).toBeInTheDocument()
-      expect(redoButton()).toBeDisabled()
+      expectNoRedo()
     })
 
     it('has nothing to redo while a subs-left change is pending', () => {
@@ -938,7 +949,7 @@ describe('FootballConsole', () => {
         fireEvent.click(
           home.getByRole('button', { name: 'Decrease subs left for Home' }),
         )
-        expect(redoButton()).toHaveTextContent('Nothing to redo')
+        expectNoRedo()
         fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
         // The pending change was committed as the newest step instead.
         expect(store.getState().teams.home.score).toBe(0)

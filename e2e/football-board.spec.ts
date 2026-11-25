@@ -119,9 +119,7 @@ test('undo and redo on the console are reflected on the board', async ({
 
   await console_.keyboard.press('Control+Shift+Z')
   await expect(boardScore(board, 'Home')).toHaveText('1')
-  await expect(
-    console_.getByRole('button', { name: 'Nothing to redo' }),
-  ).toBeDisabled()
+  await expect(console_.getByRole('button', { name: /redo/i })).toHaveCount(0)
 })
 
 test.describe('update banners', () => {

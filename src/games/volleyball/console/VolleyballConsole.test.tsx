@@ -161,9 +161,7 @@ describe('VolleyballConsole', () => {
         screen.getByRole('button', { name: 'Redo · Point for Visitor' }),
       ).toBeEnabled()
       act(() => minus('Home').click())
-      expect(
-        screen.getByRole('button', { name: 'Nothing to redo' }),
-      ).toBeDisabled()
+      expect(screen.queryByRole('button', { name: /redo/i })).toBeNull()
       act(() => {
         document.body.dispatchEvent(
           new KeyboardEvent('keydown', {
@@ -387,9 +385,7 @@ describe('VolleyballConsole', () => {
     it('names the undone step, redoes it from the button and with the keys', async () => {
       const { store } = setup()
       const user = userEvent.setup()
-      expect(
-        screen.getByRole('button', { name: 'Nothing to redo' }),
-      ).toBeDisabled()
+      expect(screen.queryByRole('button', { name: /redo/i })).toBeNull()
 
       await user.click(point('Home'))
       await user.click(point('Visitor'))
@@ -407,9 +403,7 @@ describe('VolleyballConsole', () => {
       await user.keyboard('{Control>}z{/Control}')
       await user.keyboard('{Control>}y{/Control}')
       expect(store.getState()).toEqual(before)
-      expect(
-        screen.getByRole('button', { name: 'Nothing to redo' }),
-      ).toBeDisabled()
+      expect(screen.queryByRole('button', { name: /redo/i })).toBeNull()
     })
 
     it('is cleared by a new point', async () => {
@@ -418,9 +412,7 @@ describe('VolleyballConsole', () => {
       await user.click(point('Home'))
       await user.keyboard('{Control>}z{/Control}')
       await user.click(point('Visitor'))
-      expect(
-        screen.getByRole('button', { name: 'Nothing to redo' }),
-      ).toBeDisabled()
+      expect(screen.queryByRole('button', { name: /redo/i })).toBeNull()
       await user.keyboard('{Control>}y{/Control}')
       expect(store.getState().current).toEqual({ visitor: 1, home: 0 })
     })
