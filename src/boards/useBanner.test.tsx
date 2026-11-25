@@ -1,7 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  BANNER_FOLLOW_UP_MS,
   BANNER_HOLD_MS,
   bannerEnterDelayMs,
   bannerEnterMs,
@@ -123,14 +122,18 @@ describe('useBanner', () => {
     const followUp = (n: Notice): Notice | undefined =>
       n.id === 10 ? { id: 11 } : undefined
 
-    it('replaces the notice after 4.5s, then holds and leaves as usual', () => {
-      expect(BANNER_FOLLOW_UP_MS).toBe(4_500)
+    it('flips to the follow-up when the first page has held, then holds and leaves as usual', () => {
       const f = feed()
       const { result } = renderHook(() => useBanner(f.subscribe, followUp))
 
       f.push({ id: 10 })
       const card = result.current?.key
-      act(() => void vi.advanceTimersByTime(BANNER_FOLLOW_UP_MS - 1))
+      act(
+        () =>
+          void vi.advanceTimersByTime(
+            BANNER_VISIBLE_MS + BANNER_FLIP_HALF_MS - 1,
+          ),
+      )
       // Turning edge-on, still the first page.
       expect(result.current).toMatchObject({ notice: { id: 10 }, flip: 'out' })
       act(() => void vi.advanceTimersByTime(1))
@@ -142,41 +145,87 @@ describe('useBanner', () => {
         key: card,
       })
 
-      act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS))
+      act(
+        () => void vi.advanceTimersByTime(BANNER_FLIP_HALF_MS + BANNER_HOLD_MS),
+      )
       expect(result.current?.phase).toBe('out')
       act(() => void vi.advanceTimersByTime(BANNER_EXIT_MS))
       expect(result.current).toBeNull()
+    })
+
+    it('holds every page face-on for the same time, across three pages', () => {
+      // 10 → 11 → 12, as 7+ substitution pairs page through.
+      const chain = (n: Notice): Notice | undefined =>
+        n.id < 12 ? { id: n.id + 1 } : undefined
+      const f = feed()
+      const { result } = renderHook(() => useBanner(f.subscribe, chain))
+
+      /** Ms until the current page starts to leave (flip or exit). */
+      const untilLeaving = () => {
+        let ms = 0
+        const page = result.current?.notice.id
+        while (
+          result.current?.notice.id === page &&
+          result.current?.flip !== 'out' &&
+          result.current?.phase !== 'out'
+        ) {
+          act(() => void vi.advanceTimersByTime(1))
+          ms += 1
+        }
+        return ms
+      }
+      /** Ms until the next page has replaced the current one. */
+      const untilNextPage = () => {
+        let ms = 0
+        const page = result.current?.notice.id
+        while (result.current?.notice.id === page) {
+          act(() => void vi.advanceTimersByTime(1))
+          ms += 1
+        }
+        return ms
+      }
+
+      f.push({ id: 10 })
+      // The first page slides in, then holds.
+      expect(untilLeaving()).toBe(
+        BANNER_ENTER_DELAY_MS + BANNER_ENTER_MS + BANNER_HOLD_MS,
+      )
+      expect(untilNextPage()).toBe(BANNER_FLIP_HALF_MS)
+      // Each later page flips in, then holds just as long.
+      expect(result.current?.notice).toEqual({ id: 11 })
+      expect(untilLeaving()).toBe(BANNER_FLIP_HALF_MS + BANNER_HOLD_MS)
+      expect(untilNextPage()).toBe(BANNER_FLIP_HALF_MS)
+      expect(result.current?.notice).toEqual({ id: 12 })
+      expect(untilLeaving()).toBe(BANNER_FLIP_HALF_MS + BANNER_HOLD_MS)
+      expect(result.current?.phase).toBe('out')
     })
 
     it('starts the flip a half-turn before the swap', () => {
       const f = feed()
       const { result } = renderHook(() => useBanner(f.subscribe, followUp))
       f.push({ id: 10 })
-      act(
-        () =>
-          void vi.advanceTimersByTime(
-            BANNER_FOLLOW_UP_MS - BANNER_FLIP_HALF_MS - 1,
-          ),
-      )
+      act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS - 1))
       expect(result.current?.flip).toBeUndefined()
       act(() => void vi.advanceTimersByTime(1))
-      expect(result.current?.flip).toBe('out')
+      expect(result.current).toMatchObject({ notice: { id: 10 }, flip: 'out' })
+      act(() => void vi.advanceTimersByTime(BANNER_FLIP_HALF_MS))
+      expect(result.current?.notice).toEqual({ id: 11 })
     })
 
     it('is cancelled by a newer notice', () => {
       const f = feed()
       const { result } = renderHook(() => useBanner(f.subscribe, followUp))
       f.push({ id: 10 })
-      act(() => void vi.advanceTimersByTime(BANNER_FOLLOW_UP_MS - 100))
+      act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS - 100))
       f.push({ id: 1 })
-      act(() => void vi.advanceTimersByTime(BANNER_FOLLOW_UP_MS))
+      act(() => void vi.advanceTimersByTime(BANNER_VISIBLE_MS - 1))
       expect(result.current?.notice).toEqual({ id: 1 })
       expect(result.current?.flip).toBeUndefined()
     })
   })
 
   describe('per-sport timing', () => {
-    const timing = { holdMs: 2_000, followUpMs: 1_000 }
+    const timing = { holdMs: 2_000 }
 
     it('holds for the sport hold time instead of the default', () => {
       const f = feed()
@@ -192,7 +241,7 @@ describe('useBanner', () => {
       expect(result.current?.phase).toBe('out')
     })
 
-    it('shows a follow-up after the sport follow-up time', () => {
+    it('holds each follow-up page for the sport hold time', () => {
       const f = feed()
       const followUp = (n: Notice): Notice | undefined =>
         n.id === 10 ? { id: 11 } : undefined
@@ -200,14 +249,26 @@ describe('useBanner', () => {
         useBanner(f.subscribe, followUp, timing),
       )
       f.push({ id: 10 })
-      act(() => void vi.advanceTimersByTime(timing.followUpMs))
+      act(
+        () =>
+          void vi.advanceTimersByTime(
+            bannerVisibleMs(timing.holdMs) + BANNER_FLIP_HALF_MS,
+          ),
+      )
       expect(result.current?.notice).toEqual({ id: 11 })
+      act(
+        () =>
+          void vi.advanceTimersByTime(BANNER_FLIP_HALF_MS + timing.holdMs - 1),
+      )
+      expect(result.current?.phase).toBe('in')
+      act(() => void vi.advanceTimersByTime(1))
+      expect(result.current?.phase).toBe('out')
     })
 
     it('keeps a banner showing when the board passes a fresh timing object', () => {
       const f = feed()
       const { result, rerender } = renderHook(() =>
-        useBanner(f.subscribe, undefined, { holdMs: 2_000, followUpMs: 1_000 }),
+        useBanner(f.subscribe, undefined, { holdMs: 2_000 }),
       )
       f.push({ id: 1 })
       rerender()

@@ -16,24 +16,22 @@ export const bannerExitMs = () => motionMs('--motion-board-exit')
 /** The card flips to the follow-up: each half is a turn to or from edge-on. */
 export const bannerFlipMs = () => motionMs('--motion-board-flip')
 
-/** How long a banner holds once it has arrived. */
-export const BANNER_HOLD_MS = 9_000
-
 /**
- * From a notice arriving to its follow-up replacing it, when it has one: half
- * the usual time, since the audience is waiting on the rest of the story.
+ * How long a banner holds once it has arrived. A banner that pages through
+ * follow-ups (e.g. a big substitution) holds every page this long once it is
+ * face-on: each page has as much to read as the first, so the pages don't
+ * share one hold. The first page slides in before its hold; each later page
+ * flips in.
  */
-export const BANNER_FOLLOW_UP_MS = 4_500
+export const BANNER_HOLD_MS = 9_000
 
 /** Dwell times a sport may override; football's are the defaults above. */
 export interface BannerTiming {
   holdMs: number
-  followUpMs: number
 }
 
 export const DEFAULT_BANNER_TIMING: BannerTiming = {
   holdMs: BANNER_HOLD_MS,
-  followUpMs: BANNER_FOLLOW_UP_MS,
 }
 
 /** From a notice arriving to the banner starting to leave. */
